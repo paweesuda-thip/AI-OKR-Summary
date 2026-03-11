@@ -118,11 +118,3 @@ src/
 └── index.css
 ```
 
-## ความปลอดภัย
-
-- API Keys เก็บใน `.env` เท่านั้น — ไม่ถูก commit ขึ้น Git (มีใน `.gitignore`)
-- ไม่มี HTML injection: AI response ถูก render เป็น React elements โดยตรง ไม่ใช้ `dangerouslySetInnerHTML`
-- ใช้ HTTPS สำหรับ Production
-
-> **หมายเหตุ:** เนื่องจากเป็น frontend app, API keys จะถูก embed ใน JavaScript bundle ที่ build ออกมา แนะนำให้ทำ backend proxy สำหรับ production เพื่อความปลอดภัยสูงสุด
-
