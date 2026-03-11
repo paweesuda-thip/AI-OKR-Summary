@@ -55,7 +55,7 @@ VITE_GEMINI_API_KEY=your_gemini_api_key_here
 npm run dev
 ```
 
-เปิดเบราว์เซอร์ที่ http://localhost:5173
+เปิดเบราว์เซอร์ที่ http://localhost:4200
 
 ## วิธีใช้งาน
 
@@ -126,13 +126,3 @@ src/
 
 > **หมายเหตุ:** เนื่องจากเป็น frontend app, API keys จะถูก embed ใน JavaScript bundle ที่ build ออกมา แนะนำให้ทำ backend proxy สำหรับ production เพื่อความปลอดภัยสูงสุด
 
-## Build & Deploy
-
-```bash
-npm run build    # build ไปที่ dist/
-npm run preview  # preview build locally
-```
-
-## License
-
-MIT
