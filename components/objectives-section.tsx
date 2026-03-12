@@ -32,7 +32,7 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
             spotlightColor="rgba(255, 255, 255, 0.05)"
             onClick={() => setIsExpanded(!isExpanded)}
         >
-            <div className="p-6 md:p-8 flex flex-col h-full relative z-10">
+            <div className="p-6 md:p-8 flex flex-col relative z-10">
                 {/* Header Section */}
                 <div className="flex items-start justify-between gap-4 mb-4">
                     <div className="flex items-center gap-3">
@@ -110,8 +110,8 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                 </div>
 
                 {/* Expandable Area (Key Results) */}
-                <div className={`grid transition-all duration-500 ease-in-out shrink-0 ${isExpanded ? 'grid-rows-[1fr] mt-6' : 'grid-rows-[0fr] mt-0'}`}>
-                    <div className={`overflow-hidden transition-opacity duration-500 delay-100 ${isExpanded ? 'opacity-100' : 'opacity-0'}`}>
+                <div className={`grid transition-all duration-500 ease-in-out ${isExpanded ? 'grid-rows-[1fr] mt-6' : 'grid-rows-[0fr] mt-0'}`}>
+                    <div className={`overflow-hidden min-h-0 transition-opacity duration-300 ${isExpanded ? 'opacity-100 delay-200' : 'opacity-0 delay-0'}`}>
                         <div className="pt-6 border-t border-border/30">
                             <div className="flex items-center justify-between mb-4">
                                 <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Key Results Breakdown</p>
@@ -288,7 +288,7 @@ export default function ObjectivesSection({ objectives }: { objectives: Objectiv
                     </div>
                 ) : (
                     <div className="flex flex-col gap-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
                             {visible.map((obj, idx) => (
                                 <ObjectiveCard key={obj.objectiveId} obj={obj} rank={idx + 1} />
                             ))}
