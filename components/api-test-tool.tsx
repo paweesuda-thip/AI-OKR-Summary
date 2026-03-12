@@ -2,11 +2,21 @@
 
 import { useState } from 'react';
 import apiService from '@/lib/services/api-service';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Loader2, Trash2, Send, ChevronDown, ChevronRight, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, Trash2, Send, ChevronDown, ChevronRight, CheckCircle2, XCircle, FlaskConical, Upload, Info } from "lucide-react";
+
+interface TestResult {
+    success: boolean;
+    data?: any;
+    requestParams?: Record<string, number>;
+    error?: {
+        message: string;
+        details: string;
+    };
+}
 
 export default function APITestTool() {
     // ── Form State ────────────────────────────────────────────────────────
@@ -16,7 +26,7 @@ export default function APITestTool() {
     });
 
     // ── Result State ──────────────────────────────────────────────────────
-    const [result, setResult] = useState<any>(null);
+    const [result, setResult] = useState<TestResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [showRequest, setShowRequest] = useState(false);
@@ -52,15 +62,16 @@ export default function APITestTool() {
                 data: response,
                 requestParams: params,
             });
-        } catch (err: any) {
+        } catch (err: unknown) {
             console.error('API Test Error:', err);
-            const errorMsg = err?.response?.data?.message || err?.message || 'API call failed';
+            const errorObj = err as { response?: { data?: { message?: string } }, message?: string };
+            const errorMsg = errorObj?.response?.data?.message || errorObj?.message || 'API call failed';
             setError(errorMsg);
             setResult({
                 success: false,
                 error: {
                     message: errorMsg,
-                    details: err,
+                    details: String(err),
                 },
             });
         } finally {
@@ -77,219 +88,220 @@ export default function APITestTool() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-950 text-white p-6 md:p-8 pt-24 md:pt-32">
-            <div className="max-w-6xl mx-auto space-y-8">
-                {/* Header */}
-                <div>
-                    <h1 className="text-3xl font-bold mb-2 text-slate-100 flex items-center gap-3">
-                        <span className="text-4xl">🧪</span> API Test Tool
-                    </h1>
-                    <p className="text-slate-400 text-lg">
-                        Test the new endpoint with custom parameters
-                    </p>
-                </div>
-
-                {/* Main Container */}
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-                    {/* ─── Left: Input Form ───────────────────────────────────────*/}
-                    <Card className="lg:col-span-5 bg-slate-900 border-slate-800 shadow-xl overflow-hidden sticky top-8">
-                        <CardHeader className="border-b border-slate-800 bg-slate-900/50 pb-5">
-                            <CardTitle className="text-xl text-blue-400">Request Parameters</CardTitle>
-                        </CardHeader>
-                        <CardContent className="pt-6 space-y-6">
-                            {/* Assessment Set ID */}
-                            <div className="space-y-2.5">
-                                <Label htmlFor="assessmentSetId" className="text-slate-300 font-medium">
-                                    Assessment Set ID
-                                </Label>
-                                <Input
-                                    id="assessmentSetId"
-                                    type="number"
-                                    name="assessmentSetId"
-                                    value={formData.assessmentSetId}
-                                    onChange={handleInputChange}
-                                    className="bg-slate-950 border-slate-700 text-slate-100 focus-visible:ring-blue-500 font-mono"
-                                />
-                                <p className="text-xs text-slate-500">
-                                    Required ID for the assessment set
-                                </p>
-                            </div>
-
-                            {/* Organization ID */}
-                            <div className="space-y-2.5">
-                                <Label htmlFor="organizationId" className="text-slate-300 font-medium">
-                                    Organization ID
-                                </Label>
-                                <Input
-                                    id="organizationId"
-                                    type="number"
-                                    name="organizationId"
-                                    placeholder="e.g., 14904"
-                                    value={formData.organizationId}
-                                    onChange={handleInputChange}
-                                    className="bg-slate-950 border-slate-700 text-slate-100 focus-visible:ring-blue-500 font-mono"
-                                />
-                                <p className="text-xs text-slate-500">
-                                    Organization ID to fetch OKR data (required)
-                                </p>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="pt-2 pb-6 px-6 gap-3">
-                            <Button
-                                onClick={handleTestAPI}
-                                disabled={loading}
-                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-900/20"
-                            >
-                                {loading ? (
-                                    <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Testing...</>
-                                ) : (
-                                    <><Send className="w-4 h-4 mr-2" /> Send Request</>
-                                )}
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={handleClear}
-                                className="border-slate-700 bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white"
-                            >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Clear
-                            </Button>
-                        </CardFooter>
-                    </Card>
-
-                    {/* ─── Right: Response Display ────────────────────────────────*/}
-                    <div className="lg:col-span-7 space-y-6">
-                        {/* Error Display */}
-                        {error && (
-                            <Card className="bg-rose-950/20 border-rose-900/50 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                                <CardHeader className="pb-3 pt-5">
-                                    <CardTitle className="text-rose-400 flex items-center gap-2 text-lg">
-                                        <XCircle className="w-5 h-5" /> Error
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent>
-                                    <p className="text-rose-300 font-medium">{error}</p>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* Request Details */}
-                        {result?.requestParams && (
-                            <Card className="bg-slate-900 border-slate-800 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                                <button
-                                    onClick={() => setShowRequest(!showRequest)}
-                                    className="w-full text-left font-semibold text-slate-300 hover:bg-slate-800/50 transition-colors flex items-center justify-between px-6 py-4"
-                                >
-                                    <span className="flex items-center gap-2">
-                                        📤 Request Sent
-                                    </span>
-                                    {showRequest ? <ChevronDown className="w-5 h-5 text-slate-500" /> : <ChevronRight className="w-5 h-5 text-slate-500" />}
-                                </button>
-                                {showRequest && (
-                                    <div className="px-6 pb-6 border-t border-slate-800 pt-4">
-                                        <pre className="bg-slate-950 p-4 rounded-xl text-xs text-slate-300 overflow-x-auto border border-slate-800 font-mono leading-relaxed">
-                                            {JSON.stringify(result.requestParams, null, 2)}
-                                        </pre>
-                                    </div>
-                                )}
-                            </Card>
-                        )}
-
-                        {/* Success Response */}
-                        {result?.success && result?.data && (
-                            <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden animate-in fade-in slide-in-from-bottom-2">
-                                <CardHeader className="border-b border-slate-800 bg-slate-900/50 pb-5">
-                                    <CardTitle className="text-emerald-400 flex items-center gap-2">
-                                        <CheckCircle2 className="w-5 h-5" /> Response
-                                    </CardTitle>
-                                </CardHeader>
-                                <CardContent className="pt-6">
-                                    {/* Response Stats */}
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
-                                        <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-center items-center">
-                                            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Objectives</p>
-                                            <p className="text-3xl font-bold text-blue-400">
-                                                {result.data.objectives?.length || 0}
-                                            </p>
-                                        </div>
-                                        <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-center items-center">
-                                            <p className="text-xs text-slate-400 font-medium uppercase tracking-wider mb-1">Contributors</p>
-                                            <p className="text-3xl font-bold text-blue-400">
-                                                {result.data.contributors?.length || 0}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    {/* Full Response Toggle */}
-                                    <div className="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/50">
-                                        <button 
-                                            onClick={() => setShowFullResponse(!showFullResponse)}
-                                            className="w-full px-4 py-3 flex items-center justify-between text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800/50 transition-colors"
-                                        >
-                                            View Full Response
-                                            {showFullResponse ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                        </button>
-                                        
-                                        {showFullResponse && (
-                                            <div className="p-4 border-t border-slate-800 bg-slate-950">
-                                                <pre className="text-xs text-slate-300 overflow-x-auto max-h-[500px] font-mono leading-relaxed custom-scrollbar">
-                                                    {JSON.stringify(result.data, null, 2)}
-                                                </pre>
-                                            </div>
-                                        )}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        )}
-
-                        {/* No Result Yet */}
-                        {!result && !error && (
-                            <div className="bg-slate-900 border border-slate-800 border-dashed rounded-xl p-12 text-center flex flex-col items-center justify-center opacity-70">
-                                <div className="w-16 h-16 bg-slate-800 rounded-full flex items-center justify-center mb-4">
-                                    <Send className="w-6 h-6 text-slate-500 ml-1" />
-                                </div>
-                                <p className="text-slate-400 text-lg font-medium">Ready to test</p>
-                                <p className="text-slate-500 text-sm mt-1 max-w-xs">
-                                    Configure parameters on the left and click "Send Request"
-                                </p>
-                            </div>
-                        )}
+        <div className="w-full space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* Header */}
+            <div className="pb-4 border-b border-border">
+                <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-3">
+                    <div className="p-2 bg-primary/10 rounded-xl border border-primary/20">
+                        <FlaskConical className="w-8 h-8 text-primary" />
                     </div>
-                </div>
+                    API Test Tool
+                </h1>
+                <p className="text-muted-foreground text-lg mt-2">
+                    Test the new endpoint with custom parameters
+                </p>
+            </div>
 
-                {/* Footer Info */}
-                <Card className="bg-slate-900 border-slate-800 mt-12">
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-lg text-slate-300 flex items-center gap-2">
-                            📌 API Information
-                        </CardTitle>
+            {/* Main Container */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+                {/* ─── Left: Input Form ───────────────────────────────────────*/}
+                <Card className="lg:col-span-5 shadow-sm sticky top-8 border-border">
+                    <CardHeader className="border-b border-border/50 bg-muted/20 pb-5">
+                        <CardTitle className="text-xl text-primary">Request Parameters</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="flex flex-wrap items-center gap-3">
-                            <span className="text-sm font-medium text-slate-400">Endpoint:</span>
-                            <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 font-mono text-xs font-bold rounded border border-emerald-500/20">POST</span>
-                            <code className="bg-slate-950 border border-slate-800 px-3 py-1.5 rounded-md text-sm text-blue-300 font-mono">
-                                /api/okr/objectives
-                            </code>
+                    <CardContent className="pt-6 space-y-6">
+                        {/* Assessment Set ID */}
+                        <div className="space-y-2.5">
+                            <Label htmlFor="assessmentSetId" className="text-foreground font-semibold">
+                                Assessment Set ID
+                            </Label>
+                            <Input
+                                id="assessmentSetId"
+                                type="number"
+                                name="assessmentSetId"
+                                value={formData.assessmentSetId}
+                                onChange={handleInputChange}
+                                className="font-mono bg-background"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Required ID for the assessment set
+                            </p>
                         </div>
-                        
-                        <div>
-                            <p className="text-sm font-medium text-slate-400 mb-2">Required Parameters:</p>
-                            <div className="flex flex-wrap gap-2">
-                                <code className="bg-slate-950 border border-slate-800 px-2.5 py-1 rounded text-sm text-slate-300 font-mono">assessmentSetId</code>
-                                <code className="bg-slate-950 border border-slate-800 px-2.5 py-1 rounded text-sm text-slate-300 font-mono">organizationId</code>
-                            </div>
-                        </div>
-                        
-                        <div className="bg-slate-800/40 rounded-lg p-3 text-sm text-slate-400 flex items-start gap-2 border border-slate-700/50">
-                            <span>ℹ️</span>
-                            <p>
-                                <strong className="text-slate-300 font-medium">Note:</strong> Response is an array with a <code className="bg-slate-950 border border-slate-800 px-1 py-0.5 rounded text-xs">status</code> wrapper. No date parameters needed.
+
+                        {/* Organization ID */}
+                        <div className="space-y-2.5">
+                            <Label htmlFor="organizationId" className="text-foreground font-semibold">
+                                Organization ID
+                            </Label>
+                            <Input
+                                id="organizationId"
+                                type="number"
+                                name="organizationId"
+                                placeholder="e.g., 14904"
+                                value={formData.organizationId}
+                                onChange={handleInputChange}
+                                className="font-mono bg-background"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Organization ID to fetch OKR data (required)
                             </p>
                         </div>
                     </CardContent>
+                    <CardFooter className="pt-2 pb-6 px-6 gap-3">
+                        <Button
+                            onClick={handleTestAPI}
+                            disabled={loading}
+                            className="flex-1 shadow-sm"
+                        >
+                            {loading ? (
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Testing...</>
+                            ) : (
+                                <><Send className="w-4 h-4 mr-2" /> Send Request</>
+                            )}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={handleClear}
+                            className="shadow-sm"
+                        >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Clear
+                        </Button>
+                    </CardFooter>
                 </Card>
+
+                {/* ─── Right: Response Display ────────────────────────────────*/}
+                <div className="lg:col-span-7 space-y-6">
+                    {/* Error Display */}
+                    {error && (
+                        <Card className="border-destructive/50 bg-destructive/5 shadow-sm overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+                            <CardHeader className="pb-3 pt-5">
+                                <CardTitle className="text-destructive flex items-center gap-2 text-lg">
+                                    <XCircle className="w-5 h-5" /> Error
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-destructive/90 font-medium">{error}</p>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* Request Details */}
+                    {result?.requestParams && (
+                        <Card className="shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 border-border">
+                            <button
+                                onClick={() => setShowRequest(!showRequest)}
+                                className="w-full text-left font-semibold text-foreground hover:bg-muted/50 transition-colors flex items-center justify-between px-6 py-4"
+                            >
+                                <span className="flex items-center gap-2">
+                                    <Upload className="w-4 h-4 text-muted-foreground" /> Request Sent
+                                </span>
+                                {showRequest ? <ChevronDown className="w-5 h-5 text-muted-foreground" /> : <ChevronRight className="w-5 h-5 text-muted-foreground" />}
+                            </button>
+                            {showRequest && (
+                                <div className="px-6 pb-6 border-t border-border pt-4 bg-muted/10">
+                                    <pre className="bg-background p-4 rounded-xl text-xs text-foreground overflow-x-auto border border-border font-mono leading-relaxed shadow-inner">
+                                        {JSON.stringify(result.requestParams, null, 2)}
+                                    </pre>
+                                </div>
+                            )}
+                        </Card>
+                    )}
+
+                    {/* Success Response */}
+                    {result?.success && result?.data && (
+                        <Card className="shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2 border-border">
+                            <CardHeader className="border-b border-border/50 bg-muted/10 pb-5">
+                                <CardTitle className="text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
+                                    <CheckCircle2 className="w-5 h-5" /> Response
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                {/* Response Stats */}
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-background border border-border p-4 rounded-xl flex flex-col justify-center items-center shadow-sm">
+                                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Objectives</p>
+                                        <p className="text-3xl font-bold text-primary">
+                                            {result.data.objectives?.length || 0}
+                                        </p>
+                                    </div>
+                                    <div className="bg-background border border-border p-4 rounded-xl flex flex-col justify-center items-center shadow-sm">
+                                        <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1">Contributors</p>
+                                        <p className="text-3xl font-bold text-primary">
+                                            {result.data.contributors?.length || 0}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Full Response Toggle */}
+                                <div className="border border-border rounded-xl overflow-hidden bg-muted/10">
+                                    <button 
+                                        onClick={() => setShowFullResponse(!showFullResponse)}
+                                        className="w-full px-4 py-3 flex items-center justify-between text-sm font-semibold text-foreground hover:bg-muted/30 transition-colors"
+                                    >
+                                        View Full Response
+                                        {showFullResponse ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                    </button>
+                                    
+                                    {showFullResponse && (
+                                        <div className="p-4 border-t border-border bg-background">
+                                            <pre className="text-xs text-foreground overflow-x-auto max-h-[500px] font-mono leading-relaxed custom-scrollbar p-2">
+                                                {JSON.stringify(result.data, null, 2)}
+                                            </pre>
+                                        </div>
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+
+                    {/* No Result Yet */}
+                    {!result && !error && (
+                        <div className="border border-border border-dashed rounded-xl p-12 text-center flex flex-col items-center justify-center bg-muted/5">
+                            <div className="w-16 h-16 bg-muted/50 rounded-full flex items-center justify-center mb-4 border border-border/50">
+                                <Send className="w-6 h-6 text-muted-foreground ml-1" />
+                            </div>
+                            <p className="text-foreground text-lg font-semibold">Ready to test</p>
+                            <p className="text-muted-foreground text-sm mt-1 max-w-xs">
+                                Configure parameters on the left and click &quot;Send Request&quot;
+                            </p>
+                        </div>
+                    )}
+                </div>
             </div>
+
+            {/* Footer Info */}
+            <Card className="mt-12 shadow-sm border-border/60 bg-muted/5">
+                <CardHeader className="pb-3">
+                    <CardTitle className="text-lg text-foreground flex items-center gap-2">
+                        <Info className="w-5 h-5 text-primary" /> API Information
+                    </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="flex flex-wrap items-center gap-3">
+                        <span className="text-sm font-semibold text-muted-foreground">Endpoint:</span>
+                        <span className="px-2 py-1 bg-primary/10 text-primary font-mono text-xs font-bold rounded border border-primary/20">POST</span>
+                        <code className="bg-background border border-border px-3 py-1.5 rounded-md text-sm text-foreground font-mono shadow-sm">
+                            /api/okr/objectives
+                        </code>
+                    </div>
+                    
+                    <div>
+                        <p className="text-sm font-semibold text-muted-foreground mb-2">Required Parameters:</p>
+                        <div className="flex flex-wrap gap-2">
+                            <code className="bg-background border border-border px-2.5 py-1 rounded text-sm text-foreground font-mono shadow-sm">assessmentSetId</code>
+                            <code className="bg-background border border-border px-2.5 py-1 rounded text-sm text-foreground font-mono shadow-sm">organizationId</code>
+                        </div>
+                    </div>
+                    
+                    <div className="bg-background rounded-lg p-4 text-sm text-muted-foreground flex items-start gap-3 border border-border shadow-sm">
+                        <Info className="w-5 h-5 text-sky-500 shrink-0 mt-0.5" />
+                        <p className="leading-relaxed">
+                            <strong className="text-foreground font-semibold">Note:</strong> Response is an array with a <code className="bg-muted px-1.5 py-0.5 rounded text-xs border border-border">status</code> wrapper. No date parameters needed.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

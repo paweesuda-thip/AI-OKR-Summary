@@ -4,7 +4,7 @@ import NavBar from "@/components/nav-bar";
 
 export const metadata: Metadata = {
   title: "Stratio - OKR Team Dashboard",
-  description: "AI-powered OKR dashboard",
+  description: "Enterprise OKR dashboard with AI insights",
 };
 
 export default function RootLayout({
@@ -13,12 +13,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className="font-sans antialiased min-h-screen bg-slate-950 text-slate-50 selection:bg-indigo-500/30"
-      >
-        <NavBar />
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <body className="min-h-screen bg-background text-foreground selection:bg-primary/20">
+        <div className="relative flex min-h-screen flex-col">
+          <NavBar />
+          <div className="flex-1 bg-muted/30">
+            {children}
+          </div>
+        </div>
       </body>
     </html>
   );

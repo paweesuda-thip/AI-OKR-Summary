@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Loader2, AlertCircle, X } from "lucide-react";
+import { Loader2, AlertCircle, X, Command } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import OverviewCards from "./overview-cards";
@@ -30,7 +30,7 @@ export default function Dashboard() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [topPerformersSummary, setTopPerformersSummary] = useState<string | null>(null);
+  const [topPerformersSummary, setTopPerformersSummary] = useState<any>(null);
 
   // Filter state
   const [selectedSet, setSelectedSet] = useState<FilterOption | null>(null);
@@ -52,11 +52,12 @@ export default function Dashboard() {
       setContributors(result.contributors);
       setAtRiskObjectives(result.atRiskObjectives);
       setNoCheckInEmployees(result.noCheckInEmployees || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Dashboard fetch error:", err);
+      const errorObj = err as { response?: { data?: { message?: string } }, message?: string };
       setError(
-        err?.response?.data?.message ||
-          err?.message ||
+        errorObj?.response?.data?.message ||
+          errorObj?.message ||
           "Unable to load data. Please check your connection."
       );
     } finally {
@@ -76,18 +77,18 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white pb-12">
+    <div className="w-full pb-12">
       {/* ── Header ── */}
-      <header className="bg-slate-900 border-b border-slate-700/50 px-6 sm:px-10 py-5 flex items-center gap-4 sticky top-0 z-20 shadow-lg animate-in fade-in slide-in-from-top-4 duration-700">
+      <header className="bg-card border-b border-border px-6 sm:px-10 py-5 flex items-center gap-4 sticky top-0 z-20 shadow-sm animate-in fade-in slide-in-from-top-4 duration-500">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-indigo-500/30">
-            S
+          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-primary-foreground font-bold text-lg shadow-sm">
+            <Command className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-white tracking-wide leading-tight">
+            <h1 className="text-xl font-bold text-foreground tracking-tight leading-tight">
               Stratio
             </h1>
-            <p className="text-sm text-slate-400 leading-tight mt-0.5">
+            <p className="text-sm text-muted-foreground leading-tight mt-0.5">
               OKR Team Dashboard
             </p>
           </div>
@@ -98,8 +99,8 @@ export default function Dashboard() {
         <Button
           onClick={fetchDashboard}
           disabled={loading}
-          variant="secondary"
-          className="rounded-xl flex items-center gap-2"
+          variant="outline"
+          className="rounded-lg flex items-center gap-2 shadow-sm"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
           Refresh
@@ -108,16 +109,16 @@ export default function Dashboard() {
 
       {/* ── Error Banner ── */}
       {error && (
-        <div className="mx-6 sm:mx-10 mt-8 px-6 py-5 bg-rose-500/10 border border-rose-500/30 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-500">
-          <div className="flex items-center gap-4 text-base text-rose-300">
+        <div className="mx-6 sm:mx-10 mt-8 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300">
+          <div className="flex items-center gap-4 text-base text-destructive">
             <AlertCircle className="w-6 h-6 shrink-0" />
-            {error}
+            <span className="font-medium">{error}</span>
           </div>
           <Button
             variant="ghost"
             size="icon"
             onClick={() => setError("")}
-            className="text-rose-400 hover:text-rose-200 hover:bg-rose-500/20"
+            className="text-destructive hover:text-destructive hover:bg-destructive/20"
           >
             <X className="w-5 h-5" />
           </Button>
@@ -126,14 +127,14 @@ export default function Dashboard() {
 
       {/* ── Content ── */}
       {loading ? (
-        <div className="flex items-center justify-center h-[80vh] animate-in fade-in duration-500">
+        <div className="flex items-center justify-center h-[60vh] animate-in fade-in duration-500">
           <div className="flex flex-col items-center gap-6">
-            <Loader2 className="w-12 h-12 text-indigo-400 animate-spin" />
-            <p className="text-slate-400 text-lg">Loading data...</p>
+            <Loader2 className="w-10 h-10 text-primary animate-spin" />
+            <p className="text-muted-foreground font-medium">Loading objective data...</p>
           </div>
         </div>
       ) : (
-        <main className="px-6 sm:px-10 mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700">
+        <main className="px-6 sm:px-10 mt-8 space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-500">
           {/* Main Dashboard Grid Structure */}
           {/* Filter Bar */}
           <FilterBar
