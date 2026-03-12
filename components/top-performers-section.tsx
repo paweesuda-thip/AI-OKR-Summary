@@ -2,6 +2,7 @@ import { Trophy, Loader2 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import { ContributorSum, ContributorSumObj } from "@/lib/types/okr";
 
 const medals = ['🥇', '🥈', '🥉'];
 
@@ -33,7 +34,7 @@ const EmptyState = () => (
     </Card>
 );
 
-export default function TopPerformersSection({ contributors, aiSummary = null, aiLoading = false }: any) {
+export default function TopPerformersSection({ contributors, aiSummary = null, aiLoading = false }: { contributors: ContributorSum[], aiSummary?: any, aiLoading?: boolean }) {
     const top3 = (contributors || []).slice(0, 3);
     const rest = (contributors || []).slice(3);
 
@@ -54,7 +55,7 @@ export default function TopPerformersSection({ contributors, aiSummary = null, a
             <CardContent className="p-6 sm:p-8 space-y-8">
                 {/* Top 3 — horizontal 3-column grid */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {top3.map((person: any, i: number) => {
+                    {top3.map((person: ContributorSum, i: number) => {
                         const colors = medalColors[i];
                         const aiPersonSummary = aiSummary?.rankings?.[i];
 
@@ -107,7 +108,7 @@ export default function TopPerformersSection({ contributors, aiSummary = null, a
                                             OKR Contributions ({person.objectives.length})
                                         </p>
                                         <div className="flex flex-col gap-2">
-                                            {person.objectives.slice(0, 3).map((okr: any, oi: number) => (
+                                            {person.objectives.slice(0, 3).map((okr: ContributorSumObj, oi: number) => (
                                                 <div key={oi} className="flex items-center gap-2.5">
                                                     <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot[okr.status] || 'bg-slate-500'}`} />
                                                     <span className="flex-1 text-sm text-slate-300 truncate leading-snug">
@@ -169,7 +170,7 @@ export default function TopPerformersSection({ contributors, aiSummary = null, a
                             <div className="flex-1 h-px bg-slate-700/50" />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {rest.map((person: any, i: number) => (
+                            {rest.map((person: ContributorSum, i: number) => (
                                 <div key={person.fullName} className="bg-slate-800/40 border border-slate-700/50 rounded-xl p-3 flex items-center gap-3">
                                     <span className="text-sm text-slate-500 w-6 text-right font-mono tabular-nums">#{i + 4}</span>
                                     <Avatar className="w-8 h-8 rounded-full">

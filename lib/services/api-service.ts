@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { OkrObjectiveRaw, OkrContributorRaw, KrDetail, Objective, ContributorSum, ContributorSumObj, TeamSummary, DashboardData } from '../types/okr';
 
 // Use explicit backend base URL so requests go directly to the API host.
 // In development, you can set VITE_API_BASE_URL to '' (empty) to proxy through Vite dev server (no CORS/preflight).
@@ -52,12 +53,12 @@ apiClient.interceptors.response.use(
  * { objectiveId, title, title_EN, ownerEmployeeFullName, ownerTeam, progress,
  *   contributors: [{ employeeName, pictureUrl, keyResultTitle, pointCurrent, pointOKR }] }
  */
-function mapObjective(item: any) {
+function mapObjective(item: OkrObjectiveRaw): Objective {
     // Support both PascalCase (actual) and camelCase (spec)
     const progress = item.Progress ?? item.progress ?? 0;
-    const rawDetails = item.Details ?? item.details ?? item.contributors ?? [];
+    const rawDetails: OkrContributorRaw[] = item.Details ?? item.details ?? item.Contributors ?? item.contributors ?? [];
 
-    const details = rawDetails.map((d: any) => {
+    const details: KrDetail[] = rawDetails.map((d: OkrContributorRaw) => {
         // PascalCase: FullName, PictureURL, Title, PointCurrent, PointOKR
         // camelCase:  fullName, pictureURL, title, pointCurrent, pointOKR
         const pointCurrent = d.PointCurrent ?? d.pointCurrent ?? 0;
@@ -76,28 +77,29 @@ function mapObjective(item: any) {
     });
 
     return {
-        objectiveId: item.ObjectiveId ?? item.objectiveId,
+        objectiveId: item.ObjectiveId ?? item.objectiveId ?? 0,
         objectiveName: (item.Title ?? item.title ?? '').trim(),
         objectiveName_EN: (item.Title_EN ?? item.title_EN ?? '').trim(),
         ownerName: item.OwnerEmployeeFullName ?? item.ownerEmployeeFullName ?? '',
         ownerTeam: item.OwnerTeam ?? item.ownerTeam ?? '',
         progress,
         status: progress >= 70 ? 'On Track' : progress >= 40 ? 'At Risk' : 'Behind',
+        impactLevel: progress >= 80 ? 'high' : progress >= 60 ? 'medium' : 'low',
         details,
     };
 }
 
-function calculateSummary(objectives: any[]) {
+function calculateSummary(objectives: Objective[]): TeamSummary {
     const total = objectives.length;
-    const completed = objectives.filter((o: any) => o.progress >= 70).length;
+    const completed = objectives.filter((o) => o.progress >= 70).length;
     const avgProgress = total > 0
-        ? Math.round(objectives.reduce((s: any, o: any) => s + o.progress, 0) / total * 10) / 10
+        ? Math.round(objectives.reduce((s, o) => s + o.progress, 0) / total * 10) / 10
         : 0;
 
-    const allDetails = objectives.flatMap((o: any) => o.details);
+    const allDetails = objectives.flatMap((o) => o.details);
     const totalKRs = allDetails.length;
-    const completedKRs = allDetails.filter((d: any) => d.isDone).length;
-    const uniqueNames = new Set(allDetails.map((d: any) => d.fullName).filter(Boolean));
+    const completedKRs = allDetails.filter((d) => d.isDone).length;
+    const uniqueNames = new Set(allDetails.map((d) => d.fullName).filter(Boolean));
 
     return {
         totalObjectives: total,
@@ -108,17 +110,17 @@ function calculateSummary(objectives: any[]) {
         totalContributors: uniqueNames.size,
         objectiveCompletionRate: total > 0 ? Math.round(completed / total * 100) : 0,
         krCompletionRate: totalKRs > 0 ? Math.round(completedKRs / totalKRs * 100) : 0,
-        onTrackCount: objectives.filter((o: any) => o.status === 'On Track').length,
-        atRiskCount: objectives.filter((o: any) => o.status === 'At Risk').length,
-        behindCount: objectives.filter((o: any) => o.status === 'Behind').length,
+        onTrackCount: objectives.filter((o) => o.status === 'On Track').length,
+        atRiskCount: objectives.filter((o) => o.status === 'At Risk').length,
+        behindCount: objectives.filter((o) => o.status === 'Behind').length,
     };
 }
 
-function aggregateContributors(objectives: any[]) {
+function aggregateContributors(objectives: Objective[]): ContributorSum[] {
     const map = new Map();
 
-    objectives.forEach((obj: any) => {
-        obj.details.forEach((d: any) => {
+    objectives.forEach((obj) => {
+        obj.details.forEach((d) => {
             if (!d.fullName) return;
             if (!map.has(d.fullName)) {
                 map.set(d.fullName, {
@@ -136,7 +138,7 @@ function aggregateContributors(objectives: any[]) {
             c.totalPointOKR += d.pointOKR;
             c.krCount++;
             if (d.pointCurrent > 0) c.checkInCount++;
-            if (!c.objectives.find((o: any) => o.objectiveId === obj.objectiveId)) {
+            if (!c.objectives.find((o: ContributorSumObj) => o.objectiveId === obj.objectiveId)) {
                 c.objectives.push({
                     objectiveId: obj.objectiveId,
                     objectiveName: obj.objectiveName,
@@ -147,10 +149,10 @@ function aggregateContributors(objectives: any[]) {
         });
     });
 
-    const list = [...map.values()].map((c: any) => ({
+    const list: ContributorSum[] = [...map.values()].map((c: ContributorSum) => ({
         ...c,
         avgObjectiveProgress: c.objectives.length > 0
-            ? Math.round(c.objectives.reduce((s: any, o: any) => s + o.progress, 0) / c.objectives.length)
+            ? Math.round(c.objectives.reduce((s: number, o: ContributorSumObj) => s + o.progress, 0) / c.objectives.length)
             : 0,
     }));
 
@@ -174,7 +176,7 @@ const apiService = {
      * Response: { status, data: [...] } or direct array [...]
      * 204 No Content → empty result
      */
-    async getOKRTeamDashboard(params: any) {
+    async getOKRTeamDashboard(params: { assessmentSetId: number, organizationId: number }): Promise<DashboardData> {
         try {
             const response = await apiClient.post('/api/v1/goal-managements/objective-summary', {
                 assessmentSetId: params.assessmentSetId,
@@ -184,21 +186,21 @@ const apiService = {
             // 204 No Content
             if (response.status === 204 || !response.data) {
                 const empty = calculateSummary([]);
-                return { teamSummary: empty, objectives: [], contributors: [], atRiskObjectives: [] };
+                return { teamSummary: empty, objectives: [], contributors: [], atRiskObjectives: [], noCheckInEmployees: [] };
             }
 
             // Handle both: direct array [...] and wrapped response { status, data: [...] } / { Status, Data: [...] }
-            const raw = Array.isArray(response.data)
+            const raw: OkrObjectiveRaw[] = Array.isArray(response.data)
                 ? response.data
                 : (Array.isArray(response.data?.data)
                     ? response.data.data
                     : (Array.isArray(response.data?.Data) ? response.data.Data : []));
 
-            const objectives = raw.map(mapObjective);
+            const objectives: Objective[] = raw.map((item) => mapObjective(item));
             const teamSummary = calculateSummary(objectives);
             const contributors = aggregateContributors(objectives);
-            const atRiskObjectives = objectives.filter((o: any) => o.progress < 70);
-            const noCheckInEmployees = contributors.filter((c: any) => c.checkInCount === 0);
+            const atRiskObjectives = objectives.filter((o) => o.progress < 70);
+            const noCheckInEmployees = contributors.filter((c) => c.checkInCount === 0);
 
             return { teamSummary, objectives, contributors, atRiskObjectives, noCheckInEmployees };
         } catch (error) {

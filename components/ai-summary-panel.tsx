@@ -14,6 +14,7 @@ import geminiService from "@/lib/services/gemini-service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Objective, DashboardData } from "@/lib/types/okr";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ChevronDown, ChevronUp, RefreshCw, BarChart3, Target, Lightbulb, PlayCircle, Minimize2, ArrowUpRight, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -87,7 +88,7 @@ const HealthScoreRing = ({ score }: { score: number }) => {
 };
 
 // ── Horizontal Bar Chart for Objectives ───────────────────────────────────────
-const ObjectivesBarChart = ({ objectives }: { objectives: any[] }) => {
+const ObjectivesBarChart = ({ objectives }: { objectives: Objective[] }) => {
   if (!objectives?.length) return null;
 
   const chartData = {

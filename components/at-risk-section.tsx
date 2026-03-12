@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { AlertCircle, ChevronDown, ChevronUp, Lightbulb, Activity, CheckCircle2 } from "lucide-react";
+import { Objective, KrDetail } from "@/lib/types/okr";
 
 const INITIAL_SHOW = 4;
 
-const severityConfig: Record<string, any> = {
+const severityConfig: Record<string, { bg: string; border: string; badge: string; bar: string; label: string; icon: React.ReactNode }> = {
     'Behind': {
         bg: 'bg-rose-500/10 hover:bg-rose-500/20',
         border: 'border-rose-500/20',
@@ -29,8 +30,8 @@ const severityConfig: Record<string, any> = {
     },
 };
 
-export default function AtRiskSection({ atRiskObjectives }: { atRiskObjectives: any[] }) {
-    const [expandedObj, setExpandedObj] = useState<string | null>(null);
+export default function AtRiskSection({ atRiskObjectives }: { atRiskObjectives: Objective[] }) {
+    const [expandedObj, setExpandedObj] = useState<number | null>(null);
     const [showAll, setShowAll] = useState(false);
     const hasRisk = atRiskObjectives && atRiskObjectives.length > 0;
 
@@ -48,7 +49,7 @@ export default function AtRiskSection({ atRiskObjectives }: { atRiskObjectives: 
     const totalKRs = allDetails.length;
     const completedKRs = allDetails.filter(d => d.isDone).length;
 
-    const toggleExpand = (id: string, isOpen: boolean) => setExpandedObj(isOpen ? id : null);
+    const toggleExpand = (id: number, isOpen: boolean) => setExpandedObj(isOpen ? id : null);
 
     return (
         <Card className="bg-slate-900 border-slate-800 shadow-xl overflow-hidden h-full mt-8">
@@ -109,7 +110,7 @@ export default function AtRiskSection({ atRiskObjectives }: { atRiskObjectives: 
                                     const isExpanded = expandedObj === obj.objectiveId;
                                     const gap = 70 - (obj.progress || 0);
                                     const details = obj.details || [];
-                                    const doneDetails = details.filter((d: any) => d.isDone);
+                                    const doneDetails = details.filter((d: KrDetail) => d.isDone);
 
                                     return (
                                         <Collapsible 
@@ -177,7 +178,7 @@ export default function AtRiskSection({ atRiskObjectives }: { atRiskObjectives: 
                                                 {details.length > 0 && (
                                                     <div className="flex flex-col gap-4 mb-6">
                                                         <p className="text-xs font-bold text-slate-400 uppercase tracking-wider">Key Results Status</p>
-                                                        {details.map((d: any, i: number) => (
+                                                        {details.map((d: KrDetail, i: number) => (
                                                             <div key={i} className="bg-slate-900/50 border border-slate-700/50 rounded-xl p-4">
                                                                 <div className="flex items-center gap-3 mb-3">
                                                                     <Avatar className="w-8 h-8 border border-slate-700/50">
@@ -221,7 +222,7 @@ export default function AtRiskSection({ atRiskObjectives }: { atRiskObjectives: 
                                                         <p className="text-sm text-slate-300 leading-relaxed">
                                                             {gap > 40
                                                                 ? `This objective is ${gap.toFixed(0)}% behind the On Track threshold. Consider re-scoping targets or reallocating resources to close the gap.`
-                                                                : details.length > 0 && details.every((d: any) => d.krProgress < 30)
+                                                                : details.length > 0 && details.every((d: KrDetail) => d.krProgress < 30)
                                                                 ? `All key results are below 30% progress. Review blockers with each contributor and prioritize the highest-impact KR first.`
                                                                 : `Review key results with contributors and identify blockers preventing further progress.`
                                                             }
@@ -236,7 +237,7 @@ export default function AtRiskSection({ atRiskObjectives }: { atRiskObjectives: 
 
                             {!showAll && hiddenCount > 0 && (
                                 <div className="relative mt-[-40px] pt-4">
-                                    <div className="absolute top-[-60px] left-0 right-0 h-20 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none" />
+                                    <div className="absolute top-[-60px] left-0 right-0 h-20 bg-linear-to-t from-slate-900 to-transparent pointer-events-none" />
                                     <div className="relative z-10">
                                         <Button
                                             variant="outline"

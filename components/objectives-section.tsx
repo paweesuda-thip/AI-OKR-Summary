@@ -7,14 +7,15 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Objective, KrDetail } from "@/lib/types/okr";
 
-const statusConfig: Record<string, any> = {
+const statusConfig: Record<string, { color: string; bg: string; dot: string; barColor: string }> = {
     'On Track': { color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/25', dot: 'bg-emerald-400', barColor: 'bg-emerald-500' },
     'At Risk':  { color: 'text-amber-400',   bg: 'bg-amber-500/10 border-amber-500/25',     dot: 'bg-amber-400',   barColor: 'bg-amber-500'   },
     'Behind':   { color: 'text-rose-400',    bg: 'bg-rose-500/10 border-rose-500/25',       dot: 'bg-rose-400',    barColor: 'bg-rose-500'    },
 };
 
-const ContributorCard = ({ d, rank, rankType }: { d: any, rank: number, rankType: 'top' | 'bottom' }) => {
+const ContributorCard = ({ d, rank, rankType }: { d: KrDetail, rank: number, rankType: 'top' | 'bottom' }) => {
     const rankColors = {
         top:    { bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', badge: 'bg-emerald-500/15 text-emerald-300', bar: 'bg-emerald-500' },
         bottom: { bg: 'bg-rose-500/10',    border: 'border-rose-500/20',    badge: 'bg-rose-500/15 text-rose-400',       bar: 'bg-rose-500'    },
@@ -52,7 +53,7 @@ const ContributorCard = ({ d, rank, rankType }: { d: any, rank: number, rankType
     );
 };
 
-const ObjectiveRow = ({ obj, rank }: { obj: any, rank: number }) => {
+const ObjectiveRow = ({ obj, rank }: { obj: Objective, rank: number }) => {
     const [expanded, setExpanded] = useState(false);
     const st = statusConfig[obj.status] || statusConfig['On Track'];
 
@@ -167,7 +168,7 @@ const ObjectiveRow = ({ obj, rank }: { obj: any, rank: number }) => {
 
 const INITIAL_SHOW = 4;
 
-export default function ObjectivesSection({ objectives }: { objectives: any[] }) {
+export default function ObjectivesSection({ objectives }: { objectives: Objective[] }) {
     const [filter, setFilter] = useState('All');
     const [showAll, setShowAll] = useState(false);
     const filters = ['All', 'On Track', 'At Risk', 'Behind'];

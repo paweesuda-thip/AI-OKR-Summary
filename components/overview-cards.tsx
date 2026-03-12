@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyCheck, Target, TrendingUp, Users, CheckCircle2 } from "lucide-react";
+import { TeamSummary } from "@/lib/types/okr";
 
-const colMap: Record<string, any> = {
+const colMap: Record<string, { bg: string, border: string, icon: string, iconBg: string, value: string, Icon: any }> = {
   indigo:  { bg: 'bg-indigo-500/10',  border: 'border-indigo-500/30',  icon: 'text-indigo-400',  iconBg: 'bg-indigo-500/15',  value: 'text-indigo-300', Icon: Target  },
   emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', icon: 'text-emerald-400', iconBg: 'bg-emerald-500/15', value: 'text-emerald-300', Icon: CopyCheck },
   amber:   { bg: 'bg-amber-500/10',   border: 'border-amber-500/30',   icon: 'text-amber-400',   iconBg: 'bg-amber-500/15',   value: 'text-amber-300', Icon: TrendingUp   },
@@ -31,7 +32,7 @@ const StatCard = ({ label, value, sub, colorKey }: { label: string, value: strin
     );
 };
 
-export default function OverviewCards({ summary }: { summary: any }) {
+export default function OverviewCards({ summary }: { summary: TeamSummary | null }) {
     const [activeTab, setActiveTab] = useState('current');
 
     if (!summary) return null;

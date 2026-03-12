@@ -10,30 +10,31 @@ import TopPerformersSection from "./top-performers-section";
 import NeedsAttentionSection from "./needs-attention-section";
 import NoCheckInSection from "./no-checkin-section";
 import AISummaryPanel from "./ai-summary-panel";
-import FilterBar from "./filter-bar";
+import FilterBar, { FilterOption } from "./filter-bar";
 import AtRiskSection from "./at-risk-section";
 import PeriodComparisonSection from "./period-comparison-section";
 import TeamMembersSection from "./team-members-section";
 
 import apiService from "@/lib/services/api-service";
+import { Objective, ContributorSum, TeamSummary } from "@/lib/types/okr";
 
 export default function Dashboard() {
   const ASSESSMENT_SET_ID = 185467; // prod
   const ORGANIZATION_ID = 18477; // prod
 
-  const [teamSummary, setTeamSummary] = useState<any>(null);
-  const [objectives, setObjectives] = useState<any[]>([]);
-  const [contributors, setContributors] = useState<any[]>([]);
-  const [atRiskObjectives, setAtRiskObjectives] = useState<any[]>([]);
-  const [noCheckInEmployees, setNoCheckInEmployees] = useState<any[]>([]);
+  const [teamSummary, setTeamSummary] = useState<TeamSummary | null>(null);
+  const [objectives, setObjectives] = useState<Objective[]>([]);
+  const [contributors, setContributors] = useState<ContributorSum[]>([]);
+  const [atRiskObjectives, setAtRiskObjectives] = useState<Objective[]>([]);
+  const [noCheckInEmployees, setNoCheckInEmployees] = useState<ContributorSum[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [topPerformersSummary, setTopPerformersSummary] = useState<any>(null);
+  const [topPerformersSummary, setTopPerformersSummary] = useState<string | null>(null);
 
   // Filter state
-  const [selectedSet, setSelectedSet] = useState<any>(null);
-  const [selectedPeriod, setSelectedPeriod] = useState<any>(null);
+  const [selectedSet, setSelectedSet] = useState<FilterOption | null>(null);
+  const [selectedPeriod, setSelectedPeriod] = useState<FilterOption | null>(null);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
 
   const fetchDashboard = useCallback(async () => {
@@ -138,7 +139,7 @@ export default function Dashboard() {
           <FilterBar
               sets={[]}
               periods={[]}
-              employees={contributors.map((c: any) => ({ id: c.fullName, name: c.fullName, avatar: c.fullName.charAt(0) }))}
+              employees={contributors.map((c: ContributorSum) => ({ id: c.fullName, name: c.fullName, avatar: c.fullName.charAt(0) }))}
               selectedSet={selectedSet}
               selectedPeriod={selectedPeriod}
               selectedEmployeeIds={selectedEmployeeIds}
@@ -198,7 +199,7 @@ export default function Dashboard() {
                     />
                     
                     <div className="mt-8">
-                        <TeamMembersSection teamMembers={contributors.map((c: any) => ({
+                        <TeamMembersSection teamMembers={contributors.map((c: ContributorSum) => ({
                             employeeId: c.fullName,
                             employeeName: c.fullName,
                             picture: c.pictureURL,

@@ -2,8 +2,10 @@ import { UserX } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ContributorSum } from "@/lib/types/okr";
 
-export default function NoCheckInSection({ noCheckInEmployees }: { noCheckInEmployees: any[] }) {
+export default function NoCheckInSection({ noCheckInEmployees }: { noCheckInEmployees: ContributorSum[] }) {
     const employees = noCheckInEmployees || [];
 
     if (employees.length === 0) return null;

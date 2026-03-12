@@ -1,12 +1,6 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 import NavBar from "@/components/nav-bar";
-
-const fontInter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Stratio - OKR Team Dashboard",
@@ -21,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${fontInter.variable} font-sans antialiased min-h-screen bg-slate-950 text-slate-50 selection:bg-indigo-500/30`}
+        className="font-sans antialiased min-h-screen bg-slate-950 text-slate-50 selection:bg-indigo-500/30"
       >
         <NavBar />
         {children}

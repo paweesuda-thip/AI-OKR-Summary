@@ -4,6 +4,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ContributorSum, ContributorSumObj } from "@/lib/types/okr";
 
 const statusDot: Record<string, string> = {
     'On Track': 'bg-emerald-400',
@@ -13,13 +14,13 @@ const statusDot: Record<string, string> = {
 
 const INITIAL_SHOW = 6;
 
-export default function NeedsAttentionSection({ contributors }: any) {
+export default function NeedsAttentionSection({ contributors }: { contributors: ContributorSum[] }) {
     const [showAll, setShowAll] = useState(false);
 
     // Show employees who have checked in but have low avgObjectiveProgress (< 70%)
     // Sorted by avgObjectiveProgress ASC (lowest first)
     const atRiskContributors = [...(contributors || [])]
-        .filter((c: any) => c.checkInCount > 0 && c.avgObjectiveProgress < 70)
+        .filter((c: ContributorSum) => c.checkInCount > 0 && c.avgObjectiveProgress < 70)
         .sort((a, b) => a.avgObjectiveProgress - b.avgObjectiveProgress);
 
     const visible = showAll ? atRiskContributors : atRiskContributors.slice(0, INITIAL_SHOW);
@@ -63,7 +64,7 @@ export default function NeedsAttentionSection({ contributors }: any) {
 
                         <div className="relative">
                             <div className="p-6 flex flex-col gap-4">
-                                {visible.map((person: any, i: number) => {
+                                {visible.map((person: ContributorSum, i: number) => {
                                     const isCritical = person.avgObjectiveProgress < 40;
                                     const progressColor = isCritical ? 'text-rose-400' : 'text-amber-400';
                                     const barColor = isCritical ? 'bg-rose-500' : 'bg-amber-500';
@@ -109,7 +110,7 @@ export default function NeedsAttentionSection({ contributors }: any) {
                                                 {/* Objectives list */}
                                                 {person.objectives && person.objectives.length > 0 && (
                                                     <div className="flex flex-col gap-2 mt-4">
-                                                        {person.objectives.slice(0, 2).map((okr: any, oi: number) => (
+                                                        {person.objectives.slice(0, 2).map((okr: ContributorSumObj, oi: number) => (
                                                             <div key={oi} className="flex items-center gap-2">
                                                                 <span className={`w-2 h-2 rounded-full shrink-0 ${statusDot[okr.status] || 'bg-slate-500'}`} />
                                                                 <span className="flex-1 text-sm text-slate-400 truncate">{okr.objectiveName}</span>
@@ -129,7 +130,7 @@ export default function NeedsAttentionSection({ contributors }: any) {
 
                             {!showAll && hiddenCount > 0 && (
                                 <div className="relative mt-[-80px] px-6 pb-2">
-                                    <div className="h-20 bg-gradient-to-t from-slate-900 to-transparent pointer-events-none" />
+                                    <div className="h-20 bg-linear-to-t from-slate-900 to-transparent pointer-events-none" />
                                     <div className="bg-slate-900 pt-1 pb-4">
                                         <Button
                                             variant="outline"

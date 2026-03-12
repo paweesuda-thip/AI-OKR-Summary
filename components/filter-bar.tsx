@@ -11,15 +11,21 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+export interface FilterOption {
+    id: string;
+    name: string;
+    avatar?: string;
+}
+
 interface FilterBarProps {
-    sets: any[];
-    periods: any[];
-    employees: any[];
-    selectedSet: any;
-    selectedPeriod: any;
+    sets: FilterOption[];
+    periods: FilterOption[];
+    employees: FilterOption[];
+    selectedSet: FilterOption | null;
+    selectedPeriod: FilterOption | null;
     selectedEmployeeIds: string[];
-    onSetChange: (set: any) => void;
-    onPeriodChange: (period: any) => void;
+    onSetChange: (set: FilterOption | null) => void;
+    onPeriodChange: (period: FilterOption | null) => void;
     onEmployeeChange: (updater: (prev: string[]) => string[]) => void;
 }
 

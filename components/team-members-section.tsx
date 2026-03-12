@@ -6,7 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: any[] }) {
+export interface TeamMember {
+    employeeId: string;
+    employeeName: string;
+    picture: string;
+    employeeStatus: number;
+    positionName: string;
+}
+
+export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: TeamMember[] }) {
     const [expanded, setExpanded] = useState(false);
 
     if (!teamMembers || teamMembers.length === 0) return null;
