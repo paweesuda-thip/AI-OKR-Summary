@@ -24,12 +24,14 @@ export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: 
     const resignedCount = teamMembers.filter(m => m.employeeStatus === 3).length;
 
     return (
-        <Card className="border-border shadow-sm overflow-hidden mt-8">
+        <Card className="border-border/40 shadow-sm overflow-hidden mt-8 bg-card/40 backdrop-blur-xl">
             <Collapsible open={expanded} onOpenChange={setExpanded}>
-                <CollapsibleTrigger className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 hover:bg-muted/30 transition-colors group bg-muted/10 border-b border-border/60">
+                <CollapsibleTrigger 
+                    render={<button className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 hover:bg-background/40 transition-colors group bg-muted/20 border-b border-border/40" />}
+                >
                     <div className="flex items-center justify-between sm:justify-start gap-4">
                         <div className="flex items-center gap-4">
-                            <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0 shadow-sm">
+                            <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shrink-0 shadow-inner">
                                 <Users className="w-6 h-6 text-sky-600 dark:text-sky-400" />
                             </div>
                             <div className="text-left">
@@ -50,7 +52,7 @@ export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: 
                                 {teamMembers.slice(0, 6).map((m, i) => (
                                     <Avatar 
                                         key={m.employeeId} 
-                                        className="w-10 h-10 border-2 border-background shadow-sm"
+                                        className="w-10 h-10 border-2 border-background shadow-sm opacity-90 transition-opacity hover:opacity-100"
                                         style={{ zIndex: 6 - i }}
                                     >
                                         <AvatarImage src={m.picture} alt={m.employeeName} />
@@ -71,18 +73,18 @@ export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: 
                             {/* Status dots */}
                             <div className="hidden md:flex items-center gap-4 text-sm text-muted-foreground font-medium">
                                 <span className="flex items-center gap-1.5" title="Active">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" />
+                                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                     {activeCount}
                                 </span>
                                 {inactiveCount > 0 && (
                                     <span className="flex items-center gap-1.5" title="Inactive">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" />
+                                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                                         {inactiveCount}
                                     </span>
                                 )}
                                 {resignedCount > 0 && (
                                     <span className="flex items-center gap-1.5" title="Resigned">
-                                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" />
+                                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
                                         {resignedCount}
                                     </span>
                                 )}
@@ -97,26 +99,26 @@ export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: 
                 </CollapsibleTrigger>
 
                 <CollapsibleContent>
-                    <CardContent className="px-6 py-5 border-t border-border bg-muted/5">
+                    <CardContent className="px-6 py-5 border-t border-border/40 bg-transparent">
                         {/* Mobile Status Dots (visible only when expanded on mobile) */}
-                        <div className="flex md:hidden items-center gap-4 text-sm text-muted-foreground mb-4 pb-4 border-b border-border font-medium">
+                        <div className="flex md:hidden items-center gap-4 text-sm text-muted-foreground mb-4 pb-4 border-b border-border/50 font-medium">
                             <span className="flex items-center gap-1.5">
-                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" />
+                                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                                 <span className="text-foreground font-semibold">Active</span>
-                                <span className="ml-1 px-1.5 bg-background border border-border shadow-sm rounded">{activeCount}</span>
+                                <span className="ml-1 px-1.5 bg-background/50 border border-border/50 shadow-sm rounded backdrop-blur-sm">{activeCount}</span>
                             </span>
                             {inactiveCount > 0 && (
                                 <span className="flex items-center gap-1.5">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" />
+                                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                                     <span className="text-foreground font-semibold">Inactive</span>
-                                    <span className="ml-1 px-1.5 bg-background border border-border shadow-sm rounded">{inactiveCount}</span>
+                                    <span className="ml-1 px-1.5 bg-background/50 border border-border/50 shadow-sm rounded backdrop-blur-sm">{inactiveCount}</span>
                                 </span>
                             )}
                             {resignedCount > 0 && (
                                 <span className="flex items-center gap-1.5">
-                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" />
+                                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
                                     <span className="text-foreground font-semibold">Resigned</span>
-                                    <span className="ml-1 px-1.5 bg-background border border-border shadow-sm rounded">{resignedCount}</span>
+                                    <span className="ml-1 px-1.5 bg-background/50 border border-border/50 shadow-sm rounded backdrop-blur-sm">{resignedCount}</span>
                                 </span>
                             )}
                         </div>
@@ -125,14 +127,13 @@ export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: 
                             {teamMembers.map((member) => (
                                 <div
                                     key={member.employeeId}
-                                    className="flex items-center gap-3 bg-background border border-border rounded-xl p-3 hover:shadow-md transition-all shadow-sm group"
+                                    className="flex items-center gap-3 bg-background/40 backdrop-blur-md border border-border/50 rounded-xl p-3 hover:shadow-md hover:bg-background/60 transition-all shadow-sm group"
                                 >
-                                    <Avatar className="w-11 h-11 border border-border relative shadow-sm group-hover:border-muted-foreground/30 transition-colors">
+                                    <Avatar className="w-11 h-11 border border-border/40 relative shadow-sm opacity-90 group-hover:border-muted-foreground/30 transition-colors">
                                         <AvatarImage src={member.picture} alt={member.employeeName} />
                                         <AvatarFallback className="bg-muted text-muted-foreground font-bold">
                                             {member.employeeName?.charAt(0)}
                                         </AvatarFallback>
-                                        
                                     </Avatar>
                                     <div className="flex-1 min-w-0 pr-2">
                                         <div className="flex items-center justify-between gap-2">

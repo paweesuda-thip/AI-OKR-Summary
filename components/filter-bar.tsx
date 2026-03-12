@@ -50,26 +50,25 @@ export default function FilterBar({
         : `${selectedEmployeeIds.length} คนที่เลือก`;
 
     return (
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-4 bg-card border border-border rounded-xl shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-4 bg-background/40 backdrop-blur-md border border-border/50 rounded-xl shadow-sm">
             <span className="text-sm font-semibold text-muted-foreground mr-2">Filters:</span>
             {/* OKR Set Dropdown */}
             <DropdownMenu>
-                {/* @ts-expect-error asChild type issue */}
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="bg-background border-border hover:bg-muted/50 text-foreground h-10 px-4 w-full sm:w-auto min-w-[160px] justify-between shadow-sm transition-all">
-                        <div className="flex items-center gap-2">
-                            <Folder className="w-4 h-4 text-primary" />
-                            <span className="truncate max-w-[120px] font-medium">{selectedSet?.name || 'เลือก OKR Set'}</span>
-                        </div>
-                        <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
-                    </Button>
+                <DropdownMenuTrigger 
+                    render={<Button variant="outline" className="bg-background/50 border-border/40 hover:bg-background/80 text-foreground h-10 px-4 w-full sm:w-auto min-w-[160px] justify-between shadow-sm transition-all backdrop-blur-sm" />}
+                >
+                    <div className="flex items-center gap-2">
+                        <Folder className="w-4 h-4 text-primary" />
+                        <span className="truncate max-w-[120px] font-medium">{selectedSet?.name || 'เลือก OKR Set'}</span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[220px] bg-popover border-border text-popover-foreground shadow-md">
+                <DropdownMenuContent className="w-[220px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md">
                     {sets.map(s => (
                         <DropdownMenuItem 
                             key={s.id} 
                             onClick={() => onSetChange(s)}
-                            className={`cursor-pointer focus:bg-muted focus:text-foreground ${selectedSet?.id === s.id ? 'text-primary font-bold bg-muted/30' : 'font-medium'}`}
+                            className={`cursor-pointer focus:bg-muted/50 focus:text-foreground ${selectedSet?.id === s.id ? 'text-primary font-bold bg-muted/30' : 'font-medium'}`}
                         >
                             {s.name}
                         </DropdownMenuItem>
@@ -79,22 +78,21 @@ export default function FilterBar({
 
             {/* Period Dropdown */}
             <DropdownMenu>
-                {/* @ts-expect-error asChild type issue */}
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="bg-background border-border hover:bg-muted/50 text-foreground h-10 px-4 w-full sm:w-auto min-w-[140px] justify-between shadow-sm transition-all">
-                        <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
-                            <span className="truncate font-medium">{selectedPeriod?.name || 'เลือกช่วงเวลา'}</span>
-                        </div>
-                        <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
-                    </Button>
+                <DropdownMenuTrigger 
+                    render={<Button variant="outline" className="bg-background/50 border-border/40 hover:bg-background/80 text-foreground h-10 px-4 w-full sm:w-auto min-w-[140px] justify-between shadow-sm transition-all backdrop-blur-sm" />}
+                >
+                    <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
+                        <span className="truncate font-medium">{selectedPeriod?.name || 'เลือกช่วงเวลา'}</span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[180px] bg-popover border-border text-popover-foreground shadow-md">
+                <DropdownMenuContent className="w-[180px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md">
                     {periods.map(p => (
                         <DropdownMenuItem 
                             key={p.id} 
                             onClick={() => onPeriodChange(p)}
-                            className={`cursor-pointer focus:bg-muted focus:text-foreground ${selectedPeriod?.id === p.id ? 'text-emerald-600 dark:text-emerald-500 font-bold bg-muted/30' : 'font-medium'}`}
+                            className={`cursor-pointer focus:bg-muted/50 focus:text-foreground ${selectedPeriod?.id === p.id ? 'text-emerald-600 dark:text-emerald-500 font-bold bg-muted/30' : 'font-medium'}`}
                         >
                             {p.name}
                         </DropdownMenuItem>
@@ -104,36 +102,35 @@ export default function FilterBar({
 
             {/* Employees Dropdown */}
             <DropdownMenu>
-                {/* @ts-expect-error asChild type issue */}
-                <DropdownMenuTrigger asChild>
-                    <Button variant="outline" className="bg-background border-border hover:bg-muted/50 text-foreground h-10 px-4 w-full sm:w-auto min-w-[140px] justify-between shadow-sm transition-all">
-                        <div className="flex items-center gap-2">
-                            <Users className="w-4 h-4 text-amber-600 dark:text-amber-500" />
-                            <span className="font-medium">{empLabel}</span>
-                        </div>
-                        <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
-                    </Button>
+                <DropdownMenuTrigger 
+                    render={<Button variant="outline" className="bg-background/50 border-border/40 hover:bg-background/80 text-foreground h-10 px-4 w-full sm:w-auto min-w-[140px] justify-between shadow-sm transition-all backdrop-blur-sm" />}
+                >
+                    <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                        <span className="font-medium">{empLabel}</span>
+                    </div>
+                    <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[240px] bg-popover border-border text-popover-foreground shadow-md max-h-[400px] overflow-y-auto">
+                <DropdownMenuContent className="w-[240px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md max-h-[400px] overflow-y-auto">
                     <DropdownMenuCheckboxItem
                         checked={selectedEmployeeIds.length === 0}
                         onCheckedChange={() => selectAllEmployees()}
-                        className="cursor-pointer focus:bg-muted focus:text-foreground"
+                        className="cursor-pointer focus:bg-muted/50 focus:text-foreground"
                     >
                         <span className={selectedEmployeeIds.length === 0 ? 'text-amber-600 dark:text-amber-500 font-bold' : 'font-medium'}>ทีมทั้งหมด</span>
                     </DropdownMenuCheckboxItem>
                     
-                    <DropdownMenuSeparator className="bg-border" />
+                    <DropdownMenuSeparator className="bg-border/50" />
                     
                     {employees.map(emp => (
                         <DropdownMenuCheckboxItem
                             key={emp.id}
                             checked={selectedEmployeeIds.includes(emp.id)}
                             onCheckedChange={() => toggleEmployee(emp.id)}
-                            className="cursor-pointer focus:bg-muted focus:text-foreground font-medium"
+                            className="cursor-pointer focus:bg-muted/50 focus:text-foreground font-medium"
                         >
                             <div className="flex items-center gap-2">
-                                <span className="bg-muted w-6 h-6 flex items-center justify-center rounded-full text-xs text-muted-foreground">{emp.avatar}</span>
+                                <span className="bg-muted/50 w-6 h-6 flex items-center justify-center rounded-full text-xs text-muted-foreground">{emp.avatar}</span>
                                 <span className="truncate max-w-[150px]">{emp.name}</span>
                             </div>
                         </DropdownMenuCheckboxItem>

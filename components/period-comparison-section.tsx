@@ -11,6 +11,20 @@ interface DeltaRowProps {
     invert?: boolean;
 }
 
+export interface PeriodComparisonData {
+    currentCompletionRate: number;
+    previousCompletionRate: number;
+    completionRateDelta: number;
+    currentAvgProgress: number;
+    previousAvgProgress: number;
+    avgProgressDelta: number;
+    currentCheckInCount: number;
+    previousCheckInCount: number;
+    checkInCountDelta: number;
+    progressTrend: string;
+    engagementTrend: string;
+}
+
 const DeltaRow = ({ label, current, previous, delta, unit = '%', invert = false }: DeltaRowProps) => {
     const isPositive = invert ? delta < 0 : delta > 0;
     const isZero = delta === 0;
@@ -42,7 +56,7 @@ const DeltaRow = ({ label, current, previous, delta, unit = '%', invert = false 
     );
 };
 
-export default function PeriodComparisonSection({ comparison }: { comparison: any }) {
+export default function PeriodComparisonSection({ comparison }: { comparison: PeriodComparisonData | null }) {
     if (!comparison) return null;
 
     const {
@@ -62,10 +76,10 @@ export default function PeriodComparisonSection({ comparison }: { comparison: an
     };
 
     return (
-        <Card className="border-border shadow-sm overflow-hidden h-full">
-            <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-border/60 bg-muted/10 py-5">
+        <Card className="border-border shadow-sm overflow-hidden h-full bg-card/40 backdrop-blur-lg">
+            <CardHeader className="flex flex-row items-center justify-between gap-4 border-b border-border/40 bg-muted/20 py-5">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-sky-500/10 border border-sky-500/20 flex items-center justify-center shadow-inner">
                         <TrendingUp className="w-6 h-6 text-sky-600 dark:text-sky-400" />
                     </div>
                     <div>
@@ -73,33 +87,33 @@ export default function PeriodComparisonSection({ comparison }: { comparison: an
                         <p className="text-sm text-muted-foreground mt-1 font-medium">vs. previous cycle</p>
                     </div>
                 </div>
-                <Badge variant="outline" className={`text-sm px-3 py-1 shadow-sm font-semibold ${healthStyles[overallHealth]}`}>
+                <Badge variant="outline" className={`text-sm px-3 py-1 shadow-sm font-semibold backdrop-blur-md ${healthStyles[overallHealth]}`}>
                     {overallHealth}
                 </Badge>
             </CardHeader>
 
-            <CardContent className="p-6 flex flex-col gap-6 bg-muted/5">
+            <CardContent className="p-6 flex flex-col gap-6 bg-transparent">
                 {/* Trend badges */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="bg-background rounded-xl p-5 border border-border flex flex-col gap-2 shadow-sm">
+                    <div className="bg-background/40 backdrop-blur-md rounded-xl p-5 border border-border/50 flex flex-col gap-2 shadow-sm transition-colors hover:bg-background/60">
                         <div className="flex items-center gap-2 mb-1">
-                            <div className="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-sm" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]" />
                             <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Velocity</p>
                         </div>
                         <p className="text-sm sm:text-base font-semibold text-foreground leading-snug">{progressTrend}</p>
                     </div>
-                    <div className="bg-background rounded-xl p-5 border border-border flex flex-col gap-2 shadow-sm">
+                    <div className="bg-background/40 backdrop-blur-md rounded-xl p-5 border border-border/50 flex flex-col gap-2 shadow-sm transition-colors hover:bg-background/60">
                         <div className="flex items-center gap-2 mb-1">
-                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" />
+                            <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                             <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Engagement</p>
                         </div>
                         <p className="text-sm sm:text-base font-semibold text-foreground leading-snug">{engagementTrend}</p>
                     </div>
                 </div>
 
-                <div className="bg-background rounded-xl border border-border p-4 sm:p-5 shadow-sm">
+                <div className="bg-background/40 backdrop-blur-md rounded-xl border border-border/50 p-4 sm:p-5 shadow-sm">
                     {/* Column headers */}
-                    <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground uppercase tracking-wider font-bold mb-2 px-3 pb-3 border-b border-border">
+                    <div className="flex items-center gap-2 sm:gap-4 text-xs text-muted-foreground uppercase tracking-wider font-bold mb-2 px-3 pb-3 border-b border-border/50">
                         <span className="flex-1">Metric</span>
                         <div className="flex items-center gap-2 sm:gap-4">
                             <span className="w-16 sm:w-20 text-right hidden xs:inline-block">Prev</span>
@@ -148,7 +162,7 @@ export default function PeriodComparisonSection({ comparison }: { comparison: an
                     }`}>
                         {avgProgressDelta >= 0 ? <TrendingUp className="w-5 h-5" /> : <TrendingUp className="w-5 h-5 rotate-180" />}
                     </div>
-                    <div className="flex flex-col justify-center min-h-[2.5rem]">
+                    <div className="flex flex-col justify-center min-h-10">
                         <p className={`font-semibold ${avgProgressDelta >= 0 ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-700 dark:text-rose-300'}`}>
                             {avgProgressDelta >= 0
                                 ? `Team improved by ${avgProgressDelta?.toFixed(1)}% compared to the previous cycle`

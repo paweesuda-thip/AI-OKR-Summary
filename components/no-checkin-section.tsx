@@ -10,10 +10,10 @@ export default function NoCheckInSection({ noCheckInEmployees }: { noCheckInEmpl
     if (employees.length === 0) return null;
 
     return (
-        <Card className="border-border shadow-sm overflow-hidden mt-8">
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 bg-muted/10 py-5">
+        <Card className="border-border/40 shadow-sm overflow-hidden mt-8 bg-card/40 backdrop-blur-xl">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 bg-muted/20 py-5">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-muted border border-border/50 flex items-center justify-center shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-muted/50 border border-border/50 flex items-center justify-center shadow-inner">
                         <UserX className="w-6 h-6 text-muted-foreground" />
                     </div>
                     <div>
@@ -21,19 +21,19 @@ export default function NoCheckInSection({ noCheckInEmployees }: { noCheckInEmpl
                         <p className="text-sm text-muted-foreground mt-1 font-medium">Employees who have not recorded any KR progress yet</p>
                     </div>
                 </div>
-                <Badge variant="outline" className="bg-muted/50 text-foreground border-border px-3 py-1 text-sm shadow-sm font-semibold">
+                <Badge variant="outline" className="bg-background/40 backdrop-blur-md text-foreground border-border/50 px-3 py-1 text-sm shadow-sm font-semibold">
                     {employees.length} employee{employees.length !== 1 ? 's' : ''}
                 </Badge>
             </CardHeader>
 
-            <CardContent className="p-6 bg-muted/5">
+            <CardContent className="p-6 bg-transparent">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {employees.map((person) => (
                         <div
                             key={person.fullName}
-                            className="flex items-center gap-4 p-4 bg-background border border-border rounded-xl transition-all hover:shadow-md shadow-sm hover:border-muted-foreground/30"
+                            className="flex items-center gap-4 p-4 bg-background/40 backdrop-blur-md border border-border/50 rounded-xl transition-all hover:shadow-md hover:bg-background/60 shadow-sm hover:border-muted-foreground/30"
                         >
-                            <Avatar className="w-10 h-10 border border-border opacity-80 shadow-sm">
+                            <Avatar className="w-10 h-10 border border-border/40 opacity-80 shadow-sm">
                                 <AvatarImage src={person.pictureURL} alt={person.fullName} />
                                 <AvatarFallback className="bg-muted text-muted-foreground font-bold">
                                     {person.fullName?.charAt(0)}
@@ -45,7 +45,7 @@ export default function NoCheckInSection({ noCheckInEmployees }: { noCheckInEmpl
                                     {person.krCount} KR{person.krCount !== 1 ? 's' : ''} · {person.objectives?.length || 0} objective{(person.objectives?.length || 0) !== 1 ? 's' : ''}
                                 </p>
                             </div>
-                            <Badge variant="secondary" className="bg-muted text-muted-foreground border-border font-semibold shrink-0">
+                            <Badge variant="secondary" className="bg-background/50 text-muted-foreground border-border/40 font-semibold shrink-0 shadow-sm">
                                 0 check-ins
                             </Badge>
                         </div>

@@ -468,22 +468,14 @@ const ACTION_TYPE_STYLES: Record<string, string> = {
 };
 
 interface AISummaryPanelProps {
-  dashboardData: {
-    summary?: unknown;
-    objectives?: Objective[];
-    contributors?: ContributorWithWeight[];
-    atRisk?: Objective[];
-    comparison?: unknown;
-  };
-  onTopPerformersSummary?: (summary: TopPerformersAISummary | null) => void;
+  dashboardData: any;
+  onTopPerformersSummary?: (summary: any) => void;
+  forceOpen?: boolean;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   MAIN COMPONENT
-   ═══════════════════════════════════════════════════════════ */
-export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }: AISummaryPanelProps) {
+export default function AISummaryPanel({ dashboardData, onTopPerformersSummary, forceOpen = false }: AISummaryPanelProps) {
   const cached = loadCachedAI();
-  const [open, setOpen] = useState(!!cached.summary);
+  const [open, setOpen] = useState(forceOpen);
   const [summary, setSummary] = useState<AISummary | null>(cached.summary || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -584,11 +576,13 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
        RENDER
        ═══════════════════════════════════════════════════════════ */
   return (
-    <Card className={`border-border shadow-md transition-all duration-300 overflow-hidden ${open ? 'bg-card ring-1 ring-primary/10' : 'bg-card/50'}`}>
+    <Card className={`border-border/50 shadow-lg transition-all duration-300 overflow-hidden bg-card/40 backdrop-blur-xl ${open ? 'ring-1 ring-primary/20' : ''}`}>
         <Collapsible open={open} onOpenChange={setOpen}>
-            <CollapsibleTrigger className="w-full flex items-center justify-between px-6 py-5 hover:bg-muted/30 transition-colors group">
+            <CollapsibleTrigger 
+                render={<button className="w-full flex items-center justify-between px-6 py-5 hover:bg-background/40 transition-colors group" />}
+            >
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-sm group-hover:scale-105 transition-transform duration-300">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 shadow-inner group-hover:scale-105 transition-transform duration-300">
                       <Sparkles className="w-6 h-6" />
                     </div>
                     <div className="text-left flex-1">
@@ -767,7 +761,7 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
 
                                 {/* ══ OBJECTIVES ══ */}
                                 <TabsContent value="objectives" className="mt-0 space-y-10 focus-visible:outline-none focus-visible:ring-0">
-                                    {winningObjectives?.length > 0 && (
+                                    {(winningObjectives?.length ?? 0) > 0 && winningObjectives && (
                                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-border pb-3">
                                                 <div className="flex items-center gap-3 text-emerald-600 dark:text-emerald-400">
@@ -784,14 +778,14 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
                                                 </div>
                                             </div>
 
-                                            <div className="bg-card border border-border rounded-2xl p-6 mb-8 shadow-sm">
-                                                <ObjectivesBarChart objectives={winningObjectives} />
+                                            <div className="bg-card/40 backdrop-blur-md border border-border/50 rounded-2xl p-6 mb-8 shadow-sm">
+                                                <ObjectivesBarChart objectives={winningObjectives as unknown as Objective[]} />
                                             </div>
 
                                             <div className="grid gap-4">
                                                 {winningObjectives.map((obj: AIWinningObjective, i: number) => (
-                                                    <div key={i} className="flex flex-col sm:flex-row sm:items-start gap-5 bg-muted/20 border border-border hover:border-primary/30 rounded-2xl p-6 transition-all shadow-sm">
-                                                        <div className="flex flex-col items-center justify-center shrink-0 w-20 h-20 bg-card rounded-2xl border border-border drop-shadow-sm">
+                                                    <div key={i} className="flex flex-col sm:flex-row sm:items-start gap-5 bg-muted/10 border border-border/50 hover:bg-background/40 hover:border-primary/30 rounded-2xl p-6 transition-all shadow-sm">
+                                                        <div className="flex flex-col items-center justify-center shrink-0 w-20 h-20 bg-background/50 rounded-2xl border border-border/40 drop-shadow-sm">
                                                             <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 tracking-tighter">{obj.progress}%</span>
                                                         </div>
                                                         <div className="flex-1 min-w-0">
@@ -807,8 +801,8 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
                                                             {obj.contributors && obj.contributors.length > 0 && (
                                                                 <div className="flex flex-wrap gap-2">
                                                                     {obj.contributors.map((c: string, ci: number) => (
-                                                                        <span key={ci} className="text-xs font-semibold px-3 py-1.5 bg-background border border-border text-muted-foreground rounded-full flex items-center gap-2">
-                                                                            <span className="w-1.5 h-1.5 rounded-full bg-primary"></span> {c}
+                                                                        <span key={ci} className="text-xs font-semibold px-3 py-1.5 bg-background/50 border border-border/40 text-muted-foreground rounded-full flex items-center gap-2 shadow-sm">
+                                                                            <span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_4px_rgba(var(--primary),0.5)]"></span> {c}
                                                                         </span>
                                                                     ))}
                                                                 </div>
@@ -820,9 +814,9 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
                                         </div>
                                     )}
 
-                                    {growthOpportunities?.length > 0 && (
+                                    {(growthOpportunities?.length ?? 0) > 0 && growthOpportunities && (
                                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
-                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-border pb-3 mt-12">
+                                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-border/50 pb-3 mt-12">
                                                 <div className="flex items-center gap-3 text-amber-500">
                                                     <TrendingUp className="w-6 h-6" />
                                                     <h3 className="text-xl font-bold">Growth Opportunities</h3>
@@ -832,7 +826,7 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
                                             
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                                 {growthOpportunities.map((opp: AIGrowthOpportunity, i: number) => (
-                                                    <div key={i} className="bg-muted/10 border border-border rounded-2xl p-6 flex flex-col h-full shadow-sm hover:border-muted-foreground/30 transition-colors">
+                                                    <div key={i} className="bg-background/40 backdrop-blur-md border border-border/50 rounded-2xl p-6 flex flex-col h-full shadow-sm hover:bg-background/60 transition-colors">
                                                         <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
                                                             <span className="text-base font-bold text-foreground leading-tight pr-4 flex-1">
                                                                 {opp.objectiveName}
@@ -848,8 +842,8 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
                                                         <p className="text-sm text-muted-foreground leading-relaxed font-medium mb-6 flex-1">
                                                             {opp.opportunity}
                                                         </p>
-                                                        <div className="mt-auto bg-card rounded-xl p-4 border border-border flex items-start gap-4">
-                                                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                                                        <div className="mt-auto bg-card/40 rounded-xl p-4 border border-border/40 flex items-start gap-4">
+                                                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0 shadow-inner">
                                                                 <Lightbulb className="w-4 h-4" />
                                                             </div>
                                                             <p className="text-sm text-foreground font-medium leading-relaxed py-0.5">
@@ -865,29 +859,29 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
 
                                 {/* ══ ACTION PLAN ══ */}
                                 <TabsContent value="actions" className="mt-0 space-y-6 focus-visible:outline-none focus-visible:ring-0">
-                                    {actionPlan?.length > 0 && (
+                                    {(actionPlan?.length ?? 0) > 0 && actionPlan && (
                                         <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                                             <SectionHeader icon={<Lightbulb className="w-6 h-6 text-amber-500" />} title="Priority Action Plan" subtitle="Recommended actions ordered by impact" color="text-amber-500" />
                                             <div className="space-y-4">
                                                 {actionPlan.map((action: AIActionPlanItem, i: number) => (
-                                                    <div key={i} className="flex flex-col sm:flex-row items-start gap-6 bg-muted/20 border border-border rounded-2xl p-6 hover:bg-muted/40 hover:border-primary/20 transition-all shadow-sm group">
-                                                        <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center text-xl font-black text-muted-foreground shadow-sm group-hover:scale-110 transition-transform shrink-0">
+                                                    <div key={i} className="flex flex-col sm:flex-row items-start gap-6 bg-background/40 backdrop-blur-md border border-border/50 rounded-2xl p-6 hover:bg-background/60 hover:border-primary/30 transition-all shadow-sm group">
+                                                        <div className="w-12 h-12 rounded-xl bg-card/50 border border-border/40 flex items-center justify-center text-xl font-black text-muted-foreground shadow-inner group-hover:scale-110 transition-transform shrink-0">
                                                             {action.priority}
                                                         </div>
                                                         <div className="flex-1 min-w-0 w-full">
                                                             <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 mb-3">
                                                                 <h4 className="text-lg font-bold text-foreground pr-4">{action.action}</h4>
-                                                                <span className={`text-[10px] px-3 py-1.5 rounded-full border font-bold uppercase tracking-widest shrink-0 w-fit ${ACTION_TYPE_STYLES[action.actionType] || ACTION_TYPE_STYLES.expand}`}>
+                                                                <span className={`text-[10px] px-3 py-1.5 rounded-full border font-bold uppercase tracking-widest shrink-0 w-fit shadow-sm ${ACTION_TYPE_STYLES[action.actionType] || ACTION_TYPE_STYLES.expand}`}>
                                                                     {action.actionType}
                                                                 </span>
                                                             </div>
                                                             
-                                                            <div className="bg-card rounded-lg p-3 mb-4 inline-flex items-center gap-2 max-w-full border border-border/50">
+                                                            <div className="bg-card/40 rounded-lg p-3 mb-4 inline-flex items-center gap-2 max-w-full border border-border/40">
                                                                 <Target className="w-4 h-4 text-primary shrink-0" />
                                                                 <span className="text-xs font-semibold text-foreground truncate">{action.relatedObjective}</span>
                                                             </div>
                                                             
-                                                            <p className="text-sm text-muted-foreground font-medium leading-relaxed bg-muted/30 p-4 rounded-xl border border-border border-l-2 border-l-primary/40">
+                                                            <p className="text-sm text-muted-foreground font-medium leading-relaxed bg-muted/20 p-4 rounded-xl border border-border/30 border-l-2 border-l-primary/50 shadow-sm">
                                                                 {action.expectedImpact}
                                                             </p>
                                                         </div>
@@ -926,7 +920,7 @@ export default function AISummaryPanel({ dashboardData, onTopPerformersSummary }
                                             <div key={i} className="space-y-4">
                                                 {/* User Msg */}
                                                 <div className="flex justify-end pl-12">
-                                                    <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-sm text-sm font-medium shadow-sm inline-block max-w-full whitespace-pre-wrap break-words">
+                                                    <div className="bg-primary text-primary-foreground px-4 py-3 rounded-2xl rounded-tr-sm text-sm font-medium shadow-md inline-block max-w-full whitespace-pre-wrap break-words">
                                                         {item.q}
                                                     </div>
                                                 </div>

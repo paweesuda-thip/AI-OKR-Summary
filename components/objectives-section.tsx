@@ -10,20 +10,20 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Objective, KrDetail } from "@/lib/types/okr";
 
 const statusConfig: Record<string, { color: string; bg: string; dot: string; barColor: string }> = {
-    'On Track': { color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20', dot: 'bg-emerald-500', barColor: 'bg-emerald-500' },
-    'At Risk':  { color: 'text-amber-600 dark:text-amber-400',   bg: 'bg-amber-50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/20',     dot: 'bg-amber-500',   barColor: 'bg-amber-500'   },
-    'Behind':   { color: 'text-rose-600 dark:text-rose-400',    bg: 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/20',       dot: 'bg-rose-500',    barColor: 'bg-rose-500'    },
+    'On Track': { color: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/30 backdrop-blur-md', dot: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]', barColor: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' },
+    'At Risk':  { color: 'text-amber-600 dark:text-amber-400',   bg: 'bg-amber-50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/30 backdrop-blur-md',     dot: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]',   barColor: 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]'   },
+    'Behind':   { color: 'text-rose-600 dark:text-rose-400',    bg: 'bg-rose-50 dark:bg-rose-500/5 border-rose-200 dark:border-rose-500/30 backdrop-blur-md',       dot: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]',    barColor: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'    },
 };
 
 const ContributorCard = ({ d, rank, rankType }: { d: KrDetail, rank: number, rankType: 'top' | 'bottom' }) => {
     const rankColors = {
-        top:    { bg: 'bg-emerald-50 dark:bg-emerald-500/5', border: 'border-emerald-200 dark:border-emerald-500/20', badge: 'bg-emerald-100 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300', bar: 'bg-emerald-500' },
-        bottom: { bg: 'bg-rose-50 dark:bg-rose-500/5',    border: 'border-rose-200 dark:border-rose-500/20',    badge: 'bg-rose-100 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400',       bar: 'bg-rose-500'    },
+        top:    { bg: 'bg-emerald-50 dark:bg-emerald-500/5 backdrop-blur-md', border: 'border-emerald-200 dark:border-emerald-500/30', badge: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300', bar: 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]' },
+        bottom: { bg: 'bg-rose-50 dark:bg-rose-500/5 backdrop-blur-md',    border: 'border-rose-200 dark:border-rose-500/30',    badge: 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-400',       bar: 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]'    },
     };
     const rc = rankColors[rankType];
 
     return (
-        <div className={`rounded-xl border ${rc.bg} ${rc.border} p-4 shadow-sm`}>
+        <div className={`rounded-xl border ${rc.bg} ${rc.border} p-4 shadow-sm transition-colors hover:bg-background/60`}>
             <div className="flex items-center gap-3 mb-2">
                 <Avatar className="w-8 h-8 rounded-full border border-border">
                     <AvatarImage src={d.pictureURL} alt={d.fullName} />
@@ -72,9 +72,11 @@ const ObjectiveRow = ({ obj, rank }: { obj: Objective, rank: number }) => {
         <Collapsible 
             open={expanded} 
             onOpenChange={setExpanded}
-            className={`rounded-2xl border ${st.bg} overflow-hidden shadow-sm transition-all hover:shadow-md`}
+            className={`rounded-2xl border ${st.bg} overflow-hidden shadow-sm transition-all hover:shadow-md hover:bg-background/60`}
         >
-            <CollapsibleTrigger className="w-full text-left p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:bg-muted/30 transition-colors group">
+            <CollapsibleTrigger 
+                render={<button className="w-full text-left p-4 sm:p-5 flex items-center gap-3 sm:gap-4 hover:bg-muted/30 transition-colors group" />}
+            >
                 <span className="text-sm text-muted-foreground font-mono tabular-nums w-5 shrink-0 hidden sm:inline-block">#{rank}</span>
                 <span className={`w-3.5 h-3.5 rounded-full shrink-0 shadow-sm ${st.dot}`} />
 
@@ -83,7 +85,7 @@ const ObjectiveRow = ({ obj, rank }: { obj: Objective, rank: number }) => {
                 </span>
 
                 {obj.ownerTeam && (
-                    <Badge variant="secondary" className="hidden md:inline-flex bg-background text-muted-foreground border-border shadow-sm">
+                    <Badge variant="secondary" className="hidden md:inline-flex bg-background/50 backdrop-blur-md text-muted-foreground border-border/50 shadow-sm">
                         {obj.ownerTeam}
                     </Badge>
                 )}
@@ -91,7 +93,7 @@ const ObjectiveRow = ({ obj, rank }: { obj: Objective, rank: number }) => {
                 <span className={`hidden sm:inline-block text-sm font-bold shrink-0 ${st.color} w-20`}>{obj.status}</span>
 
                 <div className="w-24 sm:w-40 shrink-0 flex items-center gap-2 sm:gap-3">
-                    <div className="flex-1 h-2.5 bg-muted rounded-full overflow-hidden hidden sm:block shadow-inner">
+                    <div className="flex-1 h-2.5 bg-muted/50 rounded-full overflow-hidden hidden sm:block shadow-inner border border-border/30">
                         <div
                             className={`h-full ${st.barColor} rounded-full transition-all`}
                             style={{ width: `${Math.min(obj.progress, 100)}%` }}
@@ -107,13 +109,13 @@ const ObjectiveRow = ({ obj, rank }: { obj: Objective, rank: number }) => {
                 </div>
             </CollapsibleTrigger>
 
-            <CollapsibleContent className="px-4 sm:px-5 pb-5 bg-background/50">
+            <CollapsibleContent className="px-4 sm:px-5 pb-5 bg-background/30 backdrop-blur-md border-t border-border/40">
                 {totalCount === 0 ? (
                     <p className="text-sm text-muted-foreground mt-2">No contributor details available</p>
                 ) : (
-                    <div className="mt-2 flex flex-col gap-5 border-t border-border pt-4">
+                    <div className="mt-2 flex flex-col gap-5 pt-4">
                         {/* Overview bar */}
-                        <div className="bg-background rounded-xl px-4 py-4 border border-border shadow-sm">
+                        <div className="bg-background/40 backdrop-blur-md rounded-xl px-4 py-4 border border-border/50 shadow-sm transition-colors hover:bg-background/60">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                                 <span className="text-xs font-bold text-muted-foreground uppercase tracking-wide">Objective Overview</span>
                                 <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs sm:text-sm font-medium">
@@ -122,7 +124,7 @@ const ObjectiveRow = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                     <span className="text-muted-foreground">Avg KR progress: <span className="text-foreground font-bold">{avgKrProgress}%</span></span>
                                 </div>
                             </div>
-                            <div className="h-2 bg-muted rounded-full overflow-hidden shadow-inner">
+                            <div className="h-2 bg-muted/50 rounded-full overflow-hidden shadow-inner border border-border/30">
                                 <div
                                     className={`h-full ${st.barColor} rounded-full transition-all`}
                                     style={{ width: `${Math.min(obj.progress, 100)}%` }}
@@ -188,10 +190,10 @@ export default function ObjectivesSection({ objectives }: { objectives: Objectiv
     };
 
     return (
-        <Card className="border-border shadow-sm overflow-hidden h-full mt-8">
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/60 bg-muted/10 py-5">
+        <Card className="border-border/40 shadow-sm overflow-hidden h-full mt-8 bg-card/40 backdrop-blur-xl">
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 bg-muted/20 py-5">
                 <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-sm">
+                    <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner">
                         <Target className="w-6 h-6 text-primary" />
                     </div>
                     <div>
@@ -209,15 +211,15 @@ export default function ObjectivesSection({ objectives }: { objectives: Objectiv
                                 variant={filter === f ? "default" : "outline"}
                                 size="sm"
                                 onClick={() => handleFilter(f)}
-                                className={`rounded-lg shadow-sm ${
+                                className={`rounded-lg shadow-sm backdrop-blur-md transition-all ${
                                     filter === f
                                         ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                        : 'border-border bg-background text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                        : 'border-border/50 bg-background/40 text-muted-foreground hover:text-foreground hover:bg-background/60'
                                 }`}
                             >
                                 {f}
                                 {f !== 'All' && count > 0 && (
-                                    <span className="ml-2 text-xs font-semibold opacity-90 bg-background/20 text-current px-1.5 py-0.5 rounded-md border border-current/10">{count}</span>
+                                    <span className="ml-2 text-xs font-semibold opacity-90 bg-background/40 text-current px-1.5 py-0.5 rounded-md border border-current/20">{count}</span>
                                 )}
                             </Button>
                         );
@@ -225,24 +227,24 @@ export default function ObjectivesSection({ objectives }: { objectives: Objectiv
                 </div>
             </CardHeader>
 
-            <div className="px-6 py-3 bg-background border-b border-border flex flex-wrap items-center gap-4 sm:gap-6 text-sm font-medium">
+            <div className="px-6 py-3 bg-background/40 backdrop-blur-md border-b border-border/50 flex flex-wrap items-center gap-4 sm:gap-6 text-sm font-medium">
                 <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
                     <span className="text-muted-foreground">On Track: <span className="font-bold text-emerald-600 dark:text-emerald-400">{counts['On Track']}</span></span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                     <span className="text-muted-foreground">At Risk: <span className="font-bold text-amber-600 dark:text-amber-400">{counts['At Risk']}</span></span>
                 </div>
                 <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
                     <span className="text-muted-foreground">Behind: <span className="font-bold text-rose-600 dark:text-rose-400">{counts['Behind']}</span></span>
                 </div>
             </div>
 
-            <CardContent className="p-6 bg-muted/5">
+            <CardContent className="p-6 bg-transparent">
                 {filtered.length === 0 ? (
-                    <div className="flex items-center justify-center py-16 text-muted-foreground text-base flex-col gap-3">
+                    <div className="flex items-center justify-center py-16 text-muted-foreground text-base flex-col gap-3 bg-transparent">
                         <Target className="w-10 h-10 opacity-20" />
                         <p className="font-medium">No objectives found in this category</p>
                     </div>
@@ -260,7 +262,7 @@ export default function ObjectivesSection({ objectives }: { objectives: Objectiv
                                 <div className="relative z-10 flex justify-center">
                                     <Button
                                         variant="outline"
-                                        className="h-12 px-8 rounded-xl border-border bg-background shadow-sm hover:bg-muted/50 text-foreground font-semibold"
+                                        className="h-12 px-8 rounded-xl border-border/50 bg-background/60 backdrop-blur-md shadow-sm hover:bg-muted/50 text-foreground font-semibold"
                                         onClick={() => setShowAll(true)}
                                     >
                                         <ChevronDown className="mr-2 w-5 h-5" />
@@ -274,7 +276,7 @@ export default function ObjectivesSection({ objectives }: { objectives: Objectiv
                             <div className="mt-6 flex justify-center">
                                 <Button
                                     variant="outline"
-                                    className="h-12 px-8 rounded-xl border-border bg-background shadow-sm hover:bg-muted/50 text-muted-foreground font-semibold"
+                                    className="h-12 px-8 rounded-xl border-border/50 bg-background/60 backdrop-blur-md shadow-sm hover:bg-muted/50 text-muted-foreground font-semibold"
                                     onClick={() => setShowAll(false)}
                                 >
                                     <ChevronUp className="mr-2 w-5 h-5" />

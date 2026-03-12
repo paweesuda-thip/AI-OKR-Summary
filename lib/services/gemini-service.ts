@@ -100,16 +100,16 @@ function formatOKRDataToPrompt(dashboardData: any) {
         prompt += `#### 4. ประเด็นวิกฤตและความเสี่ยง (Critical Risks)
 `;
         atRisk.forEach((obj: any) => {
-            prompt += `- 🔴 [วิกฤต]: ${obj.objectiveName} (คืบหน้าเพียง ${obj.progress}%) [ทีม: ${obj.ownerTeam || 'N/A'}]\n`;
+            prompt += `- [วิกฤต]: ${obj.objectiveName} (คืบหน้าเพียง ${obj.progress}%) [ทีม: ${obj.ownerTeam || 'N/A'}]\n`;
         });
         prompt += `\n`;
     }
 
     prompt += `---
 
-### 📝 คำสั่งสำหรับการส่งข้อมูลกลับ (JSON Response Format)
+### คำสั่งสำหรับการส่งข้อมูลกลับ (JSON Response Format)
 
-**⚠️ สำคัญมาก: คุณต้องส่งข้อมูลกลับมาในรูปแบบ JSON เท่านั้น ไม่ต้องมี markdown หรือข้อความอื่นใดนอกจาก JSON object**
+**สำคัญมาก: คุณต้องส่งข้อมูลกลับมาในรูปแบบ JSON เท่านั้น ไม่ต้องมี markdown หรือข้อความอื่นใดนอกจาก JSON object**
 
 หลักการสำคัญ:
 - โทนเชิงบวก มองไปข้างหน้า (Growth & Opportunity-driven)

@@ -10,7 +10,7 @@ import { Loader2, Trash2, Send, ChevronDown, ChevronRight, CheckCircle2, XCircle
 
 interface TestResult {
     success: boolean;
-    data?: any;
+    data?: unknown;
     requestParams?: Record<string, number>;
     error?: {
         message: string;

@@ -4,7 +4,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CopyCheck, Target, TrendingUp, Users, CheckCircle2 } from "lucide-react";
 import { TeamSummary } from "@/lib/types/okr";
 
-const colMap: Record<string, { bg: string, border: string, icon: string, iconBg: string, value: string, Icon: any }> = {
+const colMap: Record<string, { bg: string, border: string, icon: string, iconBg: string, value: string, Icon: React.ElementType }> = {
   indigo:  { bg: 'bg-primary/5',  border: 'border-primary/20',  icon: 'text-primary',  iconBg: 'bg-primary/10',  value: 'text-primary', Icon: Target  },
   emerald: { bg: 'bg-emerald-500/5', border: 'border-emerald-500/20', icon: 'text-emerald-600 dark:text-emerald-400', iconBg: 'bg-emerald-500/10', value: 'text-emerald-600 dark:text-emerald-400', Icon: CopyCheck },
   amber:   { bg: 'bg-amber-500/5',   border: 'border-amber-500/20',   icon: 'text-amber-600 dark:text-amber-400',   iconBg: 'bg-amber-500/10',   value: 'text-amber-600 dark:text-amber-400', Icon: TrendingUp   },
@@ -17,8 +17,8 @@ const StatCard = ({ label, value, sub, colorKey }: { label: string, value: strin
     const Icon = c.Icon;
 
     return (
-        <Card className={`border ${c.border} ${c.bg} shadow-sm transition-all hover:shadow-md`}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <Card className={`border ${c.border} ${c.bg} shadow-sm transition-all hover:shadow-md bg-card/60 backdrop-blur-md`}>
+            <CardHeader className="flex flex-row items-center justify-between pb-3">
                 <CardTitle className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{label}</CardTitle>
                 <div className={`w-10 h-10 rounded-lg ${c.iconBg} flex items-center justify-center ${c.icon}`}>
                     <Icon className="w-5 h-5" />
@@ -44,10 +44,10 @@ export default function OverviewCards({ summary }: { summary: TeamSummary | null
     } = summary;
 
     return (
-        <Card className="shadow-sm border-border overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 sm:px-8 pt-6 pb-4 border-b border-border/60 gap-4 bg-muted/10">
+        <Card className="shadow-sm border-border overflow-hidden bg-card/40 backdrop-blur-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 sm:px-8 pt-6 pb-4 border-b border-border/40 gap-4 bg-muted/20">
                 <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner">
                         <Target className="w-5 h-5 text-primary" />
                     </div>
                     <div>
@@ -57,18 +57,18 @@ export default function OverviewCards({ summary }: { summary: TeamSummary | null
                 </div>
                 
                 <Tabs defaultValue="current" value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
-                    <TabsList className="bg-muted/50 border border-border">
-                        <TabsTrigger value="current" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                    <TabsList className="bg-background/50 border border-border/40 backdrop-blur-md p-1 h-auto">
+                        <TabsTrigger value="current" className="data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-md py-1.5 px-4 rounded-md transition-all">
                             Current Cycle
                         </TabsTrigger>
-                        <TabsTrigger value="all" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">
+                        <TabsTrigger value="all" className="data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-md py-1.5 px-4 rounded-md transition-all">
                             All Quarters
                         </TabsTrigger>
                     </TabsList>
                 </Tabs>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-6 bg-background">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 p-6 bg-transparent">
                 <StatCard
                     label="Objectives"
                     value={`${completedObjectives}/${totalObjectives}`}
@@ -102,13 +102,13 @@ export default function OverviewCards({ summary }: { summary: TeamSummary | null
             </div>
 
             {/* Progress bar overview */}
-            <div className="px-6 pb-6 bg-background">
-                <div className="bg-muted/30 rounded-xl px-6 py-5 border border-border flex flex-col md:flex-row items-center gap-6 shadow-sm">
+            <div className="px-6 pb-6 bg-transparent">
+                <div className="bg-background/40 backdrop-blur-md rounded-xl px-6 py-5 border border-border/50 flex flex-col md:flex-row items-center gap-6 shadow-sm">
                     <span className="text-sm font-semibold text-muted-foreground shrink-0 uppercase tracking-wide">
                         {activeTab === 'current' ? 'Current Cycle' : 'All Quarters'} — overall progress
                     </span>
                     <div className="flex-1 w-full flex items-center gap-4">
-                        <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden flex shadow-inner">
+                        <div className="flex-1 h-3 bg-muted/50 rounded-full overflow-hidden flex shadow-inner border border-border/30">
                             <div
                                 className="h-full bg-emerald-500 transition-all"
                                 style={{ width: `${(onTrackCount / Math.max(totalObjectives, 1)) * 100}%` }}
