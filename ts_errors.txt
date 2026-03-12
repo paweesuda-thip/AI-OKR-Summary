@@ -1,0 +1,60 @@
+components/ai-summary-panel.tsx(377,11): error TS2554: Expected 1 arguments, but got 2.
+components/ai-summary-panel.tsx(818,54): error TS2304: Cannot find name 'Loader2'.
+components/filter-bar.tsx(50,38): error TS2322: Type '{ children: Element; asChild: true; }' is not assignable to type 'IntrinsicAttributes & Props<unknown>'.
+  Property 'asChild' does not exist on type 'IntrinsicAttributes & Props<unknown>'.
+components/filter-bar.tsx(74,38): error TS2322: Type '{ children: Element; asChild: true; }' is not assignable to type 'IntrinsicAttributes & Props<unknown>'.
+  Property 'asChild' does not exist on type 'IntrinsicAttributes & Props<unknown>'.
+components/filter-bar.tsx(98,38): error TS2322: Type '{ children: Element; asChild: true; }' is not assignable to type 'IntrinsicAttributes & Props<unknown>'.
+  Property 'asChild' does not exist on type 'IntrinsicAttributes & Props<unknown>'.
+lib/services/api-service.ts(24,13): error TS2322: Type '{ 'X-API-KEY-EMPEO': string; Accept?: AxiosHeaderValue | undefined; "Content-Length"?: AxiosHeaderValue | undefined; "User-Agent"?: AxiosHeaderValue | undefined; "Content-Encoding"?: AxiosHeaderValue | undefined; Authorization?: AxiosHeaderValue | undefined; "Content-Type"?: ContentType | undefined; }' is not assignable to type 'AxiosRequestHeaders'.
+  Type '{ 'X-API-KEY-EMPEO': string; Accept?: AxiosHeaderValue | undefined; "Content-Length"?: AxiosHeaderValue | undefined; "User-Agent"?: AxiosHeaderValue | undefined; "Content-Encoding"?: AxiosHeaderValue | undefined; Authorization?: AxiosHeaderValue | undefined; "Content-Type"?: ContentType | undefined; }' is missing the following properties from type 'AxiosHeaders': set, get, has, delete, and 24 more.
+lib/services/api-service.ts(58,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+lib/services/api-service.ts(63,36): error TS7006: Parameter 'd' implicitly has an 'any' type.
+lib/services/api-service.ts(93,27): error TS7006: Parameter 'objectives' implicitly has an 'any' type.
+lib/services/api-service.ts(95,41): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/api-service.ts(97,41): error TS7006: Parameter 's' implicitly has an 'any' type.
+lib/services/api-service.ts(97,44): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/api-service.ts(100,43): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/api-service.ts(102,44): error TS7006: Parameter 'd' implicitly has an 'any' type.
+lib/services/api-service.ts(103,48): error TS7006: Parameter 'd' implicitly has an 'any' type.
+lib/services/api-service.ts(114,41): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/api-service.ts(115,40): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/api-service.ts(116,40): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/api-service.ts(120,32): error TS7006: Parameter 'objectives' implicitly has an 'any' type.
+lib/services/api-service.ts(123,24): error TS7006: Parameter 'obj' implicitly has an 'any' type.
+lib/services/api-service.ts(124,29): error TS7006: Parameter 'd' implicitly has an 'any' type.
+lib/services/api-service.ts(142,36): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/api-service.ts(156,47): error TS7006: Parameter 's' implicitly has an 'any' type.
+lib/services/api-service.ts(156,50): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/api-service.ts(180,31): error TS7006: Parameter 'params' implicitly has an 'any' type.
+lib/services/api-service.ts(203,56): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/gemini-service.ts(19,16): error TS7006: Parameter 'ms' implicitly has an 'any' type.
+lib/services/gemini-service.ts(21,27): error TS7006: Parameter 'errorMessage' implicitly has an 'any' type.
+lib/services/gemini-service.ts(29,26): error TS7006: Parameter 'text' implicitly has an 'any' type.
+lib/services/gemini-service.ts(51,32): error TS7006: Parameter 'dashboardData' implicitly has an 'any' type.
+lib/services/gemini-service.ts(83,43): error TS7006: Parameter 'person' implicitly has an 'any' type.
+lib/services/gemini-service.ts(92,41): error TS7006: Parameter 'obj' implicitly has an 'any' type.
+lib/services/gemini-service.ts(101,25): error TS7006: Parameter 'obj' implicitly has an 'any' type.
+lib/services/gemini-service.ts(182,15): error TS7006: Parameter 'dashboardData' implicitly has an 'any' type.
+lib/services/gemini-service.ts(186,27): error TS7006: Parameter 'dashboardData' implicitly has an 'any' type.
+lib/services/gemini-service.ts(196,40): error TS18047: 'ai' is possibly 'null'.
+lib/services/gemini-service.ts(213,60): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(215,38): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(215,72): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(218,55): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(224,21): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(234,40): error TS7006: Parameter 'top3' implicitly has an 'any' type.
+lib/services/gemini-service.ts(239,38): error TS7006: Parameter 'person' implicitly has an 'any' type.
+lib/services/gemini-service.ts(239,46): error TS7006: Parameter 'idx' implicitly has an 'any' type.
+lib/services/gemini-service.ts(244,55): error TS7006: Parameter 'o' implicitly has an 'any' type.
+lib/services/gemini-service.ts(268,40): error TS18047: 'ai' is possibly 'null'.
+lib/services/gemini-service.ts(276,38): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(276,72): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(278,55): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(288,23): error TS7006: Parameter 'dashboardData' implicitly has an 'any' type.
+lib/services/gemini-service.ts(288,38): error TS7006: Parameter 'question' implicitly has an 'any' type.
+lib/services/gemini-service.ts(320,40): error TS18047: 'ai' is possibly 'null'.
+lib/services/gemini-service.ts(330,38): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(330,74): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(333,55): error TS18046: 'error' is of type 'unknown'.
+lib/services/gemini-service.ts(339,62): error TS18046: 'error' is of type 'unknown'.
