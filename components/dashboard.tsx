@@ -14,7 +14,6 @@ import {
 
 import OverviewCards from "./overview-cards";
 import ObjectivesSection from "./objectives-section";
-import TopPerformersSection from "./top-performers-section";
 import type { TopPerformersAISummary } from "./top-performers-section";
 import NeedsAttentionSection from "./needs-attention-section";
 import NoCheckInSection from "./no-checkin-section";
@@ -26,6 +25,10 @@ import TeamMembersSection from "./team-members-section";
 import ShinyText from "@/components/react-bits/ShinyText";
 import DomeGallery from "@/components/react-bits/DomeGallery";
 import MagicRings from "@/components/react-bits/MagicRings";
+import HoloCard from "@/components/gaia/holo-card";
+import ScrollReveal from "@/components/react-bits/ScrollReveal";
+import ScrollFloat from "@/components/react-bits/ScrollFloat";
+import ClickSpark from "@/components/react-bits/ClickSpark";
 
 import apiService from "@/lib/services/api-service";
 import { Objective, ContributorSum, TeamSummary } from "@/lib/types/okr";
@@ -135,7 +138,14 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="w-full pb-12">
+    <ClickSpark
+      sparkColor="#fff"
+      sparkSize={10}
+      sparkRadius={15}
+      sparkCount={8}
+      duration={400}
+    >
+      <div className="w-full pb-12">
       {/* Hero Section */}
       <section className="relative overflow-hidden rounded-[2.5rem] border border-border/40 bg-card/40 px-6 py-8 shadow-2xl backdrop-blur-2xl sm:px-10 lg:px-12">
         {/* Inner subtle glow */}
@@ -302,17 +312,73 @@ export default function Dashboard() {
           </div>
 
           {/* ── Overview Metrics Strip ── */}
-          <section className="mb-12">
+          <section className="mb-20">
             <OverviewCards summary={teamSummary} />
           </section>
 
-          {/* ── Main Layout: Presentation Style ── */}
-          <div className="space-y-16">
+          {/* ── Main Layout: Landing Page Style ── */}
+          <div className="flex flex-col gap-32">
             
-            {/* Section 1: Period Comparison */}
-            <div className="relative">
-              <div className="absolute -inset-x-4 -inset-y-4 z-0 bg-gradient-to-b from-primary/5 to-transparent opacity-50 blur-2xl rounded-[3rem]" />
-              <div className="relative z-10">
+            {/* ── Top Performers (HoloCard Leaderboard) ── */}
+            {contributors && contributors.length > 0 && (
+              <section className="relative">
+                <div className="mb-16 flex flex-col items-center text-center">
+                  <ScrollFloat textClassName="text-sm font-bold tracking-[0.2em] text-amber-500 uppercase mb-4">
+                    Leaderboard
+                  </ScrollFloat>
+                  <ScrollReveal textClassName="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
+                    Top Performers
+                  </ScrollReveal>
+                  <p className="mt-6 text-muted-foreground max-w-2xl text-lg">
+                    Recognizing the outstanding execution and consistent momentum of our leading contributors.
+                  </p>
+                  
+                  {topPerformersSummary?.teamSummary && (
+                    <div className="mt-8 bg-primary/5 border border-primary/20 rounded-2xl p-6 max-w-3xl backdrop-blur-sm">
+                      <p className="text-foreground/90 font-medium">{topPerformersSummary.teamSummary}</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto px-4">
+                  {contributors.slice(0, 3).map((person, i) => {
+                    const badges = ["🥇 Gold Tier", "🥈 Silver Tier", "🥉 Bronze Tier"];
+                    const colors = ["#fbbf24", "#94a3b8", "#b45309"];
+                    const aiPersonSummary = topPerformersSummary?.rankings?.[i]?.summary;
+                    
+                    return (
+                      <div key={person.fullName} className="w-full max-w-[320px] mx-auto">
+                        <HoloCard
+                          data={{
+                            name: person.fullName,
+                            subtitle: `${person.avgObjectiveProgress.toFixed(1)}% Avg Progress`,
+                            description: aiPersonSummary || `${person.krCount} Key Results • ${person.checkInCount} Check-ins`,
+                            badge: badges[i] || `Rank #${i+1}`,
+                            primaryId: person.fullName,
+                            secondaryInfo: `Check-ins: ${person.checkInCount}`,
+                            overlayColor: colors[i] || "#ffffff",
+                            overlayOpacity: 15,
+                            backgroundImage: person.pictureURL || `https://picsum.photos/seed/${person.fullName.replace(/\s+/g,'')}/400/600`
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* ── Momentum / Period Comparison ── */}
+            <section className="relative">
+              <div className="mb-12 flex flex-col items-center text-center">
+                <ScrollFloat textClassName="text-sm font-bold tracking-[0.2em] text-blue-500 uppercase mb-2">
+                  Momentum
+                </ScrollFloat>
+                <ScrollReveal textClassName="text-3xl md:text-4xl font-bold text-foreground">
+                  Period Comparison
+                </ScrollReveal>
+              </div>
+              <div className="max-w-6xl mx-auto px-4 w-full">
                 <PeriodComparisonSection comparison={{
                     currentCompletionRate: teamSummary?.objectiveCompletionRate || 0,
                     previousCompletionRate: (teamSummary?.objectiveCompletionRate || 0) - 5,
@@ -327,67 +393,83 @@ export default function Dashboard() {
                     engagementTrend: 'Consistent weekly check-ins maintained',
                 }} />
               </div>
-            </div>
+            </section>
 
-            {/* Section 2: Team Focus Areas (Unified Panel) */}
-            <div className="relative rounded-[2.5rem] border border-border/40 bg-card/20 backdrop-blur-3xl shadow-2xl overflow-hidden">
-              {/* Subtle inner glow */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
-              
-              <div className="relative z-10 flex flex-col divide-y divide-border/40">
-                {/* ── Top Row: Primary AI & Risk Analysis ── */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border/40">
-                  {/* Left: Top Performers */}
-                  <div className="p-8 xl:p-10 flex flex-col h-full bg-background/5">
-                    <TopPerformersSection 
-                        contributors={contributors} 
-                        aiSummary={topPerformersSummary} 
-                        aiLoading={false} 
-                    />
-                  </div>
-
-                  {/* Middle: Needs Attention */}
-                  <div className="p-8 xl:p-10 flex flex-col h-full bg-background/10">
-                    <NeedsAttentionSection contributors={contributors} />
-                  </div>
-
-                  {/* Right: At Risk */}
-                  <div className="p-8 xl:p-10 flex flex-col h-full bg-background/20">
-                    <AtRiskSection atRiskObjectives={atRiskObjectives} />
-                  </div>
-                </div>
-
-                {/* ── Bottom Row: Team & Execution Details ── */}
-                {(contributors.length > 0 || noCheckInEmployees.length > 0) && (
-                  <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border/40 bg-black/5 dark:bg-white/5">
-                    {contributors.length > 0 && (
-                      <div className="p-8 xl:p-10 flex flex-col h-full lg:col-span-1">
-                        <TeamMembersSection teamMembers={contributors.map((c: ContributorSum) => ({
-                            employeeId: c.fullName,
-                            employeeName: c.fullName,
-                            picture: c.pictureURL,
-                            employeeStatus: 1,
-                            positionName: 'Contributor'
-                        }))} />
-                      </div>
-                    )}
-                    {noCheckInEmployees.length > 0 && (
-                      <div className={`p-8 xl:p-10 flex flex-col h-full ${contributors.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
-                        <NoCheckInSection noCheckInEmployees={noCheckInEmployees} />
-                      </div>
-                    )}
-                  </div>
-                )}
+            {/* ── Focus Areas (Unboxed) ── */}
+            <section className="relative">
+              <div className="mb-12 flex flex-col items-center text-center">
+                <ScrollFloat textClassName="text-sm font-bold tracking-[0.2em] text-rose-500 uppercase mb-2">
+                  Risk Analysis
+                </ScrollFloat>
+                <ScrollReveal textClassName="text-3xl md:text-4xl font-bold text-foreground">
+                  Focus Areas
+                </ScrollReveal>
+                <p className="mt-4 text-muted-foreground text-lg max-w-2xl">
+                  Identify roadblocks and objectives that require immediate attention to maintain momentum.
+                </p>
               </div>
-            </div>
+              
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-4 w-full">
+                <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-4xl p-8 shadow-xl transition-all hover:bg-background/40 hover:border-border/50">
+                  <NeedsAttentionSection contributors={contributors} />
+                </div>
+                <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-4xl p-8 shadow-xl transition-all hover:bg-background/40 hover:border-border/50">
+                  <AtRiskSection atRiskObjectives={atRiskObjectives} />
+                </div>
+              </div>
+            </section>
 
-            {/* Section 3: Full-width Objectives */}
-            <div className="pt-8">
-              <ObjectivesSection objectives={objectives} />
-            </div>
+            {/* ── Team Directory ── */}
+            {(contributors.length > 3 || noCheckInEmployees.length > 0) && (
+              <section className="relative">
+                <div className="mb-12 flex flex-col items-center text-center">
+                  <ScrollFloat textClassName="text-sm font-bold tracking-[0.2em] text-emerald-500 uppercase mb-2">
+                    Directory
+                  </ScrollFloat>
+                  <ScrollReveal textClassName="text-3xl md:text-4xl font-bold text-foreground">
+                    Team Members
+                  </ScrollReveal>
+                </div>
+                
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto px-4 w-full">
+                  {contributors.length > 3 && (
+                    <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-4xl p-8 shadow-xl transition-all hover:bg-background/40 hover:border-border/50">
+                      <TeamMembersSection teamMembers={contributors.slice(3).map((c: ContributorSum) => ({
+                          employeeId: c.fullName,
+                          employeeName: c.fullName,
+                          picture: c.pictureURL,
+                          employeeStatus: 1,
+                          positionName: 'Contributor'
+                      }))} />
+                    </div>
+                  )}
+                  {noCheckInEmployees.length > 0 && (
+                    <div className={`bg-background/20 backdrop-blur-xl border border-border/30 rounded-4xl p-8 shadow-xl transition-all hover:bg-background/40 hover:border-border/50 ${contributors.length <= 3 ? 'lg:col-span-2' : ''}`}>
+                      <NoCheckInSection noCheckInEmployees={noCheckInEmployees} />
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* ── Objectives ── */}
+            <section className="relative pb-12">
+               <div className="mb-12 flex flex-col items-center text-center">
+                  <ScrollFloat textClassName="text-sm font-bold tracking-[0.2em] text-indigo-500 uppercase mb-2">
+                    Execution
+                  </ScrollFloat>
+                  <ScrollReveal textClassName="text-3xl md:text-4xl font-bold text-foreground">
+                    All Objectives
+                  </ScrollReveal>
+               </div>
+               <div className="max-w-7xl mx-auto px-4 w-full">
+                 <ObjectivesSection objectives={objectives} />
+               </div>
+            </section>
           </div>
         </main>
       )}
-    </div>
+      </div>
+    </ClickSpark>
   );
 }
