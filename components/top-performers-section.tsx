@@ -2,19 +2,12 @@ import { Trophy, Loader2, Sparkles } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { ContributorSum } from "@/lib/types/okr";
-import MagicBento, { BentoCardProps } from "@/components/react-bits/MagicBento";
 import ShinyText from "@/components/react-bits/ShinyText";
+import MagicBento from "@/components/react-bits/MagicBento";
 
-const topCardGradients = [
-    "linear-gradient(160deg, rgba(62,41,15,0.9) 0%, rgba(23,17,10,0.95) 100%)",
-    "linear-gradient(160deg, rgba(27,35,48,0.92) 0%, rgba(11,16,24,0.96) 100%)",
-    "linear-gradient(160deg, rgba(59,33,17,0.9) 0%, rgba(21,14,8,0.96) 100%)",
-];
-
-const topLabels = ["Gold Tier", "Silver Tier", "Bronze Tier"];
-
+// Re-export type for Dashboard use
 export interface TopPerformersAISummary {
-    rankings?: Array<{ rank?: number; name?: string; summary?: string }>;
+    rankings?: Array<{ rank: number; name: string; summary: string }>;
     teamSummary?: string;
 }
 
@@ -24,9 +17,17 @@ interface TopPerformersSectionProps {
     aiLoading?: boolean;
 }
 
+const topCardGradients = [
+    "linear-gradient(160deg, rgba(62,41,15,0.9) 0%, rgba(23,17,10,0.95) 100%)",
+    "linear-gradient(160deg, rgba(27,35,48,0.92) 0%, rgba(11,16,24,0.96) 100%)",
+    "linear-gradient(160deg, rgba(59,33,17,0.9) 0%, rgba(21,14,8,0.96) 100%)",
+];
+
+const topLabels = ["Gold Tier", "Silver Tier", "Bronze Tier"];
+
 const EmptyState = () => (
-    <Card className="border-border/40 shadow-sm overflow-hidden mt-8 bg-card/40 backdrop-blur-xl">
-        <CardHeader className="flex flex-row items-center gap-4 border-b border-border/40 bg-muted/20 py-5">
+    <Card className="border-none bg-transparent shadow-none w-full h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center gap-4 py-5 px-0 pb-6 shrink-0">
             <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 shadow-inner">
                 <Trophy className="w-6 h-6 text-amber-600 dark:text-amber-400" />
             </div>
@@ -34,8 +35,9 @@ const EmptyState = () => (
                 <CardTitle className="text-xl text-foreground tracking-tight">Top Performers</CardTitle>
             </div>
         </CardHeader>
-        <CardContent className="flex items-center justify-center py-16 text-muted-foreground text-base font-medium bg-transparent">
-            No contributor data available
+        <CardContent className="flex flex-col items-center justify-center flex-1 py-12 px-0 bg-transparent">
+            <Trophy className="w-16 h-16 text-amber-500 opacity-80" />
+            <p className="text-muted-foreground text-base font-medium mt-4 text-center">No contributor data available</p>
         </CardContent>
     </Card>
 );
@@ -46,7 +48,7 @@ export default function TopPerformersSection({ contributors, aiSummary = null, a
 
     if (!top3 || top3.length === 0) return <EmptyState />;
 
-    const topCards: BentoCardProps[] = top3.map((person: ContributorSum, i: number) => {
+    const topCards = top3.map((person: ContributorSum, i: number) => {
         const aiPersonSummary = aiSummary?.rankings?.[i]?.summary;
 
         return {
@@ -60,8 +62,8 @@ export default function TopPerformersSection({ contributors, aiSummary = null, a
     });
 
     return (
-        <Card className="border-border/40 shadow-sm overflow-hidden mt-8 bg-card/40 backdrop-blur-xl">
-            <CardHeader className="flex flex-row items-center gap-4 border-b border-border/40 bg-muted/20 py-5">
+        <Card className="border-none bg-transparent shadow-none w-full h-full flex flex-col p-4">
+            <CardHeader className="flex flex-row items-center gap-4 border-b border-border/40 bg-muted/20 p-4">
                 <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 shadow-inner">
                     <Trophy className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 </div>

@@ -58,8 +58,10 @@ const HERO_GALLERY_IMAGES = [
 ];
 
 export default function Dashboard() {
-  const ASSESSMENT_SET_ID = 185467; // prod
-  const ORGANIZATION_ID = 18477; // prod
+  const ASSESSMENT_SET_ID = 18892; // demo
+  const ORGANIZATION_ID = 0; // demo
+  // const ASSESSMENT_SET_ID = 185467; // prod
+  // const ORGANIZATION_ID = 18477; // prod
 
   const [teamSummary, setTeamSummary] = useState<TeamSummary | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -275,10 +277,16 @@ export default function Dashboard() {
           </div>
         </div>
       ) : (
-        <main className="mt-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
-          {/* ── Floating Filter Bar ── */}
-          <div className="sticky top-20 z-30 mb-8">
-            <div className="rounded-2xl border border-border/40 bg-background/60 p-1.5 shadow-2xl backdrop-blur-2xl">
+        <main className="mt-8 px-4 sm:px-8 lg:px-12 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1600px] mx-auto">
+          
+          {/* Header & Global Filters */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-foreground">Team Execution</h2>
+              <p className="text-muted-foreground mt-2 text-lg">Monitor momentum and surface coaching opportunities.</p>
+            </div>
+            
+            <div className="flex-shrink-0">
               <FilterBar
                   sets={[]}
                   periods={[]}
@@ -294,66 +302,87 @@ export default function Dashboard() {
           </div>
 
           {/* ── Overview Metrics Strip ── */}
-          <section className="mb-8">
+          <section className="mb-12">
             <OverviewCards summary={teamSummary} />
           </section>
 
-          {/* ── Main Grid ── */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 xl:gap-6">
-            {/* Period Comparison - Spans full width on sm, 2 cols on lg */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3">
-              <PeriodComparisonSection comparison={{
-                  currentCompletionRate: teamSummary?.objectiveCompletionRate || 0,
-                  previousCompletionRate: (teamSummary?.objectiveCompletionRate || 0) - 5,
-                  completionRateDelta: 5,
-                  currentAvgProgress: teamSummary?.avgObjectiveProgress || 0,
-                  previousAvgProgress: (teamSummary?.avgObjectiveProgress || 0) - 8,
-                  avgProgressDelta: 8,
-                  currentCheckInCount: teamSummary?.totalKRs || 0,
-                  previousCheckInCount: (teamSummary?.totalKRs || 0) - 12,
-                  checkInCountDelta: 12,
-                  progressTrend: 'Upward trend observed mostly in engineering teams',
-                  engagementTrend: 'Consistent weekly check-ins maintained',
-              }} />
+          {/* ── Main Layout: Presentation Style ── */}
+          <div className="space-y-16">
+            
+            {/* Section 1: Period Comparison */}
+            <div className="relative">
+              <div className="absolute -inset-x-4 -inset-y-4 z-0 bg-gradient-to-b from-primary/5 to-transparent opacity-50 blur-2xl rounded-[3rem]" />
+              <div className="relative z-10">
+                <PeriodComparisonSection comparison={{
+                    currentCompletionRate: teamSummary?.objectiveCompletionRate || 0,
+                    previousCompletionRate: (teamSummary?.objectiveCompletionRate || 0) - 5,
+                    completionRateDelta: 5,
+                    currentAvgProgress: teamSummary?.avgObjectiveProgress || 0,
+                    previousAvgProgress: (teamSummary?.avgObjectiveProgress || 0) - 8,
+                    avgProgressDelta: 8,
+                    currentCheckInCount: teamSummary?.totalKRs || 0,
+                    previousCheckInCount: (teamSummary?.totalKRs || 0) - 12,
+                    checkInCountDelta: 12,
+                    progressTrend: 'Upward trend observed mostly in engineering teams',
+                    engagementTrend: 'Consistent weekly check-ins maintained',
+                }} />
+              </div>
             </div>
 
-            {/* Top Performers */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-1">
-              <TopPerformersSection 
-                  contributors={contributors} 
-                  aiSummary={topPerformersSummary} 
-                  aiLoading={false} 
-              />
+            {/* Section 2: Team Focus Areas (Unified Panel) */}
+            <div className="relative rounded-[2.5rem] border border-border/40 bg-card/20 backdrop-blur-3xl shadow-2xl overflow-hidden">
+              {/* Subtle inner glow */}
+              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+              
+              <div className="relative z-10 flex flex-col divide-y divide-border/40">
+                {/* ── Top Row: Primary AI & Risk Analysis ── */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border/40">
+                  {/* Left: Top Performers */}
+                  <div className="p-8 xl:p-10 flex flex-col h-full bg-background/5">
+                    <TopPerformersSection 
+                        contributors={contributors} 
+                        aiSummary={topPerformersSummary} 
+                        aiLoading={false} 
+                    />
+                  </div>
+
+                  {/* Middle: Needs Attention */}
+                  <div className="p-8 xl:p-10 flex flex-col h-full bg-background/10">
+                    <NeedsAttentionSection contributors={contributors} />
+                  </div>
+
+                  {/* Right: At Risk */}
+                  <div className="p-8 xl:p-10 flex flex-col h-full bg-background/20">
+                    <AtRiskSection atRiskObjectives={atRiskObjectives} />
+                  </div>
+                </div>
+
+                {/* ── Bottom Row: Team & Execution Details ── */}
+                {(contributors.length > 0 || noCheckInEmployees.length > 0) && (
+                  <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border/40 bg-black/5 dark:bg-white/5">
+                    {contributors.length > 0 && (
+                      <div className="p-8 xl:p-10 flex flex-col h-full lg:col-span-1">
+                        <TeamMembersSection teamMembers={contributors.map((c: ContributorSum) => ({
+                            employeeId: c.fullName,
+                            employeeName: c.fullName,
+                            picture: c.pictureURL,
+                            employeeStatus: 1,
+                            positionName: 'Contributor'
+                        }))} />
+                      </div>
+                    )}
+                    {noCheckInEmployees.length > 0 && (
+                      <div className={`p-8 xl:p-10 flex flex-col h-full ${contributors.length > 0 ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+                        <NoCheckInSection noCheckInEmployees={noCheckInEmployees} />
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Needs Attention */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-1">
-              <NeedsAttentionSection contributors={contributors} />
-            </div>
-
-            {/* At Risk Section */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-1">
-              <AtRiskSection atRiskObjectives={atRiskObjectives} />
-            </div>
-
-            {/* Team Members */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-1">
-              <TeamMembersSection teamMembers={contributors.map((c: ContributorSum) => ({
-                  employeeId: c.fullName,
-                  employeeName: c.fullName,
-                  picture: c.pictureURL,
-                  employeeStatus: 1,
-                  positionName: 'Contributor'
-              }))} />
-            </div>
-
-            {/* No Check-in */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-2">
-              <NoCheckInSection noCheckInEmployees={noCheckInEmployees} />
-            </div>
-
-            {/* ─── Full-width Bottom: Objectives ─── */}
-            <div className="col-span-1 md:col-span-2 lg:col-span-3">
+            {/* Section 3: Full-width Objectives */}
+            <div className="pt-8">
               <ObjectivesSection objectives={objectives} />
             </div>
           </div>

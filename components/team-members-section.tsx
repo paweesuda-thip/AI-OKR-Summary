@@ -24,10 +24,10 @@ export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: 
     const resignedCount = teamMembers.filter(m => m.employeeStatus === 3).length;
 
     return (
-        <Card className="border-border/40 shadow-sm overflow-hidden mt-8 bg-card/40 backdrop-blur-xl">
+        <Card className="border-none bg-transparent shadow-none w-full">
             <Collapsible open={expanded} onOpenChange={setExpanded}>
                 <CollapsibleTrigger 
-                    render={<button className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-6 py-5 hover:bg-background/40 transition-colors group bg-muted/20 border-b border-border/40" />}
+                    render={<button className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-4 px-0 py-5 hover:bg-background/40 transition-colors group border-b border-border/40" />}
                 >
                     <div className="flex items-center justify-between sm:justify-start gap-4">
                         <div className="flex items-center gap-4">

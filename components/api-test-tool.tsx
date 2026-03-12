@@ -21,8 +21,8 @@ interface TestResult {
 export default function APITestTool() {
     // ── Form State ────────────────────────────────────────────────────────
     const [formData, setFormData] = useState({
-        assessmentSetId: '23980',
-        organizationId: '14904',
+        assessmentSetId: '18892',
+        organizationId: '0',
     });
 
     // ── Result State ──────────────────────────────────────────────────────

@@ -50,12 +50,12 @@ export default function FilterBar({
         : `${selectedEmployeeIds.length} คนที่เลือก`;
 
     return (
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 p-4 bg-background/40 backdrop-blur-md border border-border/50 rounded-xl shadow-sm">
-            <span className="text-sm font-semibold text-muted-foreground mr-2">Filters:</span>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+            <span className="text-sm font-semibold text-muted-foreground mr-2 hidden sm:inline-block">Filter by:</span>
             {/* OKR Set Dropdown */}
             <DropdownMenu>
                 <DropdownMenuTrigger 
-                    render={<Button variant="outline" className="bg-background/50 border-border/40 hover:bg-background/80 text-foreground h-10 px-4 w-full sm:w-auto min-w-[160px] justify-between shadow-sm transition-all backdrop-blur-sm" />}
+                    render={<Button variant="ghost" className="hover:bg-muted/50 text-foreground h-10 px-4 w-full sm:w-auto justify-between transition-all rounded-full border border-border/30" />}
                 >
                     <div className="flex items-center gap-2">
                         <Folder className="w-4 h-4 text-primary" />
@@ -63,7 +63,7 @@ export default function FilterBar({
                     </div>
                     <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[220px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md">
+                <DropdownMenuContent className="w-[220px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md rounded-xl">
                     {sets.map(s => (
                         <DropdownMenuItem 
                             key={s.id} 
@@ -79,7 +79,7 @@ export default function FilterBar({
             {/* Period Dropdown */}
             <DropdownMenu>
                 <DropdownMenuTrigger 
-                    render={<Button variant="outline" className="bg-background/50 border-border/40 hover:bg-background/80 text-foreground h-10 px-4 w-full sm:w-auto min-w-[140px] justify-between shadow-sm transition-all backdrop-blur-sm" />}
+                    render={<Button variant="ghost" className="hover:bg-muted/50 text-foreground h-10 px-4 w-full sm:w-auto justify-between transition-all rounded-full border border-border/30" />}
                 >
                     <div className="flex items-center gap-2">
                         <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
@@ -87,7 +87,7 @@ export default function FilterBar({
                     </div>
                     <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[180px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md">
+                <DropdownMenuContent className="w-[180px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md rounded-xl">
                     {periods.map(p => (
                         <DropdownMenuItem 
                             key={p.id} 
@@ -103,7 +103,7 @@ export default function FilterBar({
             {/* Employees Dropdown */}
             <DropdownMenu>
                 <DropdownMenuTrigger 
-                    render={<Button variant="outline" className="bg-background/50 border-border/40 hover:bg-background/80 text-foreground h-10 px-4 w-full sm:w-auto min-w-[140px] justify-between shadow-sm transition-all backdrop-blur-sm" />}
+                    render={<Button variant="ghost" className="hover:bg-muted/50 text-foreground h-10 px-4 w-full sm:w-auto justify-between transition-all rounded-full border border-border/30" />}
                 >
                     <div className="flex items-center gap-2">
                         <Users className="w-4 h-4 text-amber-600 dark:text-amber-500" />
@@ -111,7 +111,7 @@ export default function FilterBar({
                     </div>
                     <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
                 </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-[240px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md max-h-[400px] overflow-y-auto">
+                <DropdownMenuContent className="w-[240px] bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md max-h-[400px] overflow-y-auto rounded-xl">
                     <DropdownMenuCheckboxItem
                         checked={selectedEmployeeIds.length === 0}
                         onCheckedChange={() => selectAllEmployees()}

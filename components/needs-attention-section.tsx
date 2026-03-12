@@ -26,9 +26,37 @@ export default function NeedsAttentionSection({ contributors }: { contributors: 
     const visible = showAll ? atRiskContributors : atRiskContributors.slice(0, INITIAL_SHOW);
     const hiddenCount = atRiskContributors.length - INITIAL_SHOW;
 
+    if (atRiskContributors.length === 0) {
+        return (
+            <Card className="border-none bg-transparent shadow-none w-full h-full flex flex-col p-4">
+                <CardHeader className="flex flex-row items-center gap-4 py-5 px-0 pb-6 shrink-0">
+                    <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-inner">
+                            <AlertCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />
+                        </div>
+                        <div>
+                            <CardTitle className="text-xl text-foreground tracking-tight">Needs Attention</CardTitle>
+                            <p className="text-sm text-muted-foreground mt-1 font-medium">Employees with low objective progress — sorted lowest first</p>
+                        </div>
+                    </div>
+                    <Badge variant="outline" className="bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-500/30 px-3 py-1 text-sm shadow-sm backdrop-blur-md">
+                        0 employees
+                    </Badge>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center justify-center flex-1 py-12 px-0 bg-transparent">
+                    <PartyPopper className="w-16 h-16 text-emerald-500 opacity-80" />
+                    <div className="text-center mt-4 space-y-1.5">
+                        <h4 className="text-emerald-500 font-bold text-lg">Everyone is On Track</h4>
+                        <p className="text-muted-foreground text-sm font-medium">No employees need attention right now</p>
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
-        <Card className="border-border/40 shadow-sm overflow-hidden h-full mt-8 bg-card/40 backdrop-blur-xl">
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 bg-muted/20 py-5">
+        <Card className="border-none bg-transparent shadow-none w-full flex flex-col h-full">
+            <CardHeader className="flex flex-row items-center gap-4 border-b border-border/40 bg-muted/20 py-5">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center shadow-inner">
                         <AlertCircle className="w-6 h-6 text-rose-600 dark:text-rose-400" />

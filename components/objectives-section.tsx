@@ -190,8 +190,8 @@ export default function ObjectivesSection({ objectives }: { objectives: Objectiv
     };
 
     return (
-        <Card className="border-border/40 shadow-sm overflow-hidden h-full mt-8 bg-card/40 backdrop-blur-xl">
-            <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-border/40 bg-muted/20 py-5">
+        <Card className="border-none bg-transparent shadow-none w-full">
+            <CardHeader className="flex flex-row items-center gap-4 border-b border-border/40 bg-muted/20 py-5">
                 <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner">
                         <Target className="w-6 h-6 text-primary" />
