@@ -275,22 +275,40 @@ export default function Dashboard() {
                   >
                     {overviewCardsData.map((stat, i) => {
                       const { Icon, colors } = stat;
+                      const glowBg = colors.iconBg.split('/')[0]; // Extract base background color for glow
+
                       return (
                         <Card 
                           key={i} 
-                          className={`w-[400px] h-[250px] p-8 flex flex-col justify-between rounded-3xl border-2 shadow-2xl backdrop-blur-xl ${colors.bg} ${colors.border}`}
+                          className="group relative overflow-hidden w-[400px] h-[250px] p-8 flex flex-col justify-between rounded-4xl border border-white/10 bg-zinc-950/80 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.7)] backdrop-blur-3xl"
                         >
-                          <div className="flex items-start justify-between">
-                            <span className="text-lg font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</span>
-                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-inner ${colors.iconBg} ${colors.icon}`}>
-                              <Icon className="w-6 h-6" />
+                          {/* Subtle Grid Background */}
+                          <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff08_1px,transparent_1px),linear-gradient(to_bottom,#ffffff08_1px,transparent_1px)] bg-size-[24px_24px] mask-[radial-gradient(ellipse_80%_60%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
+                          
+                          {/* Ambient Glows */}
+                          <div className={`absolute -top-24 -left-24 w-64 h-64 rounded-full blur-[80px] opacity-30 ${glowBg} pointer-events-none transition-opacity duration-500 group-hover:opacity-50`} />
+                          <div className={`absolute -bottom-24 -right-24 w-64 h-64 rounded-full blur-[80px] opacity-20 ${glowBg} pointer-events-none transition-opacity duration-500 group-hover:opacity-40`} />
+
+                          {/* Inner Border Refinement */}
+                          <div className="absolute inset-0 rounded-4xl border border-white/5 pointer-events-none mix-blend-overlay" />
+
+                          {/* Card Content */}
+                          <div className="relative z-10 flex items-start justify-between">
+                            <span className="text-lg font-bold text-white/80 uppercase tracking-widest drop-shadow-sm">{stat.label}</span>
+                            <div className={`relative w-14 h-14 rounded-2xl flex items-center justify-center border border-white/10 shadow-[inset_0_0_20px_rgba(255,255,255,0.05)] ${colors.iconBg} ${colors.icon} backdrop-blur-md overflow-hidden transition-transform duration-300 group-hover:scale-110`}>
+                              <div className={`absolute inset-0 opacity-20 ${glowBg}`} />
+                              <Icon className="w-7 h-7 relative z-10 drop-shadow-md" />
                             </div>
                           </div>
-                          <div>
-                            <div className={`text-7xl font-extrabold leading-none tracking-tighter mb-4 ${colors.value}`}>
+                          
+                          <div className="relative z-10">
+                            <div className={`text-7xl font-black leading-none tracking-tighter mb-4 ${colors.value} drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]`}>
                               {stat.value}
                             </div>
-                            <p className="text-base text-muted-foreground font-medium leading-snug">{stat.sub}</p>
+                            <div className="flex items-center gap-2.5">
+                              <div className={`w-2 h-2 rounded-full ${glowBg} shadow-[0_0_8px_currentColor] animate-pulse`} />
+                              <p className="text-base text-white/60 font-medium leading-snug tracking-wide">{stat.sub}</p>
+                            </div>
                           </div>
                         </Card>
                       );
@@ -343,7 +361,7 @@ export default function Dashboard() {
               <p className="text-muted-foreground mt-2 text-lg">Monitor momentum and surface coaching opportunities.</p>
             </div>
             
-            <div className="flex-shrink-0">
+            <div className="shrink-0">
               <FilterBar
                   sets={[]}
                   periods={[]}
@@ -362,7 +380,16 @@ export default function Dashboard() {
           <div className="flex flex-col gap-32">
             
             {/* ── Top Performers (HoloCard Leaderboard) ── */}
-            {contributors && contributors.length > 0 && (
+            {(() => {
+              const topContributors = contributors && contributors.length >= 3 
+                ? contributors.slice(0, 3) 
+                : [
+                    { fullName: "Sarah Connor", avgObjectiveProgress: 95.5, krCount: 8, checkInCount: 24, pictureURL: "/person1.jpg" },
+                    { fullName: "John Smith", avgObjectiveProgress: 88.2, krCount: 6, checkInCount: 18, pictureURL: "/person2.png" },
+                    { fullName: "Emily Chen", avgObjectiveProgress: 82.0, krCount: 5, checkInCount: 15, pictureURL: "/person3.png" }
+                  ] as ContributorSum[];
+
+              return (
               <section className="relative">
                 <div className="mb-16 flex flex-col items-center text-center">
                   <ScrollFloat textClassName="text-sm font-bold tracking-[0.2em] text-amber-500 uppercase mb-4">
@@ -383,13 +410,14 @@ export default function Dashboard() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12 max-w-6xl mx-auto px-4">
-                  {contributors.slice(0, 3).map((person, i) => {
+                  {topContributors.map((person, i) => {
                     const badges = ["🥇 Gold Tier", "🥈 Silver Tier", "🥉 Bronze Tier"];
                     const colors = ["#fbbf24", "#94a3b8", "#b45309"];
+                    const defaultImages = ["/person1.jpg", "/person2.png", "/person3.png"];
                     const aiPersonSummary = topPerformersSummary?.rankings?.[i]?.summary;
                     
                     return (
-                      <div key={person.fullName} className="w-full max-w-[320px] mx-auto">
+                      <div key={person.fullName || i} className="w-full max-w-[320px] mx-auto">
                         <HoloCard
                           branding={{}}
                           data={{
@@ -401,7 +429,7 @@ export default function Dashboard() {
                             secondaryInfo: `Check-ins: ${person.checkInCount}`,
                             overlayColor: colors[i] || "#ffffff",
                             overlayOpacity: 15,
-                            backgroundImage: person.pictureURL || `https://picsum.photos/seed/${person.fullName.replace(/\s+/g,'')}/400/600`
+                            backgroundImage: person.pictureURL || defaultImages[i] || `https://picsum.photos/seed/${person.fullName.replace(/\s+/g,'')}/400/600`
                           }}
                         />
                       </div>
@@ -409,7 +437,8 @@ export default function Dashboard() {
                   })}
                 </div>
               </section>
-            )}
+              );
+            })()}
 
             {/* ── Momentum / Period Comparison ── */}
             <section className="relative">
