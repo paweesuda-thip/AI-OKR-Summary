@@ -46,7 +46,7 @@ export default function PeriodComparisonSection({ comparison }: { comparison: Pe
                     className={`text-sm tracking-[0.3em] font-bold mb-4 ${healthStyles[overallHealth]}`}
                     speed={3} 
                 />
-                <h3 className="text-3xl md:text-5xl font-semibold tracking-tight text-foreground leading-tight">
+                <h3 className="text-2xl md:text-4xl font-semibold tracking-tight text-foreground leading-tight">
                     {avgProgressDelta >= 0
                         ? `Team improved by ${avgProgressDelta?.toFixed(1)}% compared to the previous cycle`
                         : `Team declined by ${Math.abs(avgProgressDelta)?.toFixed(1)}% from the previous cycle`}

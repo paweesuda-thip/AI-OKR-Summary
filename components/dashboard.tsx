@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Loader2, AlertCircle, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -33,38 +33,11 @@ import ClickSpark from "@/components/react-bits/ClickSpark";
 import apiService from "@/lib/services/api-service";
 import { Objective, ContributorSum, TeamSummary } from "@/lib/types/okr";
 
-const HERO_GALLERY_IMAGES = [
-  {
-    src: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80",
-    alt: "Team collaboration"
-  },
-  {
-    src: "https://images.unsplash.com/photo-1551281044-8b5bd36f7ea3?auto=format&fit=crop&w=1200&q=80",
-    alt: "Dashboard analytics"
-  },
-  {
-    src: "https://images.unsplash.com/photo-1552664730-d307ca884978?auto=format&fit=crop&w=1200&q=80",
-    alt: "Executive strategy meeting"
-  },
-  {
-    src: "https://images.unsplash.com/photo-1526628953301-3e589a6a8b74?auto=format&fit=crop&w=1200&q=80",
-    alt: "Product roadmap planning"
-  },
-  {
-    src: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=1200&q=80",
-    alt: "Business insights visualization"
-  },
-  {
-    src: "https://images.unsplash.com/photo-1553877522-43269d4ea984?auto=format&fit=crop&w=1200&q=80",
-    alt: "Performance review"
-  }
-];
-
 export default function Dashboard() {
-  const ASSESSMENT_SET_ID = 18892; // demo
-  const ORGANIZATION_ID = 0; // demo
-  // const ASSESSMENT_SET_ID = 185467; // prod
-  // const ORGANIZATION_ID = 18477; // prod
+  // const ASSESSMENT_SET_ID = 18892; // demo
+  // const ORGANIZATION_ID = 0; // demo
+  const ASSESSMENT_SET_ID = 185467; // prod
+  const ORGANIZATION_ID = 18477; // prod
 
   const [teamSummary, setTeamSummary] = useState<TeamSummary | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -136,6 +109,20 @@ export default function Dashboard() {
       value: teamSummary ? `${teamSummary.totalContributors}` : "--"
     }
   ];
+
+  const domeGalleryImages = useMemo(() => {
+    if (!contributors || contributors.length === 0) {
+      return Array.from({ length: 6 }).map((_, i) => ({
+        src: `https://api.dicebear.com/9.x/open-peeps/svg?seed=Felix${i}`,
+        alt: `Mock avatar ${i}`
+      }));
+    }
+    
+    return contributors.slice(0, 15).map(person => ({
+      src: person.pictureURL || `https://api.dicebear.com/9.x/open-peeps/svg?seed=${person.fullName.replace(/\s+/g,'')}`,
+      alt: person.fullName
+    }));
+  }, [contributors]);
 
   return (
     <ClickSpark
@@ -246,7 +233,7 @@ export default function Dashboard() {
 
           <div className="relative h-[280px] overflow-hidden rounded-3xl border border-border/30 bg-background/20 shadow-2xl ring-1 ring-white/5 sm:h-[340px]">
             <DomeGallery
-              images={HERO_GALLERY_IMAGES}
+              images={domeGalleryImages}
               fit={0.38}
               minRadius={540}
               maxRadius={760}
@@ -326,10 +313,10 @@ export default function Dashboard() {
                   <ScrollFloat textClassName="text-sm font-bold tracking-[0.2em] text-amber-500 uppercase mb-4">
                     Leaderboard
                   </ScrollFloat>
-                  <ScrollReveal textClassName="text-4xl md:text-5xl font-bold tracking-tight text-foreground">
+                  <ScrollReveal textClassName="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
                     Top Performers
                   </ScrollReveal>
-                  <p className="mt-6 text-muted-foreground max-w-2xl text-lg">
+                  <p className="mt-4 text-muted-foreground max-w-2xl text-base">
                     Recognizing the outstanding execution and consistent momentum of our leading contributors.
                   </p>
                   
@@ -349,6 +336,7 @@ export default function Dashboard() {
                     return (
                       <div key={person.fullName} className="w-full max-w-[320px] mx-auto">
                         <HoloCard
+                          branding={{}}
                           data={{
                             name: person.fullName,
                             subtitle: `${person.avgObjectiveProgress.toFixed(1)}% Avg Progress`,
