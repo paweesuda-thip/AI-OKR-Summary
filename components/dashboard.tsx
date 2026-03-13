@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { Loader2, AlertCircle, X, Sparkles } from "lucide-react";
+import { Loader2, AlertCircle, X, Sparkles, Target, CopyCheck, TrendingUp, Users, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -12,7 +12,6 @@ import {
   DrawerTrigger,
 } from "@/components/ui/drawer";
 
-import OverviewCards from "./overview-cards";
 import ObjectivesSection from "./objectives-section";
 import type { TopPerformersAISummary } from "./top-performers-section";
 import NeedsAttentionSection from "./needs-attention-section";
@@ -23,7 +22,7 @@ import AtRiskSection from "./at-risk-section";
 import PeriodComparisonSection from "./period-comparison-section";
 import TeamMembersSection from "./team-members-section";
 import ShinyText from "@/components/react-bits/ShinyText";
-import DomeGallery from "@/components/react-bits/DomeGallery";
+import CardSwap, { Card } from "@/components/react-bits/CardSwap";
 import MagicRings from "@/components/react-bits/MagicRings";
 import HoloCard from "@/components/gaia/holo-card";
 import ScrollReveal from "@/components/react-bits/ScrollReveal";
@@ -110,19 +109,51 @@ export default function Dashboard() {
     }
   ];
 
-  const domeGalleryImages = useMemo(() => {
-    if (!contributors || contributors.length === 0) {
-      return Array.from({ length: 6 }).map((_, i) => ({
-        src: `https://api.dicebear.com/9.x/open-peeps/svg?seed=Felix${i}`,
-        alt: `Mock avatar ${i}`
-      }));
-    }
-    
-    return contributors.slice(0, 15).map(person => ({
-      src: person.pictureURL || `https://api.dicebear.com/9.x/open-peeps/svg?seed=${person.fullName.replace(/\s+/g,'')}`,
-      alt: person.fullName
-    }));
-  }, [contributors]);
+  const overviewCardsData = useMemo(() => {
+    if (!teamSummary) return [];
+    return [
+      {
+        label: "Objectives",
+        value: `${teamSummary.completedObjectives}/${teamSummary.totalObjectives}`,
+        sub: `Completion rate ${teamSummary.objectiveCompletionRate?.toFixed(1)}%`,
+        colorKey: "indigo",
+        Icon: Target,
+        colors: { bg: 'bg-primary/5', border: 'border-primary/20', icon: 'text-primary', iconBg: 'bg-primary/10', value: 'text-primary' }
+      },
+      {
+        label: "Key Results",
+        value: `${teamSummary.completedKRs}/${teamSummary.totalKRs}`,
+        sub: `Completion rate ${teamSummary.krCompletionRate?.toFixed(1)}%`,
+        colorKey: "emerald",
+        Icon: CopyCheck,
+        colors: { bg: 'bg-emerald-500/5', border: 'border-emerald-500/20', icon: 'text-emerald-600 dark:text-emerald-400', iconBg: 'bg-emerald-500/10', value: 'text-emerald-600 dark:text-emerald-400' }
+      },
+      {
+        label: "Avg Progress",
+        value: `${teamSummary.avgObjectiveProgress?.toFixed(1)}%`,
+        sub: "Current cycle average",
+        colorKey: "amber",
+        Icon: TrendingUp,
+        colors: { bg: 'bg-amber-500/5', border: 'border-amber-500/20', icon: 'text-amber-600 dark:text-amber-400', iconBg: 'bg-amber-500/10', value: 'text-amber-600 dark:text-amber-400' }
+      },
+      {
+        label: "Contributors",
+        value: teamSummary.totalContributors,
+        sub: "Unique people with KR activity",
+        colorKey: "sky",
+        Icon: Users,
+        colors: { bg: 'bg-sky-500/5', border: 'border-sky-500/20', icon: 'text-sky-600 dark:text-sky-400', iconBg: 'bg-sky-500/10', value: 'text-sky-600 dark:text-sky-400' }
+      },
+      {
+        label: "On Track",
+        value: teamSummary.onTrackCount,
+        sub: `Out of ${teamSummary.totalObjectives} total objectives`,
+        colorKey: "rose",
+        Icon: CheckCircle2,
+        colors: { bg: 'bg-rose-500/5', border: 'border-rose-500/20', icon: 'text-rose-600 dark:text-rose-400', iconBg: 'bg-rose-500/10', value: 'text-rose-600 dark:text-rose-400' }
+      }
+    ];
+  }, [teamSummary]);
 
   return (
     <ClickSpark
@@ -231,18 +262,47 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="relative h-[280px] overflow-hidden rounded-3xl border border-border/30 bg-background/20 shadow-2xl ring-1 ring-white/5 sm:h-[340px]">
-            <DomeGallery
-              images={domeGalleryImages}
-              fit={0.38}
-              minRadius={540}
-              maxRadius={760}
-              overlayBlurColor="var(--color-background)"
-              maxVerticalRotationDeg={6}
-              dragSensitivity={24}
-              dragDampening={1.6}
-              grayscale={false}
-            />
+          <div className="relative h-[320px] sm:h-[420px] flex items-center justify-end w-full">
+            {overviewCardsData.length > 0 ? (
+              <div className="absolute -right-6 sm:-right-10 lg:-right-12 flex items-center justify-end scale-75 sm:scale-90 lg:scale-100 origin-right [&_.card-swap-container]:relative! [&_.card-swap-container]:transform-none! [&_.card-swap-container]:bottom-auto! [&_.card-swap-container]:right-auto!">
+                  <CardSwap
+                    pauseOnHover={true}
+                    cardDistance={50}
+                    verticalDistance={50}
+                    skewAmount={4}
+                    width={400}
+                    height={250}
+                  >
+                    {overviewCardsData.map((stat, i) => {
+                      const { Icon, colors } = stat;
+                      return (
+                        <Card 
+                          key={i} 
+                          className={`w-[400px] h-[250px] p-8 flex flex-col justify-between rounded-3xl border-2 shadow-2xl backdrop-blur-xl ${colors.bg} ${colors.border}`}
+                        >
+                          <div className="flex items-start justify-between">
+                            <span className="text-lg font-bold text-muted-foreground uppercase tracking-wider">{stat.label}</span>
+                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-inner ${colors.iconBg} ${colors.icon}`}>
+                              <Icon className="w-6 h-6" />
+                            </div>
+                          </div>
+                          <div>
+                            <div className={`text-7xl font-extrabold leading-none tracking-tighter mb-4 ${colors.value}`}>
+                              {stat.value}
+                            </div>
+                            <p className="text-base text-muted-foreground font-medium leading-snug">{stat.sub}</p>
+                          </div>
+                        </Card>
+                      );
+                    })}
+                  </CardSwap>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center w-full h-full text-muted-foreground gap-3">
+                <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
+                <p className="text-sm font-medium">Loading metrics...</p>
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -297,11 +357,6 @@ export default function Dashboard() {
               />
             </div>
           </div>
-
-          {/* ── Overview Metrics Strip ── */}
-          <section className="mb-20">
-            <OverviewCards summary={teamSummary} />
-          </section>
 
           {/* ── Main Layout: Landing Page Style ── */}
           <div className="flex flex-col gap-32">
