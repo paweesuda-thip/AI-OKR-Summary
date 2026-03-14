@@ -13,19 +13,21 @@ import "./holo-card.css";
 
 export interface HoloCardDisplayData {
 	/** Primary name displayed on the card */
-	name: string;
+	name: React.ReactNode;
 	/** Secondary text (e.g., personality phrase, tagline) */
-	subtitle?: string;
+	subtitle?: React.ReactNode;
 	/** Extended description shown on the back of the card */
-	description?: string;
+	description?: React.ReactNode;
 	/** Primary identifier (e.g., user number, ID) */
-	primaryId?: string | number;
+	primaryId?: React.ReactNode;
 	/** Secondary info (e.g., member since date) */
-	secondaryInfo?: string;
+	secondaryInfo?: React.ReactNode;
 	/** Background image URL */
 	backgroundImage?: string;
+	/** Person image URL (renders on top of background) */
+	personImage?: string;
 	/** Badge/tag text (e.g., house name, role) */
-	badge?: string;
+	badge?: React.ReactNode;
 	/** Overlay color for the card */
 	overlayColor?: string;
 	/** Overlay opacity (0-100) */
@@ -108,6 +110,7 @@ export const HoloCard = ({
 		primaryId,
 		secondaryInfo,
 		backgroundImage = DEFAULT_BACKGROUND,
+		personImage,
 		badge,
 		overlayColor,
 		overlayOpacity = 40,
@@ -250,7 +253,7 @@ export const HoloCard = ({
 	// Overlay component
 	const OverlayLayer = overlayColor ? (
 		<div
-			className="pointer-events-none absolute inset-0 z-[3]"
+			className="pointer-events-none absolute inset-0 z-3"
 			style={{
 				background: overlayColor,
 				mixBlendMode: "overlay",
@@ -259,9 +262,22 @@ export const HoloCard = ({
 		/>
 	) : null;
 
+	// Person Image
+	const PersonLayer = personImage ? (
+		<div className="absolute bottom-0 left-0 w-full h-full z-2 pointer-events-none overflow-hidden">
+			<Image
+				src={personImage}
+				alt={name as string}
+				fill
+				className="object-cover object-bottom"
+				priority
+			/>
+		</div>
+	) : null;
+
 	// Front card content
 	const FrontContent = (
-		<div className="pointer-events-none absolute z-[2] flex h-full w-full flex-col items-start justify-end p-3 text-white transition">
+		<div className="pointer-events-none absolute z-2 flex h-full w-full flex-col items-start justify-end p-3 text-white transition">
 			{/* Top bar with logo and badge */}
 			<div className="absolute top-4 left-0 flex w-full justify-between px-3">
 				{branding.logo && (
@@ -326,7 +342,7 @@ export const HoloCard = ({
 
 	// Back card content
 	const BackContent = (
-		<div className="pointer-events-none absolute z-[2] flex h-full w-full flex-col items-start justify-between p-3 text-white">
+		<div className="pointer-events-none absolute z-2 flex h-full w-full flex-col items-start justify-between p-3 text-white">
 			<div className="flex w-full flex-col gap-4">
 				{/* Top bar */}
 				<div className="flex items-center justify-between">
@@ -390,6 +406,7 @@ export const HoloCard = ({
 		if (isStatic || forceSide) {
 			return (
 				<div className="relative h-full w-full overflow-hidden rounded-2xl shadow-xl">
+					{PersonLayer}
 					{OverlayLayer}
 					{content}
 					<div ref={ref} className={holoCardClasses} style={holoCardStyle}>
@@ -401,6 +418,7 @@ export const HoloCard = ({
 
 		return (
 			<Tilt className="relative h-full w-full overflow-hidden rounded-2xl p-0! shadow-xl">
+				{PersonLayer}
 				{OverlayLayer}
 				{content}
 				<div

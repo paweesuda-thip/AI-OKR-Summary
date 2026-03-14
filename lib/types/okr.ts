@@ -106,3 +106,18 @@ export interface DashboardData {
     atRiskObjectives: Objective[];
     noCheckInEmployees: ContributorSum[];
 }
+
+export interface ParticipantDetailRaw {
+  seq: number;
+  employeeId: number;
+  fullName: string;
+  fullName_EN: string;
+  pictureURL: string;
+  pictureMediumURL: string;
+  pictureOriginalURL: string;
+  totalCheckInAll: number;
+  totalCheckIn: number;
+  totalMissCheckInAll: number;
+  totalMissCheckIn: number;
+  avgPercent: number;
+}

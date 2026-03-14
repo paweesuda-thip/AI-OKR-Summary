@@ -208,6 +208,34 @@ const apiService = {
             throw error;
         }
     },
+
+    /**
+     * POST /api/v1/goal-managements/participant-details
+     */
+    async getParticipantDetails(params: {
+        assessmentSetId: number,
+        organizationId: number,
+        dateStart?: string,
+        dateEnd?: string
+    }): Promise<import('../types/okr').ParticipantDetailRaw[]> {
+        try {
+            const response = await apiClient.post('/api/v1/goal-managements/participant-details', {
+                assessmentSetId: params.assessmentSetId,
+                organizationId: params.organizationId,
+                dateStart: params.dateStart,
+                dateEnd: params.dateEnd,
+            });
+
+            if (response.status === 204 || !response.data) {
+                return [];
+            }
+
+            return Array.isArray(response.data?.data) ? response.data.data : [];
+        } catch (error) {
+            console.error('Error fetching participant details:', error);
+            throw error;
+        }
+    },
 };
 
 export default apiService;
