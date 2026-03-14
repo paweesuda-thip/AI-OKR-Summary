@@ -1,120 +1,36 @@
-# OKR Dashboard with AI Summary
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-Dashboard สำหรับ Team Lead ในการดูภาพรวม OKR ของทีม และสรุปผลด้วย Gemini AI โดยอัตโนมัติ
+## Getting Started
 
-## Features
-
-- **ภาพรวมทีม** - แสดง Objectives, Key Results, ความคืบหน้า, และจำนวนสมาชิก
-- **รายละเอียด Objectives** - แสดงรายละเอียดแต่ละ Objective พร้อมผู้มีส่วนร่วม
-- **Top Performers** - แสดงผู้ที่มีผลงานดีที่สุด พร้อมคะแนนการมีส่วนร่วม
-- **Needs Attention** - แสดงสมาชิกที่ยังไม่ได้ check-in
-- **Objectives ที่มีความเสี่ยง** - แสดง Objectives ที่ต้องให้ความสำคัญ
-- **AI Summary** - สรุปผลด้วย Gemini AI พร้อม Q&A แบบ interactive
-
-## การติดตั้ง
-
-### 1. Clone โปรเจค
-
-```bash
-git clone <repo-url>
-cd AI-OKR-Summary
-```
-
-### 2. ติดตั้ง Dependencies
-
-```bash
-npm install
-```
-
-### 3. ตั้งค่า Environment Variables
-
-```bash
-cp .env.example .env
-```
-
-แก้ไขไฟล์ `.env`:
-
-```env
-# API Configuration
-VITE_API_BASE_URL=https://api.empeo.com
-VITE_API_KEY_EMPEO=your_empeo_api_key_here
-
-# Gemini AI Configuration
-VITE_GEMINI_API_KEY=your_gemini_api_key_here
-```
-
-**วิธีรับ Gemini API Key (ฟรี):**
-1. ไปที่ https://aistudio.google.com/app/apikey
-2. Login ด้วย Google Account
-3. คลิก "Create API Key"
-4. Copy API Key มาใส่ในไฟล์ `.env`
-
-### 4. รัน Development Server
+First, run the development server:
 
 ```bash
 npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
 ```
 
-เปิดเบราว์เซอร์ที่ http://localhost:4200
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-## วิธีใช้งาน
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-### 1. กรอก Filter
-- **Assessment Set ID**: ระบุ ID ของ Assessment Set
-- **Organization ID**: ระบุ Organization ID
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-### 2. กดปุ่ม "Fetch Data"
-ระบบจะดึงข้อมูลจาก Empeo API และแสดงผลใน Dashboard
+## Learn More
 
-### 3. ดูข้อมูลในแต่ละ Section
-- **Overview Cards** - ตัวเลขสรุปภาพรวม
-- **Objectives** - รายละเอียด Objectives แต่ละตัวพร้อม Key Results
-- **Top Performers** - สมาชิกที่มีผลงานดีที่สุด
-- **Needs Attention** - สมาชิกที่ยังไม่ได้ check-in
-- **At Risk** - Objectives ที่ progress ต่ำกว่าเกณฑ์
+To learn more about Next.js, take a look at the following resources:
 
-### 4. สร้าง AI Summary
-1. กดปุ่ม "Generate AI Summary" ในส่วน AI OKR Summary
-2. รอสักครู่ AI จะวิเคราะห์และสรุปผลให้
-3. ดูผลใน 3 tabs: Overview, Objectives, Action Plan
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
 
-**ถามคำถาม follow-up:**
-- พิมพ์คำถามในช่อง Q&A เช่น "Objective ไหนควรให้ความสำคัญมากที่สุด?"
-- กด Enter หรือปุ่ม Send
-- AI จะตอบตามข้อมูล OKR ที่โหลดมา
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Backend API
+## Deploy on Vercel
 
-Dashboard ใช้ endpoint เดียว:
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-```
-POST /api/v1/goal-managements/objective-summary
-Body: { assessmentSetId, organizationId }
-```
-
-Authentication ผ่าน header `X-API-KEY-EMPEO`
-
-## โครงสร้างโปรเจค
-
-```
-src/
-├── components/
-│   ├── Dashboard.jsx              # Main dashboard component
-│   ├── FilterBar.jsx              # Filter inputs
-│   ├── OverviewCards.jsx          # Summary stat cards
-│   ├── ObjectivesSection.jsx      # Objectives list
-│   ├── TopPerformersSection.jsx   # Top performers
-│   ├── NeedsAttentionSection.jsx  # Members without check-in
-│   ├── AtRiskSection.jsx          # At-risk objectives
-│   ├── TeamMembersSection.jsx     # All team members
-│   ├── PeriodComparisonSection.jsx
-│   ├── AISummaryPanel.jsx         # Gemini AI summary & Q&A
-│   └── APITestTool.jsx            # Dev tool for API testing
-├── services/
-│   ├── apiService.js              # Empeo API calls
-│   └── geminiService.js           # Gemini AI integration
-├── App.jsx
-├── main.jsx
-└── index.css
-```
-
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
