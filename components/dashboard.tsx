@@ -112,20 +112,26 @@ function ToonifiedHoloCard({
 
       setIsProcessing(true);
       try {
-        // Fetch image via server to bypass CORS, then remove background client-side
+        // 1. Fetch image via server proxy to bypass CORS
         const proxyRes = await fetch(`/api/toonify`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ imageUrl: defaultImage }),
         });
 
-        if (proxyRes.ok) {
-          const data = await proxyRes.json();
-          if (data.toonifiedUrl) {
-            saveToCache(defaultImage, data.toonifiedUrl);
-            setImageUrl(data.toonifiedUrl);
-          }
-        }
+        if (!proxyRes.ok) return;
+        const { imageData } = await proxyRes.json();
+        if (!imageData) return;
+
+        // 2. Remove background client-side with WASM (no server size limit)
+        const { removeBackground } = await import("@imgly/background-removal");
+        const resultBlob = await removeBackground(imageData);
+        const resultBuffer = await resultBlob.arrayBuffer();
+        const base64 = Buffer.from(resultBuffer).toString("base64");
+        const finalUrl = `data:image/png;base64,${base64}`;
+
+        saveToCache(defaultImage, finalUrl);
+        setImageUrl(finalUrl);
       } catch (err) {
         console.error("Failed to remove background:", err);
       } finally {
