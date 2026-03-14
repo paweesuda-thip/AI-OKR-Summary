@@ -121,10 +121,10 @@ function ToonifiedHoloCard({
           overlayOpacity: 15,
           personImage: imageUrl,
           backgroundImage: rank === 1 
-            ? "https://res.cloudinary.com/dmmpngwym/image/upload/v1773480700/task_01kkntwyeae9nbx37v8b509p5r_1773480638_img_0_zdermr.webp" // Epic Gold/Space
+            ? "https://res.cloudinary.com/dgfwfpxvg/image/upload/v1773484447/task_01kknyd0xef9mtj7vjq5sdyg95_1773484310_img_1_mryiox.webp" // Epic Gold/Space
             : rank === 2
-            ? "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=1200&auto=format&fit=crop" // Cool Blue/Silver Nebula
-            : "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?q=80&w=1200&auto=format&fit=crop", // Warm Bronze/Orange Space
+            ? "https://res.cloudinary.com/dgfwfpxvg/image/upload/v1773485533/task_01kknzfms2fr6axzb640re5myg_1773485445_img_1_spxmb5.webp" // Cool Blue/Silver Nebula
+            : "https://res.cloudinary.com/dgfwfpxvg/image/upload/v1773485067/task_01kknz33q6fdgvyw444zr4y9t2_1773485037_img_1_euvno9.webp", // Warm Bronze/Orange Space
         }}
       />
     </div>
@@ -601,15 +601,15 @@ export default function Dashboard() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto px-4">
                       {topContributors.map((person, i) => {
                         const badges = [
-                          <div key="gold" className="flex items-center gap-1">
+                          <div key="gold" className="flex items-center gap-1 font-sans">
                             <Crown className="w-4 h-4 text-amber-500" /> Gold
                             Tier
                           </div>,
-                          <div key="silver" className="flex items-center gap-1">
+                          <div key="silver" className="flex items-center gap-1 font-sans">
                             <Medal className="w-4 h-4 text-slate-400" /> Silver
                             Tier
                           </div>,
-                          <div key="bronze" className="flex items-center gap-1">
+                          <div key="bronze" className="flex items-center gap-1 font-sans">
                             <Award className="w-4 h-4 text-amber-700" /> Bronze
                             Tier
                           </div>,

@@ -292,7 +292,7 @@ export const HoloCard = ({
 					</div>
 				)}
 				{badge && (
-					<div className="rounded-full bg-white/20 p-1 px-4 font-serif text-xl font-light text-white/70 backdrop-blur-md">
+					<div className="rounded-full bg-white/20 p-1 px-4 font-sans text-xl font-light text-white/70 backdrop-blur-md">
 						{badge}
 					</div>
 				)}
@@ -310,18 +310,18 @@ export const HoloCard = ({
 
 			{/* Bottom info card */}
 			<div className="relative flex w-full flex-col gap-1 overflow-hidden rounded-2xl bg-black/20 p-3 backdrop-blur-md">
-				<div className="font-serif text-4xl font-bold text-white">{name}</div>
+				<div className="font-sans text-4xl font-bold text-white">{name}</div>
 				{subtitle && (
-					<div className="mb-10 font-light text-white italic">{subtitle}</div>
+					<div className="mb-10 font-sans font-light text-white italic">{subtitle}</div>
 				)}
 
 				<div className="flex w-full items-center justify-between">
 					<div className="flex flex-col items-start gap-1">
 						{primaryId && (
-							<span className="text-sm text-white/80">User {primaryId}</span>
+							<span className="font-sans text-sm text-white/80">User {primaryId}</span>
 						)}
 						{secondaryInfo && (
-							<span className="text-xs text-white/50">{secondaryInfo}</span>
+							<span className="font-sans text-xs text-white/50">{secondaryInfo}</span>
 						)}
 					</div>
 
@@ -358,7 +358,7 @@ export const HoloCard = ({
 						</div>
 					)}
 					{badge && (
-						<div className="rounded-full bg-white/20 p-1 px-3 font-serif text-xl font-light text-white/70 backdrop-blur-md">
+						<div className="rounded-full bg-white/20 p-1 px-3 font-sans text-xl font-light text-white/70 backdrop-blur-md">
 							{badge}
 						</div>
 					)}
@@ -366,16 +366,16 @@ export const HoloCard = ({
 
 				{/* Bio section */}
 				<div className="relative overflow-hidden rounded-2xl bg-black/20 p-4 backdrop-blur-md">
-					<div className="mb-2 font-serif text-2xl font-bold text-white">
+					<div className="mb-2 font-sans text-2xl font-bold text-white">
 						{name}
 					</div>
 					{subtitle && (
-						<div className="mb-4 text-sm font-light text-white/80 italic">
+						<div className="mb-4 font-sans text-sm font-light text-white/80 italic">
 							{subtitle}
 						</div>
 					)}
 					{description && (
-						<p className="text-sm text-white/80">{description}</p>
+						<p className="font-sans text-sm text-white/80">{description}</p>
 					)}
 				</div>
 			</div>
@@ -383,14 +383,14 @@ export const HoloCard = ({
 			{/* Bottom info */}
 			<div className="flex w-full items-center justify-between rounded-xl bg-black/20 p-3 backdrop-blur-md">
 				<div className="flex flex-col gap-1">
-					<span className="text-xs text-white/50">Member Since</span>
-					<span className="text-sm font-medium text-white/80">
+					<span className="font-sans text-xs text-white/50">Member Since</span>
+					<span className="font-sans text-sm font-medium text-white/80">
 						{secondaryInfo || "—"}
 					</span>
 				</div>
 				<div className="flex flex-col items-end gap-1">
-					<span className="text-xs text-white/50">User ID</span>
-					<span className="text-sm font-medium text-white/80">
+					<span className="font-sans text-xs text-white/50">User ID</span>
+					<span className="font-sans text-sm font-medium text-white/80">
 						{primaryId || "—"}
 					</span>
 				</div>
