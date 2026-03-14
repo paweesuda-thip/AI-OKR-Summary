@@ -39,7 +39,7 @@ import PeriodComparisonSection from "./period-comparison-section";
 import ShinyText from "@/components/react-bits/ShinyText";
 import CardSwap, { Card } from "@/components/react-bits/CardSwap";
 import MagicRings from "@/components/react-bits/MagicRings";
-import HoloCard from "@/components/gaia/holo-card";
+import { CheckInEngagement } from "@/components/check-in-engagement";
 import ClickSpark from "@/components/react-bits/ClickSpark";
 
 import apiService from "@/lib/services/api-service";
@@ -49,6 +49,7 @@ import {
   TeamSummary,
   ParticipantDetailRaw,
 } from "@/lib/types/okr";
+import HoloCard from "./gaia/holo-card";
 
 // Wrapper component to handle the toonify API call for each person
 function ToonifiedHoloCard({
@@ -636,6 +637,11 @@ export default function Dashboard() {
                   </section>
                 );
               })()}
+
+              {/* ── Check-In Engagement (Top/Bottom Check-ins) ── */}
+              <section className="relative max-w-7xl mx-auto w-full">
+                <CheckInEngagement participantDetails={participantDetails} />
+              </section>
 
               {/* ── Focus Areas (Unboxed) ── */}
               <section className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
