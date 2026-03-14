@@ -17,12 +17,14 @@ import {
 interface DatePickerWithRangeProps extends React.HTMLAttributes<HTMLDivElement> {
   date?: DateRange;
   setDate?: (date: DateRange | undefined) => void;
+  disabled?: boolean;
 }
 
 export function DatePickerWithRange({
   className,
   date,
   setDate,
+  disabled,
 }: DatePickerWithRangeProps) {
   const [isOpen, setIsOpen] = React.useState(false);
   const [tempDate, setTempDate] = React.useState<DateRange | undefined>(date);
@@ -54,6 +56,7 @@ export function DatePickerWithRange({
             "hover:bg-muted/50 text-foreground h-10 px-4 w-full sm:w-auto justify-between transition-all rounded-full border border-border/30 gap-2",
             !date && "text-muted-foreground",
           )}
+          disabled={disabled}
         >
           <div className="flex items-center gap-2">
             <CalendarIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />

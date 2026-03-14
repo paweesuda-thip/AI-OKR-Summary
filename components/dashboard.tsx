@@ -201,6 +201,7 @@ export default function Dashboard() {
     from: new Date(2026, 1, 12), // Feb 12, 2026
     to: new Date(2026, 2, 15), // Mar 15, 2026
   });
+  const [isOverall, setIsOverall] = useState(false);
 
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
@@ -209,20 +210,21 @@ export default function Dashboard() {
     setError("");
 
     try {
+      const dateStart = (!isOverall && dateRange?.from) ? format(dateRange.from, "yyyy-MM-dd") : undefined;
+      const dateEnd = (!isOverall && dateRange?.to) ? format(dateRange.to, "yyyy-MM-dd") : undefined;
+
       const [result, participantResult] = await Promise.all([
         apiService.getOKRTeamDashboard({
           assessmentSetId: ASSESSMENT_SET_ID,
           organizationId: ORGANIZATION_ID,
+          dateStart,
+          dateEnd,
         }),
         apiService.getParticipantDetails({
           assessmentSetId: ASSESSMENT_SET_ID,
           organizationId: ORGANIZATION_ID,
-          dateStart: dateRange?.from
-            ? format(dateRange.from, "yyyy-MM-dd")
-            : undefined,
-          dateEnd: dateRange?.to
-            ? format(dateRange.to, "yyyy-MM-dd")
-            : undefined,
+          dateStart,
+          dateEnd,
         }),
       ]);
 
@@ -245,7 +247,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange]);
+  }, [dateRange, isOverall]);
 
   useEffect(() => {
     fetchDashboard();
@@ -596,6 +598,8 @@ export default function Dashboard() {
                 <FilterBar
                   dateRange={dateRange}
                   setDateRange={setDateRange}
+                  isOverall={isOverall}
+                  setIsOverall={setIsOverall}
                 />
               </div>
             </div>
@@ -605,6 +609,7 @@ export default function Dashboard() {
               <OverviewCards
                 summary={teamSummary}
                 participantDetails={participantDetails}
+                objectives={objectives}
               />
             </section>
 
