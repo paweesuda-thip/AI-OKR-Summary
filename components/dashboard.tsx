@@ -51,7 +51,7 @@ import {
 } from "@/lib/types/okr";
 import HoloCard from "./gaia/holo-card";
 
-// Wrapper component to handle the toonify API call for each person
+// Wrapper component to handle background removal for each person
 function ToonifiedHoloCard({
   person,
   rank,
@@ -71,24 +71,63 @@ function ToonifiedHoloCard({
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
+    const CACHE_PREFIX = "bg_removed_v1_";
+
+    function getCacheKey(url: string) {
+      // Simple hash to avoid key collision on similar URLs
+      let hash = 0;
+      for (let i = 0; i < url.length; i++) {
+        hash = ((hash << 5) - hash) + url.charCodeAt(i);
+        hash = hash & hash;
+      }
+      return CACHE_PREFIX + Math.abs(hash).toString(36);
+    }
+
+    function loadFromCache(url: string): string | null {
+      try { return localStorage.getItem(getCacheKey(url)); }
+      catch { return null; }
+    }
+
+    function saveToCache(url: string, base64: string) {
+      try {
+        localStorage.setItem(getCacheKey(url), base64);
+      } catch {
+        // localStorage full — evict old bg cache and retry
+        Object.keys(localStorage)
+          .filter(k => k.startsWith(CACHE_PREFIX))
+          .forEach(k => localStorage.removeItem(k));
+        try { localStorage.setItem(getCacheKey(url), base64); } catch { /* ignore */ }
+      }
+    }
+
     async function processImage() {
       if (!defaultImage) return;
+
+      // ✅ Cache hit — same top performer as before, skip generation
+      const cached = loadFromCache(defaultImage);
+      if (cached) {
+        setImageUrl(cached);
+        return;
+      }
+
       setIsProcessing(true);
       try {
-        const response = await fetch("/api/toonify", {
+        // Fetch image via server to bypass CORS, then remove background client-side
+        const proxyRes = await fetch(`/api/toonify`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ imageUrl: defaultImage }),
         });
 
-        if (response.ok) {
-          const data = await response.json();
+        if (proxyRes.ok) {
+          const data = await proxyRes.json();
           if (data.toonifiedUrl) {
+            saveToCache(defaultImage, data.toonifiedUrl);
             setImageUrl(data.toonifiedUrl);
           }
         }
       } catch (err) {
-        console.error("Failed to toonify image:", err);
+        console.error("Failed to remove background:", err);
       } finally {
         setIsProcessing(false);
       }
@@ -121,11 +160,11 @@ function ToonifiedHoloCard({
           overlayColor: color || "#ffffff",
           overlayOpacity: 15,
           personImage: imageUrl,
-          backgroundImage: rank === 1 
-            ? "https://res.cloudinary.com/dgfwfpxvg/image/upload/v1773484447/task_01kknyd0xef9mtj7vjq5sdyg95_1773484310_img_1_mryiox.webp" // Epic Gold/Space
+          backgroundImage: rank === 1
+            ? "/top1-2.png" // Epic Gold/Space
             : rank === 2
-            ? "https://res.cloudinary.com/dgfwfpxvg/image/upload/v1773485533/task_01kknzfms2fr6axzb640re5myg_1773485445_img_1_spxmb5.webp" // Cool Blue/Silver Nebula
-            : "https://res.cloudinary.com/dgfwfpxvg/image/upload/v1773485067/task_01kknz33q6fdgvyw444zr4y9t2_1773485037_img_1_euvno9.webp", // Warm Bronze/Orange Space
+            ? "/top2-2.png" // Cool Blue/Silver Nebula
+            : "/top3-2.png", // Warm Bronze/Orange Space
         }}
       />
     </div>
@@ -599,40 +638,57 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto px-4">
-                      {topContributors.map((person, i) => {
+                    <div className="flex flex-col md:grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto px-4 md:items-end">
+                      {(() => {
                         const badges = [
-                          <div key="gold" className="flex items-center gap-1 font-sans">
-                            <Crown className="w-4 h-4 text-amber-500" /> Gold
-                            Tier
+                          <div key="gold" className="flex items-center gap-1 font-sans font-bold text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                            <Crown className="w-4 h-4 text-amber-300 drop-shadow" /> Gold Tier
                           </div>,
-                          <div key="silver" className="flex items-center gap-1 font-sans">
-                            <Medal className="w-4 h-4 text-slate-400" /> Silver
-                            Tier
+                          <div key="silver" className="flex items-center gap-1 font-sans font-bold text-slate-200 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                            <Medal className="w-4 h-4 text-slate-200 drop-shadow" /> Silver Tier
                           </div>,
-                          <div key="bronze" className="flex items-center gap-1 font-sans">
-                            <Award className="w-4 h-4 text-amber-700" /> Bronze
-                            Tier
+                          <div key="bronze" className="flex items-center gap-1 font-sans font-bold text-orange-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
+                            <Award className="w-4 h-4 text-orange-300 drop-shadow" /> Bronze Tier
                           </div>,
                         ];
                         const colors = ["#fbbf24", "#94a3b8", "#b45309"];
-                        const aiPersonSummary =
-                          topPerformersSummary?.rankings?.[i]?.summary;
-
-                        return (
-                          <ToonifiedHoloCard
-                            key={person.employeeId || i}
-                            person={person}
-                            rank={person.seq}
-                            color={colors[i]}
-                            badge={badges[i]}
-                            defaultImage={
-                              person.pictureMediumURL || person.pictureURL
-                            }
-                            aiSummary={aiPersonSummary}
-                          />
-                        );
-                      })}
+                        // Podium order: 2nd left, 1st center, 3rd right
+                        return [1, 0, 2].map((origIndex) => {
+                          const p = topContributors[origIndex];
+                          if (!p) return null;
+                          const isFirst = origIndex === 0;
+                          const aiPersonSummary = topPerformersSummary?.rankings?.[origIndex]?.summary;
+                          return (
+                            <div
+                              key={p.employeeId || origIndex}
+                              className={
+                                origIndex === 0
+                                  // Gold: mobile=1st, desktop=center(2nd)
+                                  ? "order-1 md:order-2 flex flex-col items-center md:scale-[1.1] md:z-10 relative"
+                                  : origIndex === 1
+                                  // Silver: mobile=2nd, desktop=left(1st)
+                                  ? "order-2 md:order-1 flex flex-col items-center md:mt-10 md:opacity-90"
+                                  // Bronze: mobile=3rd, desktop=right(3rd)
+                                  : "order-3 md:order-3 flex flex-col items-center md:mt-10 md:opacity-90"
+                              }
+                            >
+                              {isFirst && (
+                                <div className="mb-2 text-amber-400 font-bold text-sm tracking-widest uppercase drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
+                                  ★ #1 Champion ★
+                                </div>
+                              )}
+                              <ToonifiedHoloCard
+                                person={p}
+                                rank={p.seq}
+                                color={colors[origIndex]}
+                                badge={badges[origIndex]}
+                                defaultImage={p.pictureMediumURL || p.pictureURL}
+                                aiSummary={aiPersonSummary}
+                              />
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
                   </section>
                 );

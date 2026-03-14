@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, FlaskConical, Sparkles } from "lucide-react";
+import { LayoutDashboard, Sparkles } from "lucide-react";
 import ShinyText from "@/components/react-bits/ShinyText";
 import { ModeToggle } from "@/components/mode-toggle";
 
@@ -45,18 +45,6 @@ export default function NavBar() {
                     >
                         <LayoutDashboard className="h-4 w-4" />
                         <span className="hidden sm:inline">Dashboard</span>
-                    </Link>
-                    <Link
-                        href="/test"
-                        className={cn(
-                            "flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-300",
-                            pathname === "/test"
-                                ? "bg-white/15 text-white shadow-[0_2px_8px_rgba(0,0,0,0.1),inset_0_1px_1px_rgba(255,255,255,0.15)]"
-                                : "text-white/60 hover:bg-white/5 hover:text-white"
-                        )}
-                    >
-                        <FlaskConical className="h-4 w-4" />
-                        <span className="hidden sm:inline">API Test</span>
                     </Link>
                 </nav>
 
