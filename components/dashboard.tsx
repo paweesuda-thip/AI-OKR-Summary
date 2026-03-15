@@ -299,13 +299,13 @@ export default function Dashboard() {
                         return (
                           <div 
                             key={p.employeeId || origIndex} 
-                            className={`flex flex-col w-full md:w-1/3 ${
+                            className={`flex flex-col w-full md:w-1/3 overflow-hidden ${
                               isFirst ? 'order-1 md:order-2 md:-translate-y-6 z-10' : 
                               origIndex === 1 ? 'order-2 md:order-1' : 
                               'order-3 md:order-3'
                             }`}
                           >
-                            <div className={`relative group w-full ${isFirst ? 'h-[320px]' : 'h-[280px]'}`}>
+                            <div className={`relative group w-full overflow-hidden ${isFirst ? 'h-[320px]' : 'h-[280px]'}`}>
                               {/* Card Border Container */}
                               <div className={`absolute inset-0 border border-border/40 dark:border-border/60 bg-background/40 backdrop-blur-md transition-colors duration-300 rounded-2xl ${isFirst ? 'shadow-lg ring-1 ring-black/5 dark:ring-white/10' : 'shadow-md'}`}>
                                 {/* Watermark Number */}
