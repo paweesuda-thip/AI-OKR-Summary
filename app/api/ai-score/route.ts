@@ -21,6 +21,7 @@ const normalizeAIScoreResponse = (payload: unknown): AIScoreResponse | null => {
 
   if (typeof scoreValue !== 'number' || !Number.isFinite(scoreValue) || !reviewValue) {
     return null;
+    
   }
 
   return {
