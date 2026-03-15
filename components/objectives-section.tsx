@@ -118,40 +118,39 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                         </div>
                     </SpotlightCard>
             </DialogTrigger>
-            <DialogContent className="max-w-4xl bg-card/95 backdrop-blur-3xl border-border/50 shadow-2xl max-h-[90vh] flex flex-col overflow-hidden rounded-4xl">
-                <DialogHeader className="px-6 py-6 pb-2 shrink-0">
-                    <div className="flex items-center justify-between gap-4 mb-2">
-                        <div className="flex items-center gap-3">
-                            <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${st.bg} ${st.color}`}>
-                                <TargetIcon className="w-6 h-6" />
+            <DialogContent className="w-[95vw] sm:max-w-[95vw] md:max-w-5xl lg:max-w-7xl h-[90vh] bg-card/95 backdrop-blur-3xl border-border/50 shadow-2xl flex flex-col overflow-hidden rounded-4xl p-0">
+                <div className="flex flex-col lg:flex-row h-full">
+                    {/* Left Column - Header & Overall Progress */}
+                    <div className="flex flex-col w-full lg:w-1/3 bg-background/50 border-r border-border/30 p-6 shrink-0 lg:overflow-y-auto">
+                        <DialogHeader className="pb-6 mb-6 border-b border-border/30">
+                            <div className="flex items-center gap-3 mb-4">
+                                <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-inner ${st.bg} ${st.color}`}>
+                                    <TargetIcon className="w-6 h-6" />
+                                </div>
+                                <div>
+                                    <Badge variant="outline" className={`px-3 py-1 font-bold tracking-wider uppercase text-[10px] mb-1 ${st.badgeBg}`}>
+                                        {obj.status}
+                                    </Badge>
+                                </div>
                             </div>
-                            <div>
-                                <Badge variant="outline" className={`px-3 py-1 font-bold tracking-wider uppercase text-[10px] mb-1 ${st.badgeBg}`}>
-                                    {obj.status}
-                                </Badge>
-                                <DialogTitle className="text-2xl font-bold text-foreground leading-tight tracking-tight">
-                                    {obj.objectiveName}
-                                </DialogTitle>
-                            </div>
-                        </div>
-                    </div>
-                    <DialogDescription className="text-base text-muted-foreground flex items-center gap-6 mt-4">
-                        <span className="flex items-center gap-2">
-                            <Users className="w-4 h-4" /> {contributors.length} Participants
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <TargetIcon className="w-4 h-4" /> {totalCount} Key Results
-                        </span>
-                        <span className="flex items-center gap-2">
-                            <Activity className="w-4 h-4" /> {(obj.subObjectives || []).length} Sub-Objectives
-                        </span>
-                    </DialogDescription>
-                </DialogHeader>
+                            <DialogTitle className="text-2xl font-bold text-foreground leading-tight tracking-tight text-left">
+                                {obj.objectiveName}
+                            </DialogTitle>
+                            <DialogDescription className="text-sm text-muted-foreground flex flex-col gap-3 mt-6 text-left">
+                                <span className="flex items-center gap-2">
+                                    <Users className="w-4 h-4" /> {contributors.length} Participants
+                                </span>
+                                <span className="flex items-center gap-2">
+                                    <TargetIcon className="w-4 h-4" /> {totalCount} Key Results
+                                </span>
+                                <span className="flex items-center gap-2">
+                                    <Activity className="w-4 h-4" /> {(obj.subObjectives || []).length} Sub-Objectives
+                                </span>
+                            </DialogDescription>
+                        </DialogHeader>
 
-                <ScrollArea className="flex-1 px-6 pb-6">
-                    <div className="space-y-8 mt-6">
                         {/* Overall Progress inside modal */}
-                        <div className="bg-background/40 border border-border/30 rounded-3xl p-6 shadow-sm">
+                        <div className="bg-background/80 border border-border/40 rounded-3xl p-6 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-lg font-bold text-foreground flex items-center gap-2">
                                     <Percent className="w-5 h-5 text-primary" /> Overall Progress
@@ -167,73 +166,77 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                 />
                             </div>
                         </div>
+                    </div>
 
-                        {/* Sub-Objectives List */}
+                    {/* Right Column - Sub-Objectives List */}
+                    <ScrollArea className="flex-1 p-6 h-full bg-background/20">
                         <div className="space-y-6">
-                            <h4 className="text-xl font-bold text-foreground">Sub-Objectives Breakdown</h4>
+                            <h4 className="text-xl font-bold text-foreground mb-6 sticky top-0 bg-card/95 backdrop-blur-sm z-10 py-2">Sub-Objectives Breakdown</h4>
                             
-                            {(obj.subObjectives || []).map((sub, idx) => {
-                                const subSt = statusConfig[sub.status] || statusConfig['On Track'];
+                            <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                                {(obj.subObjectives || []).map((sub, idx) => {
+                                    const subSt = statusConfig[sub.status] || statusConfig['On Track'];
 
-                                return (
-                                    <div key={sub.objectiveId || idx} className="bg-card/50 border border-border/40 rounded-4xl p-6 flex flex-col gap-4 shadow-sm hover:border-primary/20 transition-colors">
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
-                                                    <span className={`w-2 h-2 rounded-full ${subSt.dot}`} />
-                                                    <span className={`text-xs font-bold uppercase tracking-widest ${subSt.color}`}>{sub.status}</span>
-                                                    {sub.objectiveOwnerType === 2 && (
-                                                        <Badge variant="outline" className="text-[10px] ml-2">Personal</Badge>
+                                    return (
+                                        <div key={sub.objectiveId || idx} className="bg-card/50 border border-border/40 rounded-3xl p-5 flex flex-col gap-4 shadow-sm hover:border-primary/20 transition-colors">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex-1">
+                                                    <div className="flex items-center gap-2 mb-2">
+                                                        <span className={`w-2 h-2 rounded-full ${subSt.dot}`} />
+                                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${subSt.color}`}>{sub.status}</span>
+                                                        {sub.objectiveOwnerType === 2 && (
+                                                            <Badge variant="outline" className="text-[10px] ml-2 py-0 h-4">Personal</Badge>
+                                                        )}
+                                                    </div>
+                                                    <h5 className="text-sm font-bold text-foreground leading-snug line-clamp-2" title={sub.title}>{sub.title}</h5>
+                                                </div>
+                                                <div className="text-right shrink-0">
+                                                    <div className="text-xl font-black tabular-nums text-foreground">{sub.progress?.toFixed(0)}%</div>
+                                                    {sub.progressUpdate > 0 && (
+                                                        <div className="text-[10px] font-semibold text-emerald-500 flex items-center justify-end gap-1">
+                                                            <TrendingUp className="w-3 h-3" /> +{sub.progressUpdate?.toFixed(1)}%
+                                                        </div>
                                                     )}
                                                 </div>
-                                                <h5 className="text-lg font-bold text-foreground leading-snug">{sub.title}</h5>
                                             </div>
-                                            <div className="text-right shrink-0">
-                                                <div className="text-2xl font-black tabular-nums text-foreground">{sub.progress?.toFixed(0)}%</div>
-                                                {sub.progressUpdate > 0 && (
-                                                    <div className="text-xs font-semibold text-emerald-500 flex items-center justify-end gap-1">
-                                                        <TrendingUp className="w-3 h-3" /> +{sub.progressUpdate?.toFixed(1)}% in period
+
+                                            <div className="h-1.5 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden w-full">
+                                                <div
+                                                    className={`h-full ${subSt.barColor} rounded-full`}
+                                                    style={{ width: `${Math.min(sub.progress || 0, 100)}%` }}
+                                                />
+                                            </div>
+
+                                            {sub.details && sub.details.length > 0 && (
+                                                <div className="mt-2 pt-3 border-t border-border/20">
+                                                    <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                                        <Users className="w-3 h-3" /> KRs ({sub.details.length})
+                                                    </p>
+                                                    <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
+                                                        {sub.details.map((kr, i) => (
+                                                            <div key={i} className="flex items-center gap-2 bg-background/50 p-2 rounded-xl border border-border/30">
+                                                                <Avatar className="w-6 h-6 border shadow-sm shrink-0">
+                                                                    <AvatarImage src={kr.pictureURL} />
+                                                                    <AvatarFallback className="text-[8px]">{kr.fullName?.charAt(0)}</AvatarFallback>
+                                                                </Avatar>
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-[11px] font-bold text-foreground truncate">{kr.fullName}</p>
+                                                                    <p className="text-[9px] text-muted-foreground truncate">{kr.krTitle}</p>
+                                                                </div>
+                                                                <div className="shrink-0 text-right">
+                                                                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded border ${kr.isDone ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted border-border/50 text-foreground'}`}>
+                                                                        {kr.isDone ? 'Done' : `${kr.krProgress}%`}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        ))}
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="h-2 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden w-full">
-                                            <div
-                                                className={`h-full ${subSt.barColor} rounded-full`}
-                                                style={{ width: `${Math.min(sub.progress || 0, 100)}%` }}
-                                            />
-                                        </div>
-
-                                        {sub.details && sub.details.length > 0 && (
-                                            <div className="mt-4 pt-4 border-t border-border/20">
-                                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
-                                                    <Users className="w-3 h-3" /> Participants & Key Results ({sub.details.length})
-                                                </p>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                    {sub.details.map((kr, i) => (
-                                                        <div key={i} className="flex items-center gap-3 bg-background/50 p-3 rounded-xl border border-border/30">
-                                                            <Avatar className="w-8 h-8 border shadow-sm">
-                                                                <AvatarImage src={kr.pictureURL} />
-                                                                <AvatarFallback className="text-[10px]">{kr.fullName?.charAt(0)}</AvatarFallback>
-                                                            </Avatar>
-                                                            <div className="flex-1 min-w-0">
-                                                                <p className="text-xs font-bold text-foreground truncate">{kr.fullName}</p>
-                                                                <p className="text-[10px] text-muted-foreground truncate">{kr.krTitle}</p>
-                                                            </div>
-                                                            <div className="shrink-0 text-right">
-                                                                <span className={`text-xs font-bold px-2 py-0.5 rounded border ${kr.isDone ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' : 'bg-muted border-border/50 text-foreground'}`}>
-                                                                    {kr.isDone ? 'Done' : `${kr.krProgress}%`}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    ))}
                                                 </div>
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            })}
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
 
                             {(!obj.subObjectives || obj.subObjectives.length === 0) && obj.details && obj.details.length > 0 && (
                                 <div className="bg-card/50 border border-border/40 rounded-4xl p-6 shadow-sm">
@@ -260,8 +263,8 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                 </div>
                             )}
                         </div>
-                    </div>
-                </ScrollArea>
+                    </ScrollArea>
+                </div>
             </DialogContent>
         </Dialog>
     );

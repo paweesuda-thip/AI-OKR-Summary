@@ -14,13 +14,13 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -30,10 +30,12 @@ import ObjectivesSection from "./objectives-section";
 import type { TopPerformersAISummary } from "./top-performers-section";
 import NeedsAttentionSection from "./needs-attention-section";
 import AISummaryPanel from "./ai-summary-panel";
+import { SimpleChatbot } from "./ai-element/simple-chatbot";
 import FilterBar from "./filter-bar";
 import AtRiskSection from "./at-risk-section";
 import PeriodComparisonSection from "./period-comparison-section";
 import ShinyText from "@/components/react-bits/ShinyText";
+import LightRays from "@/components/react-bits/LightRays";
 import CardSwap, { Card } from "@/components/react-bits/CardSwap";
 import MagicRings from "@/components/react-bits/MagicRings";
 import { CheckInEngagement } from "@/components/check-in-engagement";
@@ -335,52 +337,71 @@ export default function Dashboard() {
                   Refresh Dashboard
                 </Button>
 
-                {/* Trigger Drawer for AI Summary */}
-                <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
-                  <DrawerTrigger asChild>
+                {/* Trigger Dialog for AI Summary / Chat */}
+                <Dialog open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
+                  <DialogTrigger render={
                     <Button className="rounded-full px-6 py-5 text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 gap-2">
                       <Sparkles className="w-4 h-4" />
-                      Open AI Summary
+                      Open AI Intelligence
                     </Button>
-                  </DrawerTrigger>
-                  <DrawerContent className="h-[90vh] bg-background/95 backdrop-blur-3xl border-border/50">
-                    <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
-                      <DrawerHeader className="shrink-0 text-center sm:text-left">
-                        <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-2">
-                          <Sparkles className="w-6 h-6 text-primary" />
-                          AI OKR Intelligence
-                        </DrawerTitle>
-                        <DrawerDescription>
-                          Deep dive into strategic insights, team performance
-                          patterns, and actionable recommendations.
-                        </DrawerDescription>
-                      </DrawerHeader>
-                      <div className="flex-1 overflow-y-auto mt-4 pr-2 relative">
-                        {/* Magic Rings subtle background glow inside drawer */}
-                        <div className="pointer-events-none fixed inset-0 z-0 opacity-20 dark:opacity-30 blur-xl">
-                          <MagicRings
-                            color="#7c3aed"
-                            colorTwo="#06b6d4"
-                            speed={0.3}
-                            ringCount={3}
-                            attenuation={20}
-                            lineThickness={2}
-                            baseRadius={0.4}
-                            opacity={0.5}
-                            followMouse={false}
-                          />
-                        </div>
-                        <div className="relative z-10 h-full">
+                  } />
+                  <DialogContent className="max-w-[95vw] sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-[85vw] xl:max-w-[1400px] w-full h-[95vh] p-0 gap-0 border-border/50 bg-background/95 backdrop-blur-3xl overflow-hidden rounded-2xl flex flex-col">
+                    <DialogHeader className="p-4 sm:p-6 border-b border-border/40 shrink-0 bg-background/50 backdrop-blur-xl relative z-10">
+                      <DialogTitle className="text-2xl flex items-center gap-2">
+                        <Sparkles className="w-6 h-6 text-primary animate-pulse" />
+                        <ShinyText
+                          text="AI OKR Intelligence"
+                          disabled={false}
+                          speed={3}
+                          color="var(--color-muted-foreground)"
+                          shineColor="var(--color-foreground)"
+                        />
+                      </DialogTitle>
+                      <DialogDescription>
+                        Analyze your execution rhythm, summarize performance, or ask questions directly.
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="flex-1 flex overflow-hidden relative">
+                      {/* Magic Rings subtle background glow inside dialog */}
+                      <div className="pointer-events-none absolute inset-0 z-0 opacity-20 dark:opacity-30 blur-2xl">
+                        <MagicRings
+                          color="#7c3aed"
+                          colorTwo="#06b6d4"
+                          speed={0.2}
+                          ringCount={2}
+                          attenuation={30}
+                          lineThickness={1}
+                          baseRadius={0.6}
+                          opacity={0.3}
+                          followMouse={false}
+                        />
+                      </div>
+                      
+                      {/* Main split view: Left (Summary panel), Right (Chat) */}
+                      <div className="flex w-full h-full relative z-10 divide-x divide-border/30">
+                        {/* Summary side (hidden on small screens, expands) */}
+                        <div className="hidden lg:flex lg:w-5/12 xl:w-1/3 flex-col h-full overflow-y-auto custom-scrollbar p-6 bg-background/20">
                           <AISummaryPanel
                             dashboardData={dashboardData}
                             onTopPerformersSummary={setTopPerformersSummary}
-                            forceOpen={true} // Optional prop we'll pass to force it open
+                            forceOpen={true}
                           />
+                        </div>
+                        
+                        {/* Chat side */}
+                        <div className="flex-1 flex flex-col h-full relative w-full lg:w-7/12 xl:w-2/3 bg-background/40">
+                          {/* We wrap ChatbotDemo in a relative container so its 'fixed inset-0' classes don't break our layout if we adapt it.
+                              Note: Since ChatbotDemo has 'fixed inset-0', we need to override that or ensure it fits inside this container. 
+                              For this component, we will adjust ChatbotDemo later to not use fixed inset-0, but for now we mount it. */}
+                           <div className="absolute inset-0">
+                             <SimpleChatbot />
+                           </div>
                         </div>
                       </div>
                     </div>
-                  </DrawerContent>
-                </Drawer>
+                  </DialogContent>
+                </Dialog>
 
                 <p className="text-xs font-medium text-muted-foreground/70 sm:text-sm">
                   Live sync from latest check-ins.
@@ -542,28 +563,30 @@ export default function Dashboard() {
 
                 return (
                   <section className="relative">
-                    <div className="mb-16 flex flex-col items-center text-center relative z-20">
-                      {/* Ethereal Glow */}
-                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-32 bg-primary/10 blur-[80px] rounded-full pointer-events-none -z-10" />
+                    <div className="mb-8 flex flex-col items-center text-center relative z-20 pt-6 pb-8">
+                      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border/50 bg-background/50 backdrop-blur-md mb-8 shadow-sm">
+                        <Sparkles className="w-4 h-4 text-primary" />
+                        <span className="text-[11px] font-bold tracking-widest uppercase text-foreground">Hall of Fame</span>
+                      </div>
 
-                      <div className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tighter mb-4 capitalize">
+                      <div className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-6 capitalize leading-none">
                         <ShinyText 
                           text="Top Performers" 
                           disabled={false} 
                           speed={3} 
-                          color="rgba(255,255,255,0.3)" 
+                          color="rgba(255,255,255,0.4)" 
                           shineColor="#ffffff" 
                         />
                       </div>
 
                       {topPerformersSummary?.teamSummary && (
-                        <div className="mt-4 text-muted-foreground/70 text-sm md:text-base max-w-2xl px-6 font-mono font-medium tracking-wide">
-                          <p>&gt; {topPerformersSummary.teamSummary}</p>
+                        <div className="mt-6 text-muted-foreground text-lg md:text-xl max-w-3xl px-6 font-medium leading-relaxed">
+                          {topPerformersSummary.teamSummary}
                         </div>
                       )}
                     </div>
 
-                    <div className="flex flex-col md:flex-row justify-center items-end gap-4 max-w-5xl mx-auto px-4 mt-16">
+                    <div className="flex flex-col md:flex-row justify-center items-end gap-4 max-w-5xl mx-auto px-4 mt-8">
                       {(() => {
                         // Order: 2nd, 1st, 3rd for podium layout
                         return [1, 0, 2].map((origIndex) => {

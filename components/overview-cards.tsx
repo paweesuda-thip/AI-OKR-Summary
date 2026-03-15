@@ -1,11 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Card } from "@/components/ui/card";
-import { CopyCheck, Target, TrendingUp, Users, CheckCircle2, UserX, ArrowUpRight } from "lucide-react";
+import { CopyCheck, Target, TrendingUp, Users, CheckCircle2, UserX, ArrowUpRight, Flame } from "lucide-react";
 import { TeamSummary, ParticipantDetailRaw, Objective, KrDetail } from "@/lib/types/okr";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import ShinyText from "@/components/react-bits/ShinyText";
 
 interface OverviewCardsProps {
     summary: TeamSummary | null;
@@ -513,17 +514,38 @@ export default function OverviewCards({ summary, participantDetails = [], object
 
             {/* Top Active Objectives Section */}
             {objectives.length > 0 && topObjectives.length > 0 && (
-                <div className="flex flex-col items-center gap-6 mt-10 mb-4">
-                    <div className="flex flex-col items-center text-center px-4 mb-2">
-                        <h2 className="text-2xl font-bold text-foreground tracking-tight mb-2">Top Active Objectives</h2>
-                        <p className="text-sm text-muted-foreground font-medium">Ranked by team engagement, member participation, and check-in volume.</p>
+                <div className="flex flex-col items-center gap-10 mt-16 mb-8 relative">
+                    {/* Background decoration for the header */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-32 bg-linear-to-b from-primary/5 to-transparent blur-2xl pointer-events-none -z-10" />
+                    
+                    <div className="flex flex-col items-center text-center px-4 max-w-2xl relative z-10">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 mb-6 shadow-sm">
+                            <Flame className="w-4 h-4 text-orange-500" />
+                            <span className="text-xs font-bold tracking-wider uppercase text-orange-500">Trending Now</span>
+                        </div>
+                        
+                        <div className="text-4xl md:text-5xl font-extrabold tracking-tighter mb-4">
+                            <ShinyText 
+                                text="Top Active Objectives" 
+                                disabled={false} 
+                                speed={3} 
+                                color="rgba(255,255,255,0.7)" 
+                                shineColor="#ffffff" 
+                            />
+                        </div>
+                        
+                        <p className="text-base md:text-lg text-muted-foreground font-medium leading-relaxed">
+                            Ranked by team engagement, member participation, and check-in volume.
+                        </p>
                     </div>
                     
                     {/* Grid Layout */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 w-full">
-                        {topObjectives.map((obj, index) => (
-                            <TopObjectiveCard key={index} obj={obj} rank={index + 1} />
-                        ))}
+                    <div className="flex justify-center w-full relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full max-w-6xl">
+                            {topObjectives.map((obj, index) => (
+                                <TopObjectiveCard key={index} obj={obj} rank={index + 1} />
+                            ))}
+                        </div>
                     </div>
                 </div>
             )}
