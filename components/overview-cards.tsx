@@ -6,7 +6,15 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/ui/tooltip";
 import ShinyText from "@/components/react-bits/ShinyText";
+
+import { AvatarInfoTooltip, AvatarOverflowTooltip } from "@/components/ui/avatar-tooltip";
 
 interface OverviewCardsProps {
     summary: TeamSummary | null;
@@ -227,15 +235,24 @@ const TopObjectiveCard = ({ obj, rank }: { obj: TopObjective, rank: number }) =>
                                             {subMembers.length > 0 && (
                                                 <div className="flex -space-x-2 rtl:space-x-reverse">
                                                     {subMembers.slice(0, 4).map((member: KrDetail, idx: number) => (
-                                                        <Avatar key={idx} className="w-6 h-6 border-2 border-background ring-1 ring-border/50">
-                                                            <AvatarImage src={member.pictureURL} alt={member.fullName} />
-                                                            <AvatarFallback className="text-[8px] bg-muted">{member.fullName.substring(0, 2)}</AvatarFallback>
-                                                        </Avatar>
+                                                        <AvatarInfoTooltip
+                                                            key={`${member.fullName || "member"}-${idx}`}
+                                                            fullName={member.fullName}
+                                                            pictureURL={member.pictureURL}
+                                                            avatarClassName="h-6 w-6 border-2 border-background ring-1 ring-border/50"
+                                                            fallbackClassName="bg-muted text-[8px]"
+                                                        />
                                                     ))}
                                                     {subMembers.length > 4 && (
-                                                        <div className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-background bg-muted text-[9px] font-medium z-10 ring-1 ring-border/50">
-                                                            +{subMembers.length - 4}
-                                                        </div>
+                                                        <AvatarOverflowTooltip
+                                                            members={subMembers.map((member: KrDetail) => ({
+                                                                fullName: member.fullName,
+                                                                pictureURL: member.pictureURL,
+                                                            }))}
+                                                            hiddenCount={subMembers.length - 4}
+                                                            label="Contributors"
+                                                            triggerClassName="z-10 flex h-6 w-6 cursor-help items-center justify-center rounded-full border-2 border-background bg-muted text-[9px] font-medium ring-1 ring-border/50"
+                                                        />
                                                     )}
                                                 </div>
                                             )}
@@ -323,8 +340,9 @@ export default function OverviewCards({ summary, participantDetails = [], object
     const behindCount = summary?.behindCount || 0;
 
     return (
-        <div className="w-full">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-5 w-full">
+        <TooltipProvider delay={120}>
+            <div className="w-full">
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-5 w-full">
                 {/* 1. Overall Progress (Spans 2 columns) */}
                 <div className="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col p-6 rounded-2xl border border-blue-500/20 bg-linear-to-br from-blue-500/10 via-background to-background shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
                     <div className="absolute -right-6 -top-6 opacity-5 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none">
@@ -434,15 +452,24 @@ export default function OverviewCards({ summary, participantDetails = [], object
                         <div className="flex items-center">
                             <div className="flex -space-x-2 rtl:space-x-reverse bg-background/50 p-1 rounded-full backdrop-blur-sm">
                                 {participantDetails.slice(0, 5).map((member, i) => (
-                                    <Avatar key={member.employeeId || i} className="w-8 h-8 border-2 border-background shadow-sm">
-                                        <AvatarImage src={member.pictureMediumURL || member.pictureURL} alt={member.fullName} />
-                                        <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 font-medium">{member.fullName?.substring(0, 2)}</AvatarFallback>
-                                    </Avatar>
+                                    <AvatarInfoTooltip
+                                        key={member.employeeId || `${member.fullName || "member"}-${i}`}
+                                        fullName={member.fullName}
+                                        pictureURL={member.pictureMediumURL || member.pictureURL}
+                                        avatarClassName="h-8 w-8 border-2 border-background shadow-sm"
+                                        fallbackClassName="bg-purple-100 text-[10px] font-medium text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                                    />
                                 ))}
                                 {participantDetails.length > 5 && (
-                                    <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-background bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-[10px] font-bold z-10 shadow-sm">
-                                        +{participantDetails.length - 5}
-                                    </div>
+                                    <AvatarOverflowTooltip
+                                        members={participantDetails.map(member => ({
+                                            fullName: member.fullName,
+                                            pictureURL: member.pictureMediumURL || member.pictureURL,
+                                        }))}
+                                        hiddenCount={participantDetails.length - 5}
+                                        label="Team members"
+                                        triggerClassName="z-10 flex h-8 w-8 cursor-help items-center justify-center rounded-full border-2 border-background bg-purple-100 text-[10px] font-bold text-purple-700 shadow-sm dark:bg-purple-900 dark:text-purple-300"
+                                    />
                                 )}
                             </div>
                         </div>
@@ -478,11 +505,25 @@ export default function OverviewCards({ summary, participantDetails = [], object
                                     </div>
                                     <div className="flex -space-x-1.5 rtl:space-x-reverse ml-1 border-l border-border/50 pl-2">
                                         {missingCheckInEmployees.slice(0, 3).map((member, i) => (
-                                            <Avatar key={member.employeeId || i} className="w-6 h-6 border-2 border-background shadow-sm">
-                                                <AvatarImage src={member.pictureMediumURL || member.pictureURL} alt={member.fullName} />
-                                                <AvatarFallback className="text-[8px] bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300 font-medium">{member.fullName?.substring(0, 2)}</AvatarFallback>
-                                            </Avatar>
+                                            <AvatarInfoTooltip
+                                                key={member.employeeId || `${member.fullName || "member"}-${i}`}
+                                                fullName={member.fullName}
+                                                pictureURL={member.pictureMediumURL || member.pictureURL}
+                                                avatarClassName="h-6 w-6 border-2 border-background shadow-sm"
+                                                fallbackClassName="bg-rose-100 text-[8px] font-medium text-rose-700 dark:bg-rose-900 dark:text-rose-300"
+                                            />
                                         ))}
+                                        {missingCheckInEmployees.length > 3 && (
+                                            <AvatarOverflowTooltip
+                                                members={missingCheckInEmployees.map(member => ({
+                                                    fullName: member.fullName,
+                                                    pictureURL: member.pictureMediumURL || member.pictureURL,
+                                                }))}
+                                                hiddenCount={missingCheckInEmployees.length - 3}
+                                                label="Missed check-ins"
+                                                triggerClassName="z-10 flex h-6 w-6 cursor-help items-center justify-center rounded-full border-2 border-background bg-rose-100 text-[8px] font-bold text-rose-700 shadow-sm dark:bg-rose-900 dark:text-rose-300"
+                                            />
+                                        )}
                                     </div>
                                 </div>
                             )}
@@ -490,6 +531,7 @@ export default function OverviewCards({ summary, participantDetails = [], object
                     </div>
                 </div>
             </div>
-        </div>
+            </div>
+        </TooltipProvider>
     );
 }

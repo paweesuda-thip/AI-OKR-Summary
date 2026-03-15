@@ -1,6 +1,7 @@
 import { Trophy, Loader2, Sparkles } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { AvatarInfoTooltip } from "@/components/ui/avatar-tooltip";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContributorSum } from "@/lib/types/okr";
 import ShinyText from "@/components/react-bits/ShinyText";
 import MagicBento from "@/components/react-bits/MagicBento";
@@ -138,10 +139,12 @@ export default function TopPerformersSection({ contributors, aiSummary = null, a
                             {rest.map((person: ContributorSum, i: number) => (
                                 <div key={person.fullName} className="bg-background/40 backdrop-blur-md border border-border/50 rounded-xl p-3 flex items-center gap-3 shadow-sm hover:border-muted-foreground/30 hover:bg-background/60 transition-colors">
                                     <span className="text-sm text-muted-foreground w-6 text-right font-mono tabular-nums font-semibold">#{i + 4}</span>
-                                    <Avatar className="w-8 h-8 rounded-full border border-border/40 shadow-sm">
-                                        <AvatarImage src={person.pictureURL} alt={person.fullName} />
-                                        <AvatarFallback className="bg-muted text-xs text-muted-foreground">{person.fullName?.[0]}</AvatarFallback>
-                                    </Avatar>
+                                    <AvatarInfoTooltip
+                                        fullName={person.fullName}
+                                        pictureURL={person.pictureURL}
+                                        avatarClassName="w-8 h-8 rounded-full border border-border/40 shadow-sm"
+                                        fallbackClassName="bg-muted text-xs text-muted-foreground"
+                                    />
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm text-foreground truncate font-semibold">{person.fullName}</p>
                                         <p className="text-xs text-muted-foreground font-medium">{person.checkInCount} check-ins</p>

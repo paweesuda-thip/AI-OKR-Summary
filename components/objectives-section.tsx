@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Target, ChevronDown, ChevronUp, Users, Target as TargetIcon, ArrowRight, Activity, Percent, TrendingUp } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarInfoTooltip, AvatarOverflowTooltip } from "@/components/ui/avatar-tooltip";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Objective } from "@/lib/types/okr";
@@ -61,7 +61,7 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                             {/* Main Progress Block */}
                             <div className="mt-auto mb-8">
                                 <div className="flex items-end justify-between mb-3">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Overall Progress</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Overall Quarter</p>
                                     <div className="flex items-baseline gap-0.5">
                                         <span className={`text-4xl font-bold tracking-tighter tabular-nums ${st.color}`}>
                                             {obj.progress?.toFixed(0)}
@@ -98,15 +98,25 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                     </div>
                                     <div className="flex -space-x-2 pl-6">
                                         {contributors.slice(0, 3).map((c, i) => (
-                                            <Avatar key={i} className="w-8 h-8 border-2 border-background shadow-sm">
-                                                <AvatarImage src={c.pictureURL} alt={c.fullName} />
-                                                <AvatarFallback className="bg-muted text-xs font-bold">{c.fullName?.charAt(0)}</AvatarFallback>
-                                            </Avatar>
+                                            <AvatarInfoTooltip
+                                                key={i}
+                                                fullName={c.fullName}
+                                                pictureURL={c.pictureURL}
+                                                avatarClassName="w-8 h-8 border-2 border-background shadow-sm"
+                                                fallbackClassName="bg-muted text-xs font-bold"
+                                                style={{ zIndex: 3 - i }}
+                                            />
                                         ))}
                                         {contributors.length > 3 && (
-                                            <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-sm text-xs font-bold text-muted-foreground">
-                                                +{contributors.length - 3}
-                                            </div>
+                                            <AvatarOverflowTooltip
+                                                members={contributors.map(c => ({
+                                                    fullName: c.fullName,
+                                                    pictureURL: c.pictureURL
+                                                }))}
+                                                hiddenCount={contributors.length - 3}
+                                                label="Team members"
+                                                triggerClassName="w-8 h-8 rounded-full bg-muted flex items-center justify-center border-2 border-background shadow-sm text-xs font-bold text-muted-foreground z-0 cursor-help"
+                                            />
                                         )}
                                     </div>
                                 </div>
@@ -153,7 +163,7 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                         <div className="bg-background/80 border border-border/40 rounded-3xl p-6 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-lg font-bold text-foreground flex items-center gap-2">
-                                    <Percent className="w-5 h-5 text-primary" /> Overall Progress
+                                    <Percent className="w-5 h-5 text-primary" /> Overall Quarter
                                 </h4>
                                 <span className={`text-3xl font-black tabular-nums ${st.color}`}>
                                     {obj.progress?.toFixed(0)}%
@@ -215,10 +225,12 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                                     <div className="flex flex-col gap-2 max-h-[120px] overflow-y-auto pr-1 custom-scrollbar">
                                                         {sub.details.map((kr, i) => (
                                                             <div key={i} className="flex items-center gap-2 bg-background/50 p-2 rounded-xl border border-border/30">
-                                                                <Avatar className="w-6 h-6 border shadow-sm shrink-0">
-                                                                    <AvatarImage src={kr.pictureURL} />
-                                                                    <AvatarFallback className="text-[8px]">{kr.fullName?.charAt(0)}</AvatarFallback>
-                                                                </Avatar>
+                                                                <AvatarInfoTooltip
+                                                                    fullName={kr.fullName}
+                                                                    pictureURL={kr.pictureURL}
+                                                                    avatarClassName="w-6 h-6 border shadow-sm shrink-0"
+                                                                    fallbackClassName="text-[8px]"
+                                                                />
                                                                 <div className="flex-1 min-w-0">
                                                                     <p className="text-[11px] font-bold text-foreground truncate">{kr.fullName}</p>
                                                                     <p className="text-[9px] text-muted-foreground truncate">{kr.krTitle}</p>
@@ -244,10 +256,12 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                         {obj.details.map((kr, i) => (
                                             <div key={i} className="flex items-center gap-3 bg-background/50 p-3 rounded-xl border border-border/30">
-                                                <Avatar className="w-8 h-8 border shadow-sm">
-                                                    <AvatarImage src={kr.pictureURL} />
-                                                    <AvatarFallback className="text-[10px]">{kr.fullName?.charAt(0)}</AvatarFallback>
-                                                </Avatar>
+                                                <AvatarInfoTooltip
+                                                    fullName={kr.fullName}
+                                                    pictureURL={kr.pictureURL}
+                                                    avatarClassName="w-8 h-8 border shadow-sm shrink-0"
+                                                    fallbackClassName="text-[10px]"
+                                                />
                                                 <div className="flex-1 min-w-0">
                                                     <p className="text-xs font-bold text-foreground truncate">{kr.fullName}</p>
                                                     <p className="text-[10px] text-muted-foreground truncate">{kr.krTitle}</p>

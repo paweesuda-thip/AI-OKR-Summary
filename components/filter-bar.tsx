@@ -27,7 +27,7 @@ export default function FilterBar({
           onCheckedChange={setIsOverall}
         />
         <Label htmlFor="overall-mode" className="font-medium text-sm cursor-pointer whitespace-nowrap">
-          Overall Progress
+          Overall Quarter
         </Label>
       </div>
 

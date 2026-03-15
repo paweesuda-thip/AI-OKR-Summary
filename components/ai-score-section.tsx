@@ -5,6 +5,11 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { TeamSummary, Objective, ContributorSum } from "@/lib/types/okr";
 
+export interface AIScoreResult {
+  score: number;
+  review: string;
+}
+
 interface AIScoreSectionProps {
   teamSummary: TeamSummary | null;
   dashboardData: {
@@ -13,11 +18,34 @@ interface AIScoreSectionProps {
     contributors: ContributorSum[];
     atRisk: Objective[];
   };
+  aiScoreResult: AIScoreResult | null;
+  onAiScoreResultChange: (result: AIScoreResult | null) => void;
 }
 
-export function AIScoreSection({ teamSummary, dashboardData }: AIScoreSectionProps) {
+const normalizeAIScoreResult = (payload: unknown): AIScoreResult | null => {
+  if (!payload || typeof payload !== "object") return null;
+
+  const raw = payload as { score?: unknown; review?: unknown };
+  const parsedScore = typeof raw.score === "string" ? Number(raw.score) : raw.score;
+  const parsedReview = typeof raw.review === "string" ? raw.review.trim() : "";
+
+  if (typeof parsedScore !== "number" || !Number.isFinite(parsedScore) || !parsedReview) {
+    return null;
+  }
+
+  return {
+    score: Math.min(10, Math.max(1, Math.round(parsedScore))),
+    review: parsedReview,
+  };
+};
+
+export function AIScoreSection({
+  teamSummary,
+  dashboardData,
+  aiScoreResult,
+  onAiScoreResultChange,
+}: AIScoreSectionProps) {
   const [isGeneratingScore, setIsGeneratingScore] = useState(false);
-  const [aiScoreResult, setAiScoreResult] = useState<{ score: number; review: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleGetAIScore = async () => {
@@ -35,7 +63,10 @@ export function AIScoreSection({ teamSummary, dashboardData }: AIScoreSectionPro
       if (!response.ok) throw new Error('Failed to generate score');
       
       const data = await response.json();
-      setAiScoreResult(data);
+      const normalized = normalizeAIScoreResult(data);
+      if (!normalized) throw new Error("Invalid AI score response");
+
+      onAiScoreResultChange(normalized);
     } catch (err) {
       console.error(err);
       setError('ไม่สามารถสร้างคะแนนประเมินได้ กรุณาลองใหม่อีกครั้ง');

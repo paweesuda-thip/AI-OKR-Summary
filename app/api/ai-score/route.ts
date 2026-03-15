@@ -5,6 +5,77 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 // Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+interface AIScoreResponse {
+  score: number;
+  review: string;
+}
+
+const clampScore = (score: number) => Math.min(10, Math.max(1, Math.round(score)));
+
+const normalizeAIScoreResponse = (payload: unknown): AIScoreResponse | null => {
+  if (!payload || typeof payload !== 'object') return null;
+
+  const raw = payload as { score?: unknown; review?: unknown };
+  const scoreValue = typeof raw.score === 'string' ? Number(raw.score) : raw.score;
+  const reviewValue = typeof raw.review === 'string' ? raw.review.trim() : '';
+
+  if (typeof scoreValue !== 'number' || !Number.isFinite(scoreValue) || !reviewValue) {
+    return null;
+  }
+
+  return {
+    score: clampScore(scoreValue),
+    review: reviewValue,
+  };
+};
+
+const tryParseJson = (raw: string): unknown | null => {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
+const parseModelResponse = (text: string): AIScoreResponse | null => {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+
+  const parseCandidates = new Set<string>([trimmed]);
+
+  const fencedJsonMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fencedJsonMatch?.[1]) {
+    parseCandidates.add(fencedJsonMatch[1].trim());
+  }
+
+  const firstObjectStart = trimmed.indexOf('{');
+  const lastObjectEnd = trimmed.lastIndexOf('}');
+  if (firstObjectStart !== -1 && lastObjectEnd > firstObjectStart) {
+    parseCandidates.add(trimmed.slice(firstObjectStart, lastObjectEnd + 1));
+  }
+
+  for (const candidate of parseCandidates) {
+    const parsed = tryParseJson(candidate);
+    const normalized = normalizeAIScoreResponse(parsed);
+    if (normalized) return normalized;
+  }
+
+  const scoreMatch = trimmed.match(/["']?score["']?\s*:\s*([0-9]+(?:\.[0-9]+)?)/i);
+  if (!scoreMatch) return null;
+
+  const fallbackScore = Number(scoreMatch[1]);
+  if (!Number.isFinite(fallbackScore)) return null;
+
+  const reviewMatch = trimmed.match(/["']?review["']?\s*:\s*["']?([\s\S]*)/i);
+  let fallbackReview = reviewMatch?.[1]?.trim() || trimmed;
+  fallbackReview = fallbackReview.replace(/"\s*}\s*$/, '').trim();
+
+  return {
+    score: clampScore(fallbackScore),
+    review: fallbackReview || trimmed,
+  };
+};
+
 export async function POST(req: Request) {
   try {
     const { dashboardData } = await req.json();
@@ -14,7 +85,7 @@ export async function POST(req: Request) {
     }
 
     // Check if API key is provided
-    const apiKey = process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY;
+    const apiKey = process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY;
     
     // Using a mocked response if no API key is found to ensure it works for demo purposes
     if (!apiKey) {
@@ -65,6 +136,8 @@ export async function POST(req: Request) {
         "score": number,
         "review": "string with markdown formatting in Thai"
       }
+
+      IMPORTANT: Return only raw JSON. Do not wrap with markdown code fences.
     `;
 
     const { text } = await generateText({
@@ -72,17 +145,17 @@ export async function POST(req: Request) {
       prompt: prompt,
     });
 
-    try {
-      const parsed = JSON.parse(text);
+    const parsed = parseModelResponse(text);
+    if (parsed) {
       return NextResponse.json(parsed);
-    } catch (error) {
-      // Fallback if parsing fails
-      console.error('Failed to parse JSON, falling back', error);
-      return NextResponse.json({
-        score: 8,
-        review: text
-      });
     }
+
+    // Last-resort fallback: keep review text but avoid misleading hardcoded score.
+    console.error('Failed to parse AI score response, using safe fallback');
+    return NextResponse.json({
+      score: 5,
+      review: text,
+    });
   } catch (error) {
     console.error('Error generating AI score:', error);
     return NextResponse.json(

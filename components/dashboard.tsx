@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 
-import { AIScoreSection } from "./ai-score-section";
+import { AIScoreResult, AIScoreSection } from "./ai-score-section";
 import OverviewCards from "./overview-cards";
 import ObjectivesSection from "./objectives-section";
 import FilterBar from "./filter-bar";
@@ -41,6 +41,8 @@ import {
 import ProgressUpdateSection from "./progress-update-section";
 import { FloatingAiChat } from "./floating-ai-chat";
 import { ModeToggle } from "@/components/mode-toggle";
+import ShinyText from "@/components/react-bits/ShinyText";
+import { TransparentImage } from "@/components/transparent-image";
 
 export default function Dashboard() {
   // const ASSESSMENT_SET_ID = 18892; // demo
@@ -60,65 +62,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // Background removal state cache
-  const [processedImages, setProcessedImages] = useState<Record<string, string>>({});
-
-  const processImage = useCallback(async (url: string) => {
-    if (!url) return;
-    if (processedImages[url]) return;
-
-    try {
-      const proxyRes = await fetch(`/api/toonify`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ imageUrl: url }),
-      });
-
-      if (proxyRes.ok) {
-        const data = await proxyRes.json();
-        if (data.imageData) {
-          // Immediately show original image from proxy
-          setProcessedImages(prev => ({ ...prev, [url]: data.imageData }));
-          
-          try {
-            // Remove background client-side asynchronously
-            const { removeBackground } = await import("@imgly/background-removal");
-            const resultBlob = await removeBackground(data.imageData);
-            const finalUrl = URL.createObjectURL(resultBlob);
-            
-            // Update with the background-removed image once done
-            setProcessedImages(prev => ({ ...prev, [url]: finalUrl }));
-          } catch (bgError) {
-            console.error("Background removal failed, keeping original image:", bgError);
-          }
-        }
-      }
-    } catch (err) {
-      console.error("Failed to fetch image via proxy:", err);
-    }
-  }, [processedImages]);
-
-  useEffect(() => {
-    const topContributors =
-      participantDetails.length > 0
-        ? [...participantDetails]
-            .sort((a, b) => a.seq - b.seq)
-            .slice(0, 3)
-        : [];
-        
-    topContributors.forEach(p => {
-      const url = p.pictureMediumURL || p.pictureURL;
-      if (url && !processedImages[url]) {
-        processImage(url);
-      }
-    });
-  }, [participantDetails, processImage, processedImages]);
-
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2026, 1, 12), // Feb 12, 2026
     to: new Date(2026, 2, 15), // Mar 15, 2026
   });
   const [isOverall, setIsOverall] = useState(false);
+  const [aiScoreResult, setAiScoreResult] = useState<AIScoreResult | null>(null);
 
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
 
@@ -132,6 +81,7 @@ export default function Dashboard() {
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
     setError("");
+    setAiScoreResult(null);
 
     try {
       const dateStart = (!isOverall && dateRange?.from) ? format(dateRange.from, "yyyy-MM-dd") : undefined;
@@ -192,12 +142,14 @@ export default function Dashboard() {
             
             {/* Left: Branding */}
             <div className="flex items-center gap-3 shrink-0">
-              <div className="flex h-10 w-10 items-center justify-center rounded-[14px] bg-zinc-100 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 shadow-sm transition-transform hover:scale-105">
-                <div className="text-zinc-900 dark:text-zinc-100 font-bold text-lg leading-none tracking-tighter">S</div>
-              </div>
               <div className="flex flex-col">
-                <h1 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100 leading-none mb-1">
-                  Statio OKR
+                <h1 className="mb-1 text-lg leading-none font-semibold tracking-tight">
+                  <ShinyText 
+                    text="Statio OKR" 
+                    speed={3} 
+                    className="drop-shadow-sm" 
+                    backgroundImage="linear-gradient(90deg, #0ea5e9, #6366f1, #a855f7, #ec4899, #0ea5e9)"
+                  />
                 </h1>
                 <span className="text-[11px] text-zinc-500 font-medium flex items-center gap-1.5 uppercase tracking-wider">
                   <span className="relative flex h-1.5 w-1.5">
@@ -211,7 +163,57 @@ export default function Dashboard() {
 
             {/* Right: Controls */}
             <div className="flex items-center gap-4">
-              <div className="hidden md:block">
+              <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
+                <DrawerTrigger asChild>
+                  <Button className="rounded-full px-4 py-4 sm:px-6 sm:py-5 text-xs sm:text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="hidden sm:inline">AI Performance Insight</span>
+                    <span className="sm:hidden">AI Insight</span>
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="h-[90vh] bg-background/95 backdrop-blur-3xl border-border/50">
+                  <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
+                    <DrawerHeader className="shrink-0 text-center sm:text-left">
+                      <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-2">
+                        <Sparkles className="w-6 h-6 text-indigo-500" />
+                        AI OKR Intelligence
+                      </DrawerTitle>
+                      <DrawerDescription>
+                        Deep dive into strategic insights, team performance
+                        patterns, and actionable recommendations.
+                      </DrawerDescription>
+                    </DrawerHeader>
+                    <div className="flex-1 overflow-y-auto mt-4 pr-2 relative">
+                      {/* Magic Rings subtle background glow inside drawer */}
+                      <div className="pointer-events-none fixed inset-0 z-0 opacity-20 dark:opacity-30 blur-xl">
+                        <MagicRings
+                          color="#6366f1"
+                          colorTwo="#a855f7"
+                          speed={0.3}
+                          ringCount={3}
+                          attenuation={20}
+                          lineThickness={2}
+                          baseRadius={0.4}
+                          opacity={0.5}
+                          followMouse={false}
+                        />
+                      </div>
+                      <div className="relative z-10 h-full">
+                        <AIScoreSection
+                          teamSummary={teamSummary}
+                          dashboardData={dashboardData}
+                          aiScoreResult={aiScoreResult}
+                          onAiScoreResultChange={setAiScoreResult}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+
+              <div className="hidden xl:block h-8 w-px bg-border/50" />
+
+              <div className="hidden xl:block">
                 <FilterBar
                   dateRange={dateRange}
                   setDateRange={setDateRange}
@@ -220,7 +222,7 @@ export default function Dashboard() {
                 />
               </div>
               
-              <div className="hidden md:block h-8 w-px bg-border/50" />
+              <div className="hidden xl:block h-8 w-px bg-border/50" />
               
               <div className="flex items-center gap-2">
                 <ModeToggle />
@@ -252,51 +254,6 @@ export default function Dashboard() {
 
           {/* ── Overview Metrics Strip ── */}
           <section className="mb-10">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 relative z-20">
-              <h2 className="text-3xl font-bold tracking-tight text-foreground">Statio OKR</h2>
-              
-              <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
-                <DrawerTrigger asChild>
-                  <Button className="rounded-full px-6 py-5 text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    AI Performance Insight
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="h-[90vh] bg-background/95 backdrop-blur-3xl border-border/50">
-                  <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
-                    <DrawerHeader className="shrink-0 text-center sm:text-left">
-                      <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-2">
-                        <Sparkles className="w-6 h-6 text-indigo-500" />
-                        AI OKR Intelligence
-                      </DrawerTitle>
-                      <DrawerDescription>
-                        Deep dive into strategic insights, team performance
-                        patterns, and actionable recommendations.
-                      </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="flex-1 overflow-y-auto mt-4 pr-2 relative">
-                      {/* Magic Rings subtle background glow inside drawer */}
-                      <div className="pointer-events-none fixed inset-0 z-0 opacity-20 dark:opacity-30 blur-xl">
-                        <MagicRings
-                          color="#6366f1"
-                          colorTwo="#a855f7"
-                          speed={0.3}
-                          ringCount={3}
-                          attenuation={20}
-                          lineThickness={2}
-                          baseRadius={0.4}
-                          opacity={0.5}
-                          followMouse={false}
-                        />
-                      </div>
-                      <div className="relative z-10 h-full">
-                        <AIScoreSection teamSummary={teamSummary} dashboardData={dashboardData} />
-                      </div>
-                    </div>
-                  </div>
-                </DrawerContent>
-              </Drawer>
-            </div>
             <OverviewCards
               summary={teamSummary}
               participantDetails={participantDetails}
@@ -367,11 +324,13 @@ export default function Dashboard() {
                                 className="absolute inset-x-0 bottom-0 top-0 flex items-end justify-center pointer-events-none z-10"
                                 style={{ clipPath: 'inset(-100% 0 0 0 round 0 0 1rem 1rem)' }}
                               >
-                                {processedImages[p.pictureMediumURL || p.pictureURL] ? (
-                                  <img 
-                                    src={processedImages[p.pictureMediumURL || p.pictureURL]} 
+                                {(p.pictureMediumURL || p.pictureURL) ? (
+                                  <TransparentImage 
+                                    src={p.pictureMediumURL || p.pictureURL} 
                                     alt={p.fullName} 
                                     className={`w-auto object-contain object-bottom drop-shadow-2xl transition-transform duration-500 group-hover:scale-105 origin-bottom ${isFirst ? 'h-[125%]' : 'h-[115%]'}`}
+                                    width={500}
+                                    height={500}
                                   />
                                 ) : (
                                   <div className="flex items-center justify-center h-full">
