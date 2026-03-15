@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { SubObjective, KrDetail } from "@/lib/types/okr";
 import { Badge } from "@/components/ui/badge";
-import { TrendingUp, TrendingDown, Target } from "lucide-react";
+import { Target, TrendingDown, TrendingUp } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarInfoTooltip, AvatarOverflowTooltip } from "@/components/ui/avatar-tooltip";
 import {
     Dialog,
     DialogContent,
@@ -87,15 +88,24 @@ export default function ProgressUpdateSection({ title, description, subObjective
                                     return (
                                         <div className="flex -space-x-2 rtl:space-x-reverse">
                                             {members.slice(0, 3).map((member: KrDetail, i: number) => (
-                                                <Avatar key={i} className="w-6 h-6 border-2 border-background ring-1 ring-border/50">
-                                                    <AvatarImage src={member.pictureURL} alt={member.fullName} />
-                                                    <AvatarFallback className="text-[8px] bg-muted">{member.fullName.substring(0, 2)}</AvatarFallback>
-                                                </Avatar>
+                                                <AvatarInfoTooltip
+                                                    key={i}
+                                                    fullName={member.fullName}
+                                                    pictureURL={member.pictureURL}
+                                                    avatarClassName="w-6 h-6 border-2 border-background ring-1 ring-border/50"
+                                                    fallbackClassName="text-[8px] bg-muted"
+                                                />
                                             ))}
                                             {members.length > 3 && (
-                                                <div className="flex items-center justify-center w-6 h-6 rounded-full border-2 border-background bg-muted text-[9px] font-medium z-10 ring-1 ring-border/50 text-foreground">
-                                                    +{members.length - 3}
-                                                </div>
+                                                <AvatarOverflowTooltip
+                                                    members={members.map(m => ({
+                                                        fullName: m.fullName,
+                                                        pictureURL: m.pictureURL
+                                                    }))}
+                                                    hiddenCount={members.length - 3}
+                                                    label="Contributors"
+                                                    triggerClassName="flex items-center justify-center w-6 h-6 rounded-full border-2 border-background bg-muted text-[9px] font-medium z-10 ring-1 ring-border/50 text-foreground cursor-help"
+                                                />
                                             )}
                                         </div>
                                     );

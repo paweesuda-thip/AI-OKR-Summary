@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from 'react';
-import { Users, ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, Search, UserMinus, ShieldAlert, BadgeInfo, Users } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AvatarInfoTooltip, AvatarOverflowTooltip } from "@/components/ui/avatar-tooltip";
+import { Badge } from "@/components/ui/badge";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -50,23 +52,25 @@ export default function TeamMembersSection({ teamMembers = [] }: { teamMembers: 
                             {/* Stacked avatars */}
                             <div className="flex -space-x-3">
                                 {teamMembers.slice(0, 6).map((m, i) => (
-                                    <Avatar 
-                                        key={m.employeeId} 
-                                        className="w-10 h-10 border-2 border-background shadow-sm opacity-90 transition-opacity hover:opacity-100"
+                                    <AvatarInfoTooltip
+                                        key={m.employeeId}
+                                        fullName={m.employeeName}
+                                        pictureURL={m.picture}
+                                        avatarClassName="w-10 h-10 border-2 border-background shadow-sm opacity-90 transition-opacity hover:opacity-100"
+                                        fallbackClassName="bg-muted text-muted-foreground text-xs font-bold"
                                         style={{ zIndex: 6 - i }}
-                                    >
-                                        <AvatarImage src={m.picture} alt={m.employeeName} />
-                                        <AvatarFallback className="bg-muted text-muted-foreground text-xs font-bold">
-                                            {m.employeeName?.charAt(0)}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    />
                                 ))}
                                 {teamMembers.length > 6 && (
-                                    <Avatar className="w-10 h-10 border-2 border-background z-0 shadow-sm">
-                                        <AvatarFallback className="bg-muted text-muted-foreground text-xs font-bold">
-                                            +{teamMembers.length - 6}
-                                        </AvatarFallback>
-                                    </Avatar>
+                                    <AvatarOverflowTooltip
+                                        members={teamMembers.map(m => ({
+                                            fullName: m.employeeName,
+                                            pictureURL: m.picture
+                                        }))}
+                                        hiddenCount={teamMembers.length - 6}
+                                        label="Team members"
+                                        triggerClassName="flex items-center justify-center w-10 h-10 rounded-full border-2 border-background bg-muted text-xs font-bold text-muted-foreground z-0 shadow-sm cursor-help"
+                                    />
                                 )}
                             </div>
 

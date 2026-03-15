@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ParticipantDetailRaw } from "@/lib/types/okr";
+import { AvatarInfoTooltip } from "@/components/ui/avatar-tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Image from "next/image";
 import { 
@@ -140,17 +141,18 @@ export function CheckInEngagement({ participantDetails }: CheckInEngagementProps
 
                   <div className="flex items-center gap-3 flex-1 z-10">
                     <div className="relative">
-                      <Avatar className={`border-2 shadow-xl ${i === 0 ? 'w-11 h-11 border-amber-400/50' : 'w-9 h-9 border-white/10'}`}>
-                        <AvatarImage src={person.pictureMediumURL || person.pictureURL} alt={person.fullName} />
-                        <AvatarFallback className="text-[10px] font-medium">{person.fullName.substring(0, 2)}</AvatarFallback>
-                      </Avatar>
+                      <AvatarInfoTooltip
+                        fullName={person.fullName}
+                        pictureURL={person.pictureMediumURL || person.pictureURL}
+                        avatarClassName={`border-2 shadow-xl ${i === 0 ? 'w-11 h-11 border-amber-400/50' : 'w-9 h-9 border-white/10'}`}
+                        fallbackClassName="text-[10px] font-medium"
+                      />
                       {i === 0 && (
                         <div className="absolute -bottom-1.5 -right-1.5 bg-amber-500 p-0.5 rounded-full border border-background shadow-lg">
                           <Trophy className="w-2.5 h-2.5 text-white" />
                         </div>
                       )}
                     </div>
-                    
                     <div className="flex flex-col flex-1 min-w-0">
                       <h4 className={`font-bold truncate ${i === 0 ? 'text-sm text-amber-50' : 'text-xs text-foreground'}`}>
                         {person.fullName}
@@ -224,10 +226,12 @@ export function CheckInEngagement({ participantDetails }: CheckInEngagementProps
 
                   <div className="flex items-center gap-3 flex-1">
                     <div className="relative">
-                      <Avatar className={`border-2 shadow-xl grayscale-[0.5] ${i === 0 ? 'w-11 h-11 border-rose-500/50' : 'w-9 h-9 border-white/10'}`}>
-                        <AvatarImage src={person.pictureMediumURL || person.pictureURL} alt={person.fullName} />
-                        <AvatarFallback className="text-[10px] font-medium">{person.fullName.substring(0, 2)}</AvatarFallback>
-                      </Avatar>
+                      <AvatarInfoTooltip
+                        fullName={person.fullName}
+                        pictureURL={person.pictureMediumURL || person.pictureURL}
+                        avatarClassName={`border-2 shadow-xl grayscale-[0.5] ${i === 0 ? 'w-11 h-11 border-rose-500/50' : 'w-9 h-9 border-white/10'}`}
+                        fallbackClassName="text-[10px] font-medium"
+                      />
                       {i === 0 && (
                         <div className="absolute -bottom-1.5 -right-1.5 bg-rose-500 p-0.5 rounded-full border border-background shadow-lg">
                           <AlertCircle className="w-2.5 h-2.5 text-white" />
