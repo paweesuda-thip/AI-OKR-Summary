@@ -1,70 +1,81 @@
-// Backend C# model: OkrObjectiveContributorModel
-export interface OkrContributorRaw {
-    // JsonProperty mapped fields from C# backend
-    FullName?: string;        // EmployeeName mapped to FullName
-    PictureURL?: string;      // PictureUrl mapped to PictureURL  
-    Title?: string;           // KeyResultTitle mapped to Title
-    
-    // Direct C# properties
-    PointCurrent?: number;
-    PointOKR?: number;
-    
-    // Fallback properties for compatibility
-    fullName?: string;
-    employeeName?: string;
-    pictureURL?: string;
-    pictureUrl?: string;
-    title?: string;
-    keyResultTitle?: string;
-    pointCurrent?: number;
-    pointOKR?: number;
+// Backend API models
+export interface ApiResponse<T> {
+  status: {
+    code: string;
+    description: string;
+  };
+  data: T;
 }
 
-// Backend C# model: OkrObjectiveSummaryModel
-export interface OkrObjectiveRaw {
-    // Direct C# properties
-    ObjectiveId?: number;
-    Title?: string;
-    Title_EN?: string;
-    OwnerEmployeeFullName?: string;
-    OwnerTeam?: string;
-    Progress?: number;
-    
-    // JsonProperty mapped field - Contributors mapped to Details
-    Details?: OkrContributorRaw[];
-    
-    // Fallback properties for compatibility
-    objectiveId?: number;
-    title?: string;
-    title_EN?: string;
-    ownerEmployeeFullName?: string;
-    ownerTeam?: string;
-    progress?: number;
-    details?: OkrContributorRaw[];
-    Contributors?: OkrContributorRaw[];
-    contributors?: OkrContributorRaw[];
+export interface OkrDataRaw {
+  objectiveId: number;
+  objectiveOwnerType: number;
+  objectiveType: number;
+  referenceObjectiveId: number;
+  ownerTeam: string;
+  title: string;
+  title_EN: string;
+  progress: number;
+  objectiveDetails: OkrObjectiveDetailRaw[];
 }
 
+export interface OkrObjectiveDetailRaw {
+  objectiveId: number;
+  objectiveOwnerType: number;
+  ownerTeam?: string | null;
+  title: string;
+  title_EN: string;
+  progress: number;
+  progressUpdate: number;
+  details: OkrDetailRaw[];
+}
+
+export interface OkrDetailRaw {
+  keyId: number;
+  fullName: string;
+  fullName_EN: string;
+  pictureUrl: string;
+  title: string;
+  pointCurrent: number;
+  pointOKR: number;
+}
+
+// Internal mapped models
 export interface KrDetail {
-    fullName: string;
-    pictureURL: string;
-    krTitle: string;
-    pointCurrent: number;
-    pointOKR: number;
-    krProgress: number;
-    isDone: boolean;
+  fullName: string;
+  pictureURL: string;
+  krTitle: string;
+  pointCurrent: number;
+  pointOKR: number;
+  krProgress: number;
+  isDone: boolean;
+}
+
+export interface SubObjective {
+  objectiveId: number;
+  objectiveOwnerType: number;
+  ownerTeam?: string | null;
+  title: string;
+  title_EN: string;
+  progress: number;
+  progressUpdate: number; // For date-filtered progress
+  status: 'On Track' | 'At Risk' | 'Behind';
+  details: KrDetail[];
 }
 
 export interface Objective {
-    objectiveId: number;
-    objectiveName: string;
-    objectiveName_EN: string;
-    ownerName: string;
-    ownerTeam: string;
-    progress: number;
-    status: 'On Track' | 'At Risk' | 'Behind';
-    impactLevel?: 'high' | 'medium' | 'low';
-    details: KrDetail[];
+  objectiveId: number;
+  objectiveOwnerType: number;
+  objectiveType: number;
+  referenceObjectiveId: number;
+  objectiveName: string;
+  objectiveName_EN: string;
+  ownerTeam: string;
+  progress: number;
+  status: 'On Track' | 'At Risk' | 'Behind';
+  impactLevel?: 'high' | 'medium' | 'low';
+  subObjectives: SubObjective[];
+  details: KrDetail[]; // Flattened from all subObjectives for backwards compatibility if needed
 }
 
 export interface ContributorSumObj {

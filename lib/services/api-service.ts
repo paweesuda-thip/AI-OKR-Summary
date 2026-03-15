@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { OkrObjectiveRaw, OkrContributorRaw, KrDetail, Objective, ContributorSum, ContributorSumObj, TeamSummary, DashboardData } from '../types/okr';
+import { OkrDataRaw, OkrObjectiveDetailRaw, OkrDetailRaw, KrDetail, SubObjective, Objective, ContributorSum, ContributorSumObj, TeamSummary, DashboardData } from '../types/okr';
 
 // Use explicit backend base URL so requests go directly to the API host.
 // In development, you can set VITE_API_BASE_URL to '' (empty) to proxy through Vite dev server (no CORS/preflight).
@@ -40,58 +40,62 @@ apiClient.interceptors.response.use(
 
 // ─── Mapping ───────────────────────────────────────────────────────────────────
 
-/**
- * Map a single raw API item to internal format.
- *
- * Actual response uses PascalCase:
- * {
- *   ObjectiveId, Title, Title_EN, OwnerTeam, Progress,
- *   Details: [{ FullName, PictureURL, Title, PointCurrent, PointOKR }]
- * }
- *
- * Also handles the camelCase spec shape just in case:
- * { objectiveId, title, title_EN, ownerEmployeeFullName, ownerTeam, progress,
- *   contributors: [{ employeeName, pictureUrl, keyResultTitle, pointCurrent, pointOKR }] }
- */
-function mapObjective(item: OkrObjectiveRaw): Objective {
-    // Support both PascalCase (actual) and camelCase (spec)
-    const progress = item.Progress ?? item.progress ?? 0;
-    const rawDetails: OkrContributorRaw[] = item.Details ?? item.details ?? item.Contributors ?? item.contributors ?? [];
-
-    const details: KrDetail[] = rawDetails.map((d: OkrContributorRaw) => {
-        // PascalCase: FullName, PictureURL, Title, PointCurrent, PointOKR
-        // camelCase:  fullName, pictureURL, title, pointCurrent, pointOKR
-        const pointCurrent = d.PointCurrent ?? d.pointCurrent ?? 0;
-        const pointOKR = d.PointOKR ?? d.pointOKR ?? 0;
-        const krProgress = pointOKR > 0 ? Math.round((pointCurrent / pointOKR) * 100) : 0;
-
+function mapObjective(item: OkrDataRaw): Objective {
+    const progress = item.progress ?? 0;
+    
+    const subObjectives: SubObjective[] = (item.objectiveDetails || []).map((sub: OkrObjectiveDetailRaw) => {
+        const subProgress = sub.progress ?? 0;
+        
+        const details: KrDetail[] = (sub.details || []).map((d: OkrDetailRaw) => {
+            const pointCurrent = d.pointCurrent ?? 0;
+            const pointOKR = d.pointOKR ?? 0;
+            const krProgress = pointOKR > 0 ? Math.round((pointCurrent / pointOKR) * 100) : 0;
+            
+            return {
+                fullName: d.fullName ?? d.fullName_EN ?? '',
+                pictureURL: d.pictureUrl ?? '',
+                krTitle: d.title ?? '',
+                pointCurrent,
+                pointOKR,
+                krProgress,
+                isDone: pointOKR > 0 && pointCurrent >= 100,
+            };
+        });
+        
         return {
-            fullName: d.FullName ?? d.fullName ?? d.employeeName ?? '',
-            pictureURL: d.PictureURL ?? d.pictureURL ?? d.pictureUrl ?? '',
-            krTitle: d.Title ?? d.title ?? d.keyResultTitle ?? '',
-            pointCurrent,
-            pointOKR,
-            krProgress,
-            isDone: pointOKR > 0 && pointCurrent >= pointOKR,
+            objectiveId: sub.objectiveId,
+            objectiveOwnerType: sub.objectiveOwnerType,
+            ownerTeam: sub.ownerTeam,
+            title: sub.title,
+            title_EN: sub.title_EN,
+            progress: subProgress,
+            progressUpdate: sub.progressUpdate ?? 0,
+            status: subProgress >= 70 ? 'On Track' : subProgress >= 40 ? 'At Risk' : 'Behind',
+            details,
         };
     });
+    
+    const allDetails: KrDetail[] = subObjectives.flatMap((sub) => sub.details);
 
     return {
-        objectiveId: item.ObjectiveId ?? item.objectiveId ?? 0,
-        objectiveName: (item.Title ?? item.title ?? '').trim(),
-        objectiveName_EN: (item.Title_EN ?? item.title_EN ?? '').trim(),
-        ownerName: item.OwnerEmployeeFullName ?? item.ownerEmployeeFullName ?? '',
-        ownerTeam: item.OwnerTeam ?? item.ownerTeam ?? '',
+        objectiveId: item.objectiveId ?? 0,
+        objectiveOwnerType: item.objectiveOwnerType ?? 1,
+        objectiveType: item.objectiveType ?? 1,
+        referenceObjectiveId: item.referenceObjectiveId ?? 0,
+        objectiveName: (item.title ?? '').trim(),
+        objectiveName_EN: (item.title_EN ?? '').trim(),
+        ownerTeam: item.ownerTeam ?? '',
         progress,
         status: progress >= 70 ? 'On Track' : progress >= 40 ? 'At Risk' : 'Behind',
         impactLevel: progress >= 80 ? 'high' : progress >= 60 ? 'medium' : 'low',
-        details,
+        subObjectives,
+        details: allDetails, // Keep flattened array for backwards compatibility and easy aggregations
     };
 }
 
 function calculateSummary(objectives: Objective[]): TeamSummary {
     const total = objectives.length;
-    const completed = objectives.filter((o) => o.progress >= 70).length;
+    const completed = objectives.filter((o) => o.progress == 100).length;
     const avgProgress = total > 0
         ? Math.round(objectives.reduce((s, o) => s + o.progress, 0) / total * 10) / 10
         : 0;
@@ -176,11 +180,13 @@ const apiService = {
      * Response: { status, data: [...] } or direct array [...]
      * 204 No Content → empty result
      */
-    async getOKRTeamDashboard(params: { assessmentSetId: number, organizationId: number }): Promise<DashboardData> {
+    async getOKRTeamDashboard(params: { assessmentSetId: number, organizationId: number, dateStart?: string, dateEnd?: string }): Promise<DashboardData> {
         try {
             const response = await apiClient.post('/api/v1/goal-managements/objective-summary', {
                 assessmentSetId: params.assessmentSetId,
                 organizationId: params.organizationId,
+                dateStart: params.dateStart,
+                dateEnd: params.dateEnd,
             });
 
             // 204 No Content
@@ -190,7 +196,7 @@ const apiService = {
             }
 
             // Handle both: direct array [...] and wrapped response { status, data: [...] } / { Status, Data: [...] }
-            const raw: OkrObjectiveRaw[] = Array.isArray(response.data)
+            const raw: OkrDataRaw[] = Array.isArray(response.data)
                 ? response.data
                 : (Array.isArray(response.data?.data)
                     ? response.data.data

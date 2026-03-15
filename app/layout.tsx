@@ -1,11 +1,10 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import NavBar from "@/components/nav-bar";
 import { ThemeProvider } from "@/components/theme-provider";
 import Aurora from "@/components/react-bits/Aurora";
 
 export const metadata: Metadata = {
-  title: "Stratio - OKR Team Dashboard",
+  title: "Statio OKR",
   description: "Enterprise OKR dashboard with AI insights",
 };
 
@@ -33,8 +32,7 @@ export default function RootLayout({
                             speed={0.4}
                         />
                     </div>
-                    <NavBar />
-                    <div className="relative flex-1 pt-24">
+                    <div className="relative flex-1">
                         {children}
                     </div>
                 </div>
