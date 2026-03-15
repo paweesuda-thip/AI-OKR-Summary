@@ -140,7 +140,7 @@ export default function ProgressUpdateSection({ title, description, subObjective
 
                                     <div className="space-y-3 pt-4 border-t border-border/20">
                                         <div className="flex justify-between items-end">
-                                            <span className="font-medium text-muted-foreground">Overall Progress</span>
+                                            <span className="font-medium text-muted-foreground">Overall Quarter</span>
                                             <span className="text-2xl font-bold">{selectedObj.progress?.toFixed(1)}%</span>
                                         </div>
                                         <Progress value={selectedObj.progress || 0} className="h-3 w-full [&>div>div]:bg-primary" />

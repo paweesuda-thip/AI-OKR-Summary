@@ -61,7 +61,7 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                             {/* Main Progress Block */}
                             <div className="mt-auto mb-8">
                                 <div className="flex items-end justify-between mb-3">
-                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Overall Progress</p>
+                                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Overall Quarter</p>
                                     <div className="flex items-baseline gap-0.5">
                                         <span className={`text-4xl font-bold tracking-tighter tabular-nums ${st.color}`}>
                                             {obj.progress?.toFixed(0)}
@@ -153,7 +153,7 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                         <div className="bg-background/80 border border-border/40 rounded-3xl p-6 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-lg font-bold text-foreground flex items-center gap-2">
-                                    <Percent className="w-5 h-5 text-primary" /> Overall Progress
+                                    <Percent className="w-5 h-5 text-primary" /> Overall Quarter
                                 </h4>
                                 <span className={`text-3xl font-black tabular-nums ${st.color}`}>
                                     {obj.progress?.toFixed(0)}%

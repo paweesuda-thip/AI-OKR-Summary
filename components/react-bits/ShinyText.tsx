@@ -14,6 +14,7 @@ interface ShinyTextProps {
   pauseOnHover?: boolean;
   direction?: 'left' | 'right';
   delay?: number;
+  backgroundImage?: string;
 }
 
 const ShinyText: React.FC<ShinyTextProps> = ({
@@ -27,7 +28,8 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   yoyo = false,
   pauseOnHover = false,
   direction = 'left',
-  delay = 0
+  delay = 0,
+  backgroundImage
 }) => {
   const [isPaused, setIsPaused] = useState(false);
   const progress = useMotionValue(0);
@@ -110,7 +112,7 @@ const ShinyText: React.FC<ShinyTextProps> = ({
   }, [pauseOnHover]);
 
   const gradientStyle: React.CSSProperties = {
-    backgroundImage: `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
+    backgroundImage: backgroundImage || `linear-gradient(${spread}deg, ${color} 0%, ${color} 35%, ${shineColor} 50%, ${color} 65%, ${color} 100%)`,
     backgroundSize: '200% auto',
     WebkitBackgroundClip: 'text',
     backgroundClip: 'text',
