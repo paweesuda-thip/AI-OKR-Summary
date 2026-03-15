@@ -57,51 +57,48 @@ export function AIScoreSection({ teamSummary, dashboardData }: AIScoreSectionPro
   };
 
   return (
-    <section className="w-full max-w-7xl mx-auto mb-10">
-      <div className="border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 rounded-2xl shadow-sm transition-all duration-500 overflow-hidden">
+    <section className="w-full max-w-7xl mx-auto mb-10 h-full flex flex-col">
+      <div className="flex-1 flex flex-col transition-all duration-500 overflow-hidden">
         
         {/* Uninitialized State */}
         {!aiScoreResult && !isGeneratingScore && (
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 p-5 sm:p-6">
-            <div className="flex items-center gap-4">
-              <div className="h-10 w-10 sm:h-12 sm:w-12 rounded-full bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center shrink-0">
-                <Sparkles className="h-4 w-4 sm:h-5 sm:w-5 text-zinc-700 dark:text-zinc-300" />
-              </div>
-              <div>
-                <h3 className="text-base sm:text-lg font-semibold tracking-tight text-zinc-900 dark:text-zinc-100">
-                  AI Performance Insight
-                </h3>
-                <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
-                  ให้ AI ช่วยวิเคราะห์ผลงานและให้คำแนะนำแบบเจาะลึกเพื่อขับเคลื่อนทีมของคุณ
-                </p>
-              </div>
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-zinc-50/50 dark:bg-zinc-950/20 rounded-2xl border border-zinc-200 dark:border-zinc-800/50 backdrop-blur-sm">
+            <div className="h-16 w-16 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center mb-6 shadow-sm">
+              <Sparkles className="h-8 w-8 text-indigo-500 dark:text-indigo-400" />
             </div>
+            <h3 className="text-2xl font-bold tracking-tight text-zinc-900 dark:text-zinc-100 mb-2">
+              Generate AI Insight
+            </h3>
+            <p className="text-zinc-500 dark:text-zinc-400 max-w-md mx-auto mb-8">
+              ให้ AI ช่วยวิเคราะห์ผลงานและให้คำแนะนำแบบเจาะลึกเพื่อขับเคลื่อนทีมของคุณ
+            </p>
             <Button 
               onClick={handleGetAIScore}
               disabled={!teamSummary}
-              className="w-full sm:w-auto bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100 rounded-full px-6"
+              size="lg"
+              className="rounded-full px-8 py-6 text-base font-semibold shadow-lg hover:scale-105 active:scale-95 transition-all bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-900 dark:hover:bg-zinc-100"
             >
-              <Sparkles className="w-4 h-4 mr-2" />
-              Generate Insight
+              <Sparkles className="w-5 h-5 mr-2" />
+              Analyze Dashboard Data
             </Button>
           </div>
         )}
 
         {/* Loading State */}
         {isGeneratingScore && (
-          <div className="flex flex-col items-center justify-center py-12 px-6">
-            <Loader2 className="w-8 h-8 text-zinc-400 animate-spin mb-4" />
-            <h3 className="text-base font-medium text-zinc-900 dark:text-zinc-100 mb-1">Analyzing Data</h3>
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">กำลังวิเคราะห์ข้อมูลผลงานของทีม...</p>
+          <div className="flex-1 flex flex-col items-center justify-center p-12 text-center bg-zinc-50/50 dark:bg-zinc-950/20 rounded-2xl border border-zinc-200 dark:border-zinc-800/50 backdrop-blur-sm">
+            <Loader2 className="w-10 h-10 text-indigo-500 animate-spin mb-6" />
+            <h3 className="text-xl font-bold text-zinc-900 dark:text-zinc-100 mb-2">Analyzing Data</h3>
+            <p className="text-zinc-500 dark:text-zinc-400">กำลังวิเคราะห์ข้อมูลผลงานของทีมและสร้างคำแนะนำ...</p>
           </div>
         )}
 
         {/* Error State */}
         {error && !isGeneratingScore && (
-          <div className="flex flex-col items-center justify-center py-10 px-6 text-center">
-            <AlertCircle className="w-8 h-8 text-destructive mb-3" />
-            <p className="text-destructive font-medium">{error}</p>
-            <Button variant="outline" onClick={handleGetAIScore} className="mt-4 rounded-full">
+          <div className="flex-1 flex flex-col items-center justify-center py-10 px-6 text-center bg-red-50 dark:bg-red-950/10 rounded-2xl border border-red-200 dark:border-red-900/30">
+            <AlertCircle className="w-10 h-10 text-destructive mb-4" />
+            <p className="text-destructive font-medium text-lg mb-6">{error}</p>
+            <Button variant="outline" onClick={handleGetAIScore} className="rounded-full px-8 bg-white dark:bg-transparent">
               Try Again
             </Button>
           </div>
@@ -109,39 +106,49 @@ export function AIScoreSection({ teamSummary, dashboardData }: AIScoreSectionPro
 
         {/* Result State */}
         {aiScoreResult && !isGeneratingScore && (
-          <div className="flex flex-col animate-in fade-in zoom-in-95 duration-500">
+          <div className="flex flex-col flex-1 animate-in fade-in zoom-in-95 duration-500 bg-white/60 dark:bg-zinc-950/40 border border-zinc-200 dark:border-zinc-800/50 rounded-2xl overflow-hidden shadow-xl backdrop-blur-md">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-zinc-100 dark:border-zinc-900 px-6 py-4 bg-zinc-50/50 dark:bg-zinc-900/20">
+            <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800/50 px-6 py-4 bg-zinc-50/80 dark:bg-black/20">
               <div className="flex items-center gap-2.5">
-                <BarChart2 className="w-4 h-4 text-zinc-500" />
-                <span className="text-sm font-medium text-zinc-700 dark:text-zinc-300">AI Analysis Complete</span>
+                <BarChart2 className="w-5 h-5 text-indigo-500 dark:text-indigo-400" />
+                <span className="font-semibold text-zinc-900 dark:text-zinc-100 tracking-wide uppercase text-sm">Analysis Complete</span>
               </div>
               <Button 
                 onClick={handleGetAIScore}
                 variant="ghost"
                 size="sm"
-                className="h-8 text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full"
+                className="text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full"
               >
-                <RefreshCw className="w-3.5 h-3.5 mr-2" />
+                <RefreshCw className="w-4 h-4 mr-2" />
                 Re-analyze
               </Button>
             </div>
 
             {/* Content */}
-            <div className="flex flex-col md:flex-row">
+            <div className="flex flex-col md:flex-row flex-1 min-h-0">
               {/* Score Column */}
-              <div className="md:w-[280px] shrink-0 flex flex-col items-center justify-center p-8 border-b md:border-b-0 md:border-r border-zinc-100 dark:border-zinc-900 bg-white dark:bg-zinc-950">
-                <div className="text-[5rem] leading-none font-semibold tracking-tighter text-zinc-900 dark:text-white mb-3">
-                  {aiScoreResult.score}<span className="text-3xl text-zinc-300 dark:text-zinc-700 font-normal">/10</span>
+              <div className="md:w-[320px] shrink-0 flex flex-col items-center justify-center p-10 border-b md:border-b-0 md:border-r border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-black/10 relative overflow-hidden">
+                {/* Subtle glow behind score */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-10 dark:opacity-20 pointer-events-none">
+                  <div className={`w-32 h-32 blur-3xl rounded-full ${
+                    aiScoreResult.score >= 8 ? 'bg-emerald-500' : 
+                    aiScoreResult.score >= 5 ? 'bg-amber-500' : 'bg-rose-500'
+                  }`} />
                 </div>
-                <div className={`px-3 py-1 rounded-full text-xs font-semibold border uppercase tracking-wider ${getScoreStyle(aiScoreResult.score)}`}>
+                
+                <div className="text-[6rem] leading-none font-black tracking-tighter text-zinc-900 dark:text-white mb-4 drop-shadow-sm relative z-10">
+                  {aiScoreResult.score}<span className="text-3xl text-zinc-400 dark:text-zinc-600 font-medium ml-1">/10</span>
+                </div>
+                <div className={`px-4 py-1.5 rounded-full text-sm font-bold border uppercase tracking-widest shadow-sm relative z-10 ${getScoreStyle(aiScoreResult.score)}`}>
                   {getScoreLabel(aiScoreResult.score)}
                 </div>
               </div>
 
               {/* Markdown Column */}
-              <div className="flex-1 p-6 md:p-8 bg-zinc-50/30 dark:bg-zinc-900/10">
-                <div className="prose prose-zinc dark:prose-invert prose-sm sm:prose-base max-w-none prose-headings:font-semibold prose-headings:tracking-tight prose-p:text-zinc-600 dark:prose-p:text-zinc-400 prose-li:text-zinc-600 dark:prose-li:text-zinc-400">
+              <div className="flex-1 p-8 md:p-10 overflow-y-auto custom-scrollbar bg-zinc-50/50 dark:bg-transparent">
+                <div className="prose prose-zinc dark:prose-invert prose-lg max-w-none 
+                  prose-headings:font-bold prose-headings:tracking-tight 
+                  prose-p:leading-relaxed">
                   <ReactMarkdown remarkPlugins={[remarkGfm]}>
                     {aiScoreResult.review}
                   </ReactMarkdown>

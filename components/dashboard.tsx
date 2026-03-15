@@ -6,7 +6,6 @@ import {
   AlertCircle,
   X,
   Sparkles,
-  Target,
   TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,14 +16,20 @@ import { format } from "date-fns";
 import { AIScoreSection } from "./ai-score-section";
 import OverviewCards from "./overview-cards";
 import ObjectivesSection from "./objectives-section";
-import { SimpleChatbot } from "./ai-element/simple-chatbot";
 import FilterBar from "./filter-bar";
 import PeriodComparisonSection from "./period-comparison-section";
-import ShinyText from "@/components/react-bits/ShinyText";
 import MagicRings from "@/components/react-bits/MagicRings";
 import { CheckInEngagement } from "@/components/check-in-engagement";
 import ClickSpark from "@/components/react-bits/ClickSpark";
 import { EvervaultCard } from "@/components/ui/evervault-card";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 import apiService from "@/lib/services/api-service";
 import {
@@ -33,7 +38,6 @@ import {
   TeamSummary,
   ParticipantDetailRaw,
 } from "@/lib/types/okr";
-import Image from "next/image";
 import ProgressUpdateSection from "./progress-update-section";
 import { FloatingAiChat } from "./floating-ai-chat";
 import { ModeToggle } from "@/components/mode-toggle";
@@ -72,12 +76,25 @@ export default function Dashboard() {
 
       if (proxyRes.ok) {
         const data = await proxyRes.json();
-        if (data.toonifiedUrl) {
-          setProcessedImages(prev => ({ ...prev, [url]: data.toonifiedUrl }));
+        if (data.imageData) {
+          // Immediately show original image from proxy
+          setProcessedImages(prev => ({ ...prev, [url]: data.imageData }));
+          
+          try {
+            // Remove background client-side asynchronously
+            const { removeBackground } = await import("@imgly/background-removal");
+            const resultBlob = await removeBackground(data.imageData);
+            const finalUrl = URL.createObjectURL(resultBlob);
+            
+            // Update with the background-removed image once done
+            setProcessedImages(prev => ({ ...prev, [url]: finalUrl }));
+          } catch (bgError) {
+            console.error("Background removal failed, keeping original image:", bgError);
+          }
         }
       }
     } catch (err) {
-      console.error("Failed to remove background:", err);
+      console.error("Failed to fetch image via proxy:", err);
     }
   }, [processedImages]);
 
@@ -237,6 +254,48 @@ export default function Dashboard() {
           <section className="mb-10">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 relative z-20">
               <h2 className="text-3xl font-bold tracking-tight text-foreground">Statio OKR</h2>
+              
+              <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
+                <DrawerTrigger asChild>
+                  <Button className="rounded-full px-6 py-5 text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    AI Performance Insight
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent className="h-[90vh] bg-background/95 backdrop-blur-3xl border-border/50">
+                  <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
+                    <DrawerHeader className="shrink-0 text-center sm:text-left">
+                      <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-2">
+                        <Sparkles className="w-6 h-6 text-indigo-500" />
+                        AI OKR Intelligence
+                      </DrawerTitle>
+                      <DrawerDescription>
+                        Deep dive into strategic insights, team performance
+                        patterns, and actionable recommendations.
+                      </DrawerDescription>
+                    </DrawerHeader>
+                    <div className="flex-1 overflow-y-auto mt-4 pr-2 relative">
+                      {/* Magic Rings subtle background glow inside drawer */}
+                      <div className="pointer-events-none fixed inset-0 z-0 opacity-20 dark:opacity-30 blur-xl">
+                        <MagicRings
+                          color="#6366f1"
+                          colorTwo="#a855f7"
+                          speed={0.3}
+                          ringCount={3}
+                          attenuation={20}
+                          lineThickness={2}
+                          baseRadius={0.4}
+                          opacity={0.5}
+                          followMouse={false}
+                        />
+                      </div>
+                      <div className="relative z-10 h-full">
+                        <AIScoreSection teamSummary={teamSummary} dashboardData={dashboardData} />
+                      </div>
+                    </div>
+                  </div>
+                </DrawerContent>
+              </Drawer>
             </div>
             <OverviewCards
               summary={teamSummary}
@@ -244,9 +303,6 @@ export default function Dashboard() {
               objectives={objectives}
             />
           </section>
-
-          {/* ── AI Performance Insight ── */}
-          <AIScoreSection teamSummary={teamSummary} dashboardData={dashboardData} />
 
           {/* ── Main Layout: Dashboard Style ── */}
           <div className="flex flex-col gap-12">
@@ -312,11 +368,9 @@ export default function Dashboard() {
                                 style={{ clipPath: 'inset(-100% 0 0 0 round 0 0 1rem 1rem)' }}
                               >
                                 {processedImages[p.pictureMediumURL || p.pictureURL] ? (
-                                  <Image 
+                                  <img 
                                     src={processedImages[p.pictureMediumURL || p.pictureURL]} 
                                     alt={p.fullName} 
-                                    width={400}
-                                    height={400}
                                     className={`w-auto object-contain object-bottom drop-shadow-2xl transition-transform duration-500 group-hover:scale-105 origin-bottom ${isFirst ? 'h-[125%]' : 'h-[115%]'}`}
                                   />
                                 ) : (
