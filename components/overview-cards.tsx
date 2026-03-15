@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Card } from "@/components/ui/card";
-import { CopyCheck, Target, TrendingUp, Users, CheckCircle2, UserX, ArrowUpRight, Flame } from "lucide-react";
+import { CopyCheck, Target, Users, CheckCircle2, Activity, UserX, ArrowUpRight } from "lucide-react";
 import { TeamSummary, ParticipantDetailRaw, Objective, KrDetail } from "@/lib/types/okr";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
@@ -305,8 +305,6 @@ export default function OverviewCards({ summary, participantDetails = [], object
         return objectives?.flatMap(o => o.subObjectives || []) || [];
     }, [objectives]);
 
-    if (!summary) return null;
-
     // Calculate total and missed check-ins using the new API data
     const totalCheckIns = participantDetails.reduce((acc, curr) => acc + curr.totalCheckIn, 0);
     const missingCheckInEmployees = participantDetails.filter(p => p.totalCheckIn === 0);
@@ -315,128 +313,114 @@ export default function OverviewCards({ summary, participantDetails = [], object
     const completedSubObjectives = subObjectives.filter(sub => sub.progress >= 100).length;
     const subObjectiveCompletionRate = totalSubObjectives > 0 ? (completedSubObjectives / totalSubObjectives) * 100 : 0;
 
-    const {
-        totalKRs, completedKRs, krCompletionRate,
-        avgObjectiveProgress, onTrackCount, totalObjectives
-    } = summary;
+    const totalKRs = summary?.totalKRs || 0;
+    const completedKRs = summary?.completedKRs || 0;
+    const krCompletionRate = summary?.krCompletionRate || 0;
+    const avgObjectiveProgress = summary?.avgObjectiveProgress || 0;
+    const onTrackCount = summary?.onTrackCount || 0;
+    const totalObjectives = summary?.totalObjectives || 0;
+    const atRiskCount = summary?.atRiskCount || 0;
+    const behindCount = summary?.behindCount || 0;
 
     return (
-        <div className="flex flex-col gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
-                    {/* 1. Objectives */}
-                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Objectives</span>
-                            <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center">
-                                <Target className="w-4 h-4 text-indigo-500" />
-                            </div>
+        <div className="w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full">
+                {/* 1. Overall Progress (Spans 2 columns) */}
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <Activity className="w-4 h-4 text-muted-foreground" />
+                            <span className="text-sm font-medium">Cycle Health</span>
                         </div>
-                        <div className="relative z-10">
-                            <div className="text-4xl font-bold text-foreground mb-1 tracking-tight">
-                                {completedSubObjectives}/{totalSubObjectives}
-                            </div>
-                            <div className="text-sm text-muted-foreground font-medium">
-                                Completion rate {subObjectiveCompletionRate?.toFixed(1)}%
-                            </div>
-                        </div>
+                        <Badge variant="secondary" className="bg-secondary/50 text-xs font-normal">Overall Progress</Badge>
                     </div>
-
-                    {/* 2. Key Results */}
-                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-linear-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Key Results</span>
-                            <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
-                                <CopyCheck className="w-4 h-4 text-emerald-500" />
+                    
+                    <div className="flex-1 flex flex-col justify-end mt-2">
+                        <div className="flex items-baseline gap-2 mb-3">
+                            <div className="text-4xl font-semibold tracking-tight leading-none">
+                                {avgObjectiveProgress.toFixed(1)}<span className="text-xl text-muted-foreground font-normal ml-0.5">%</span>
                             </div>
                         </div>
-                        <div className="relative z-10">
-                            <div className="text-4xl font-bold text-emerald-500 mb-1 tracking-tight">
-                                {completedKRs}/{totalKRs}
+                        
+                        <div className="space-y-3 mt-1">
+                            <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden flex">
+                                <div className="bg-emerald-500 transition-all duration-1000" style={{ width: `${totalObjectives > 0 ? (onTrackCount / totalObjectives) * 100 : 0}%` }} />
+                                <div className="bg-amber-500 transition-all duration-1000" style={{ width: `${totalObjectives > 0 ? (atRiskCount / totalObjectives) * 100 : 0}%` }} />
+                                <div className="bg-rose-500 transition-all duration-1000" style={{ width: `${totalObjectives > 0 ? (behindCount / totalObjectives) * 100 : 0}%` }} />
                             </div>
-                            <div className="text-sm text-muted-foreground font-medium">
-                                Completion rate {krCompletionRate?.toFixed(1)}%
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 4. Total Check-in (Replaces Contributors) */}
-                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Total Check-in</span>
-                            <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
-                                <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                            </div>
-                        </div>
-                        <div className="relative z-10">
-                            <div className="text-4xl font-bold text-blue-500 mb-1 tracking-tight">
-                                {totalCheckIns}
-                            </div>
-                            <div className="text-sm text-muted-foreground font-medium">
-                                Check-ins in selected period
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* 5. Missing Check-ins */}
-                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-linear-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Missed Check-ins</span>
-                            <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center">
-                                <UserX className="w-4 h-4 text-rose-500" />
-                            </div>
-                        </div>
-                        <div className="relative z-10 flex flex-col gap-2">
-                            <div className="text-4xl font-bold text-rose-500 mb-1 tracking-tight">
-                                {missingCheckInEmployees.length}
-                            </div>
-                            {missingCheckInEmployees.length > 0 ? (
-                                <div className="flex -space-x-3 rtl:space-x-reverse mt-1">
-                                    {missingCheckInEmployees.slice(0, 5).map((member, i) => (
-                                        <Avatar key={member.employeeId || i} className="w-8 h-8 border-2 border-background ring-2 ring-rose-500/20">
-                                            <AvatarImage src={member.pictureMediumURL || member.pictureURL} alt={member.fullName} />
-                                            <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">{member.fullName.substring(0, 2)}</AvatarFallback>
-                                        </Avatar>
-                                    ))}
-                                    {missingCheckInEmployees.length > 5 && (
-                                        <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-background bg-muted text-xs font-medium z-10 ring-2 ring-rose-500/20">
-                                            +{missingCheckInEmployees.length - 5}
-                                        </div>
-                                    )}
+                            
+                            <div className="flex items-center justify-between text-xs text-muted-foreground">
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                    <span>On Track <span className="font-medium text-foreground ml-0.5">{onTrackCount}</span></span>
                                 </div>
-                            ) : (
-                                <div className="text-sm text-muted-foreground font-medium flex items-center gap-2">
-                                    Everyone checked in
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                                    <span>At Risk <span className="font-medium text-foreground ml-0.5">{atRiskCount}</span></span>
                                 </div>
-                            )}
+                                <div className="flex items-center gap-1.5">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                                    <span>Behind <span className="font-medium text-foreground ml-0.5">{behindCount}</span></span>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                </div>
 
-                    {/* 6. Team Members (Avatar Group) */}
-                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Contributors</span>
-                            <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
-                                <Users className="w-4 h-4 text-purple-500" />
-                            </div>
+                {/* 2. Objectives */}
+                <div className="flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Target className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Objectives</span>
+                    </div>
+                    <div className="mt-auto">
+                        <div className="text-3xl font-semibold tracking-tight">
+                            {completedSubObjectives}
+                            <span className="text-lg text-muted-foreground font-normal ml-1">/ {totalSubObjectives}</span>
                         </div>
-                        <div className="relative z-10 flex flex-col gap-2">
-                            <div className="text-4xl font-bold text-foreground mb-1 tracking-tight">
-                                {participantDetails.length}
-                            </div>
-                            <div className="flex -space-x-3 rtl:space-x-reverse mt-1">
-                                 {participantDetails.slice(0, 5).map((member, i) => (
-                                    <Avatar key={member.employeeId || i} className="w-8 h-8 border-2 border-background ring-2 ring-purple-500/20">
+                        <div className="text-sm text-muted-foreground mt-1">
+                            {subObjectiveCompletionRate.toFixed(1)}% completed
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Key Results */}
+                <div className="flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-4">
+                        <CopyCheck className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Key Results</span>
+                    </div>
+                    <div className="mt-auto">
+                        <div className="text-3xl font-semibold tracking-tight">
+                            {completedKRs}
+                            <span className="text-lg text-muted-foreground font-normal ml-1">/ {totalKRs}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground mt-1">
+                            {krCompletionRate.toFixed(1)}% completed
+                        </div>
+                    </div>
+                </div>
+
+                {/* 4. Team / Contributors */}
+                <div className="flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Users className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Team</span>
+                    </div>
+                    <div className="mt-auto">
+                        <div className="text-3xl font-semibold tracking-tight mb-2">
+                            {participantDetails.length}
+                        </div>
+                        <div className="flex items-center">
+                            <div className="flex -space-x-2 rtl:space-x-reverse">
+                                {participantDetails.slice(0, 5).map((member, i) => (
+                                    <Avatar key={member.employeeId || i} className="w-7 h-7 border-2 border-background">
                                         <AvatarImage src={member.pictureMediumURL || member.pictureURL} alt={member.fullName} />
-                                        <AvatarFallback className="text-[10px] bg-muted text-muted-foreground">{member.fullName.substring(0, 2)}</AvatarFallback>
+                                        <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">{member.fullName?.substring(0, 2)}</AvatarFallback>
                                     </Avatar>
                                 ))}
                                 {participantDetails.length > 5 && (
-                                    <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-background bg-muted text-xs font-medium z-10 ring-2 ring-purple-500/20">
+                                    <div className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-background bg-secondary text-secondary-foreground text-[10px] font-medium z-10">
                                         +{participantDetails.length - 5}
                                     </div>
                                 )}
@@ -445,73 +429,42 @@ export default function OverviewCards({ summary, participantDetails = [], object
                     </div>
                 </div>
 
-                <div className="bg-muted/10 backdrop-blur-xl rounded-3xl px-8 py-6 flex flex-col md:flex-row md:items-center gap-6 mt-2">
-                    <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
-                        Current Cycle — Overall Progress
-                    </span>
-                    
-                    <div className="flex-1 flex items-center gap-4">
-                        <div className="flex-1 h-3 bg-muted/50 rounded-full overflow-hidden flex shadow-inner">
-                            <div className="h-full bg-emerald-500 transition-all duration-1000 ease-out" style={{ width: `${(onTrackCount / totalObjectives) * 100}%` }} />
-                            <div className="h-full bg-amber-500 transition-all duration-1000 ease-out" style={{ width: `${(summary.atRiskCount / totalObjectives) * 100}%` }} />
-                            <div className="h-full bg-rose-500 transition-all duration-1000 ease-out" style={{ width: `${(summary.behindCount / totalObjectives) * 100}%` }} />
-                        </div>
-                        <span className="font-bold text-lg">{summary.avgObjectiveProgress.toFixed(1)}%</span>
+                {/* 5. Check-ins */}
+                <div className="flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-4">
+                        <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Check-ins</span>
                     </div>
-
-                    <div className="flex items-center gap-4 text-sm whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]" />
-                            <span className="font-medium text-foreground">On Track <span className="font-bold ml-1">{onTrackCount}</span></span>
+                    <div className="mt-auto">
+                        <div className="text-3xl font-semibold tracking-tight mb-2">
+                            {totalCheckIns}
                         </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.6)]" />
-                            <span className="font-medium text-foreground">At Risk <span className="font-bold ml-1">{summary.atRiskCount}</span></span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]" />
-                            <span className="font-medium text-foreground">Behind <span className="font-bold ml-1">{summary.behindCount}</span></span>
-                        </div>
-                    </div>
-                </div>
-
-            {/* Top Active Objectives Section */}
-            {objectives.length > 0 && topObjectives.length > 0 && (
-                <div id="Pre-delete" className="hidden flex-col items-center gap-10 mt-16 mb-8 relative">
-                    {/* Background decoration for the header */}
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-32 bg-linear-to-b from-primary/5 to-transparent blur-2xl pointer-events-none -z-10" />
-                    
-                    <div className="flex flex-col items-center text-center px-4 max-w-2xl relative z-10">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-orange-500/30 bg-orange-500/10 mb-6 shadow-sm">
-                            <Flame className="w-4 h-4 text-orange-500" />
-                            <span className="text-xs font-bold tracking-wider uppercase text-orange-500">Trending Now</span>
-                        </div>
-                        
-                        <div className="text-4xl md:text-5xl font-extrabold tracking-tighter mb-4">
-                            <ShinyText 
-                                text="Top Active Objectives" 
-                                disabled={false} 
-                                speed={3} 
-                                color="rgba(255,255,255,0.7)" 
-                                shineColor="#ffffff" 
-                            />
-                        </div>
-                        
-                        <p className="text-base md:text-lg text-muted-foreground font-medium leading-relaxed">
-                            Ranked by team engagement, member participation, and check-in volume.
-                        </p>
-                    </div>
-                    
-                    {/* Grid Layout */}
-                    <div className="flex justify-center w-full relative z-10">
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full max-w-6xl">
-                            {topObjectives.map((obj, index) => (
-                                <TopObjectiveCard key={obj.objectiveId || index} obj={obj} rank={index + 1} />
-                            ))}
+                        <div className="flex items-center">
+                            {missingCheckInEmployees.length === 0 ? (
+                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                                    <CheckCircle2 className="w-3.5 h-3.5" />
+                                    <span className="text-xs font-medium">All clear</span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
+                                        <UserX className="w-3.5 h-3.5" />
+                                        <span className="text-xs font-medium">{missingCheckInEmployees.length} missed</span>
+                                    </div>
+                                    <div className="flex -space-x-1.5 rtl:space-x-reverse ml-1">
+                                        {missingCheckInEmployees.slice(0, 3).map((member, i) => (
+                                            <Avatar key={member.employeeId || i} className="w-5 h-5 border border-background">
+                                                <AvatarImage src={member.pictureMediumURL || member.pictureURL} alt={member.fullName} />
+                                                <AvatarFallback className="text-[8px] bg-secondary text-secondary-foreground">{member.fullName?.substring(0, 2)}</AvatarFallback>
+                                            </Avatar>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
-            )}
+            </div>
         </div>
     );
 }

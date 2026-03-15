@@ -4,7 +4,6 @@ import { useState, useCallback, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { SendIcon, SparklesIcon } from "lucide-react"
 import { nanoid } from "nanoid"
-import { toast } from "sonner"
 
 interface Message {
   id: string
@@ -20,14 +19,6 @@ const suggestions = [
   "Summarize check-in engagement",
   "How can we improve completion rates?",
   "What patterns do you see in the data?",
-]
-
-const mockResponses = [
-  "Based on the current data, I can see that your team has strong momentum in engineering objectives with an average progress of 78%. The completion rate shows positive trends, particularly in Q1 targets.",
-  "Looking at your performance metrics, there are several key insights: Your top performers are showing consistent check-in patterns, and the overall objective completion rate has improved by 5% compared to the previous period.",
-  "From analyzing the OKR data, I notice that objectives related to product development are progressing well, while some operational goals might benefit from additional focus and resources.",
-  "The team engagement metrics show healthy patterns with regular check-ins. I'd recommend focusing on the objectives that haven't had recent updates to maintain momentum across all areas.",
-  "Your performance dashboard indicates strong execution in most areas. The key success factors seem to be consistent check-ins and clear objective definitions. Consider applying these patterns to at-risk objectives.",
 ]
 
 export function SimpleChatbot() {
@@ -55,21 +46,39 @@ export function SimpleChatbot() {
   const simulateResponse = useCallback(async (userMessage: string) => {
     setIsLoading(true)
     
-    // Simulate AI thinking time
-    await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1500))
-    
-    const response = mockResponses[Math.floor(Math.random() * mockResponses.length)]
-    
-    const assistantMessage: Message = {
-      id: nanoid(),
-      from: "assistant",
-      content: response,
-      timestamp: new Date(),
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: [...messages, { id: nanoid(), from: 'user', content: userMessage, timestamp: new Date() }],
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to get AI response');
+      const data = await response.json();
+      
+      const assistantMessage: Message = {
+        id: nanoid(),
+        from: "assistant",
+        content: data.message,
+        timestamp: new Date(),
+      }
+      
+      setMessages(prev => [...prev, assistantMessage])
+    } catch (error) {
+      console.error(error);
+      const errorMessage: Message = {
+        id: nanoid(),
+        from: "assistant",
+        content: "Sorry, I encountered an error while trying to respond. Please try again.",
+        timestamp: new Date(),
+      }
+      setMessages(prev => [...prev, errorMessage])
+    } finally {
+      setIsLoading(false)
     }
-    
-    setMessages(prev => [...prev, assistantMessage])
-    setIsLoading(false)
-  }, [])
+  }, [messages])
 
   const handleSend = useCallback(async () => {
     if (!input.trim()) return

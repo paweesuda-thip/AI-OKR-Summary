@@ -272,7 +272,7 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
 
 const INITIAL_SHOW = 4;
 
-export default function ObjectivesSection({ objectives }: { objectives: Objective[] }) {
+export default function ObjectivesSection({ objectives = [] }: { objectives?: Objective[] }) {
     const displayObjectives = objectives || [];
 
     const [filter, setFilter] = useState('All');
@@ -282,15 +282,15 @@ export default function ObjectivesSection({ objectives }: { objectives: Objectiv
     const handleFilter = (f: string) => { setFilter(f); setShowAll(false); };
 
     // Sort by progress DESC before filtering
-    const sorted = [...(displayObjectives || [])].sort((a, b) => b.progress - a.progress);
+    const sorted = [...displayObjectives].sort((a, b) => (b.progress || 0) - (a.progress || 0));
     const filtered = filter === 'All' ? sorted : sorted.filter(o => o.status === filter);
     const visible = showAll ? filtered : filtered.slice(0, INITIAL_SHOW);
     const hiddenCount = filtered.length - INITIAL_SHOW;
 
     const counts: Record<string, number> = {
-        'On Track': (displayObjectives || []).filter(o => o.status === 'On Track').length,
-        'At Risk':  (displayObjectives || []).filter(o => o.status === 'At Risk').length,
-        'Behind':   (displayObjectives || []).filter(o => o.status === 'Behind').length,
+        'On Track': displayObjectives.filter(o => o.status === 'On Track').length,
+        'At Risk':  displayObjectives.filter(o => o.status === 'At Risk').length,
+        'Behind':   displayObjectives.filter(o => o.status === 'Behind').length,
     };
 
     return (
