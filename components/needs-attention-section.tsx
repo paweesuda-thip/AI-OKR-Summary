@@ -4,6 +4,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ContributorSum, ContributorSumObj } from "@/lib/types/okr";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 
 const statusDot: Record<string, string> = {
     'On Track': 'bg-emerald-500',
@@ -15,6 +22,7 @@ const INITIAL_SHOW = 6;
 
 export default function NeedsAttentionSection({ contributors }: { contributors: ContributorSum[] }) {
     const [showAll, setShowAll] = useState(false);
+    const [selectedPerson, setSelectedPerson] = useState<ContributorSum | null>(null);
 
     // Show employees who have checked in but have low avgObjectiveProgress (< 70%)
     const atRiskContributors = [...(contributors || [])]
@@ -51,7 +59,7 @@ export default function NeedsAttentionSection({ contributors }: { contributors: 
                 </Badge>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {visible.map((person: ContributorSum, i: number) => {
                     const isCritical = person.avgObjectiveProgress < 40;
                     const progressColor = isCritical ? 'text-rose-500' : 'text-amber-500';
@@ -59,7 +67,11 @@ export default function NeedsAttentionSection({ contributors }: { contributors: 
                     const bgClass = isCritical ? 'bg-rose-500/5 hover:bg-rose-500/10' : 'bg-muted/30 hover:bg-muted/50';
 
                     return (
-                        <div key={person.fullName} className={`rounded-3xl p-6 transition-all duration-300 ${bgClass} border border-border/40 backdrop-blur-sm group`}>
+                        <div 
+                            key={person.fullName} 
+                            className={`rounded-3xl p-6 transition-all duration-300 ${bgClass} border border-border/40 backdrop-blur-sm group cursor-pointer hover:-translate-y-1 hover:shadow-lg`}
+                            onClick={() => setSelectedPerson(person)}
+                        >
                             <div className="flex items-center gap-4 mb-6">
                                 <div className="relative">
                                     <Avatar className="w-14 h-14 border-2 border-background shadow-md">
@@ -68,7 +80,7 @@ export default function NeedsAttentionSection({ contributors }: { contributors: 
                                             {person.fullName?.charAt(0)}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-background flex items-center justify-center text-[10px] font-bold text-muted-foreground shadow-sm">
+                                    <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-background flex items-center justify-center text-[10px] font-bold text-muted-foreground shadow-sm border border-border/50">
                                         #{i + 1}
                                     </div>
                                 </div>
@@ -139,6 +151,72 @@ export default function NeedsAttentionSection({ contributors }: { contributors: 
                     </Button>
                 </div>
             )}
+
+            <Dialog open={!!selectedPerson} onOpenChange={(open) => !open && setSelectedPerson(null)}>
+                <DialogContent className="sm:max-w-[700px] w-[95vw] bg-background/95 backdrop-blur-xl border-border/50 max-h-[90vh] overflow-hidden flex flex-col">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl">Objectives Details</DialogTitle>
+                        <DialogDescription>
+                            {selectedPerson?.fullName}&apos;s current objectives and progress
+                        </DialogDescription>
+                    </DialogHeader>
+                    
+                    {selectedPerson && (
+                        <div className="mt-4 flex flex-col gap-6 overflow-hidden flex-1">
+                            <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/20 border border-border/40 shrink-0">
+                                <Avatar className="w-16 h-16 border-2 border-background shadow-md">
+                                    <AvatarImage src={selectedPerson.pictureURL} alt={selectedPerson.fullName} />
+                                    <AvatarFallback className="bg-muted text-muted-foreground text-xl font-bold">
+                                        {selectedPerson.fullName?.charAt(0)}
+                                    </AvatarFallback>
+                                </Avatar>
+                                <div>
+                                    <h4 className="text-xl font-bold text-foreground">{selectedPerson.fullName}</h4>
+                                    <div className="flex items-center gap-3 text-sm text-muted-foreground mt-1">
+                                        <Badge variant="secondary" className="font-medium bg-background/50">
+                                            {selectedPerson.checkInCount} check-in{selectedPerson.checkInCount !== 1 ? 's' : ''}
+                                        </Badge>
+                                        <span className="flex items-center gap-1">
+                                            Avg Progress: <strong className={selectedPerson.avgObjectiveProgress < 40 ? 'text-rose-500' : 'text-amber-500'}>{selectedPerson.avgObjectiveProgress}%</strong>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 overflow-y-auto pr-2 pb-4 flex-1 custom-scrollbar">
+                                <h5 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2">All Objectives ({selectedPerson.objectives?.length || 0})</h5>
+                                {selectedPerson.objectives?.map((okr: ContributorSumObj, idx: number) => {
+                                    const progressColor = okr.progress < 40 ? 'bg-rose-500' : okr.progress < 70 ? 'bg-amber-500' : 'bg-emerald-500';
+                                    
+                                    return (
+                                        <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-xl border border-border/50 bg-background/40 hover:bg-muted/20 transition-colors">
+                                            <div className="flex items-start sm:items-center gap-3 flex-1 min-w-0">
+                                                <span className={`mt-1.5 sm:mt-0 w-3 h-3 rounded-full shrink-0 shadow-sm ${statusDot[okr.status] || 'bg-muted-foreground'}`} />
+                                                <div className="flex-1 min-w-0">
+                                                    <h6 className="font-semibold text-foreground/90 leading-tight">{okr.objectiveName}</h6>
+                                                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-1.5 inline-block px-2 py-0.5 rounded-full bg-muted border border-border/50">
+                                                        {okr.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-4 sm:w-[35%] shrink-0">
+                                                <div className="flex-1 h-2 bg-black/5 dark:bg-white/5 rounded-full overflow-hidden border border-border/20">
+                                                    <div 
+                                                        className={`h-full rounded-full transition-all duration-1000 ${progressColor}`} 
+                                                        style={{ width: `${Math.min(okr.progress, 100)}%` }} 
+                                                    />
+                                                </div>
+                                                <span className="font-bold tabular-nums min-w-12 text-right">{okr.progress}%</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

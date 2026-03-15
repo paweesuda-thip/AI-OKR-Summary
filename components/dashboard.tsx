@@ -11,9 +11,6 @@ import {
   TrendingUp,
   Users,
   CheckCircle2,
-  Crown,
-  Medal,
-  Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +38,8 @@ import CardSwap, { Card } from "@/components/react-bits/CardSwap";
 import MagicRings from "@/components/react-bits/MagicRings";
 import { CheckInEngagement } from "@/components/check-in-engagement";
 import ClickSpark from "@/components/react-bits/ClickSpark";
+import { LayoutTextFlip } from "@/components/ui/layout-text-flip";
+import { EvervaultCard, Icon } from "@/components/ui/evervault-card";
 
 import apiService from "@/lib/services/api-service";
 import {
@@ -49,133 +48,7 @@ import {
   TeamSummary,
   ParticipantDetailRaw,
 } from "@/lib/types/okr";
-import HoloCard from "./gaia/holo-card";
-
-// Wrapper component to handle background removal for each person
-function ToonifiedHoloCard({
-  person,
-  rank,
-  color,
-  badge,
-  defaultImage,
-  aiSummary,
-}: {
-  person: ParticipantDetailRaw;
-  rank: number;
-  color: string;
-  badge: React.ReactNode;
-  defaultImage: string;
-  aiSummary?: string;
-}) {
-  const [imageUrl, setImageUrl] = useState<string>(defaultImage);
-  const [isProcessing, setIsProcessing] = useState(false);
-
-  useEffect(() => {
-    const CACHE_PREFIX = "bg_removed_v1_";
-
-    function getCacheKey(url: string) {
-      // Simple hash to avoid key collision on similar URLs
-      let hash = 0;
-      for (let i = 0; i < url.length; i++) {
-        hash = ((hash << 5) - hash) + url.charCodeAt(i);
-        hash = hash & hash;
-      }
-      return CACHE_PREFIX + Math.abs(hash).toString(36);
-    }
-
-    function loadFromCache(url: string): string | null {
-      try { return localStorage.getItem(getCacheKey(url)); }
-      catch { return null; }
-    }
-
-    function saveToCache(url: string, base64: string) {
-      try {
-        localStorage.setItem(getCacheKey(url), base64);
-      } catch {
-        // localStorage full — evict old bg cache and retry
-        Object.keys(localStorage)
-          .filter(k => k.startsWith(CACHE_PREFIX))
-          .forEach(k => localStorage.removeItem(k));
-        try { localStorage.setItem(getCacheKey(url), base64); } catch { /* ignore */ }
-      }
-    }
-
-    async function processImage() {
-      if (!defaultImage) return;
-
-      // ✅ Cache hit — same top performer as before, skip generation
-      const cached = loadFromCache(defaultImage);
-      if (cached) {
-        setImageUrl(cached);
-        return;
-      }
-
-      setIsProcessing(true);
-      try {
-        // 1. Fetch image via server proxy to bypass CORS
-        const proxyRes = await fetch(`/api/toonify`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ imageUrl: defaultImage }),
-        });
-
-        if (!proxyRes.ok) return;
-        const { imageData } = await proxyRes.json();
-        if (!imageData) return;
-
-        // 2. Remove background client-side with WASM (no server size limit)
-        const { removeBackground } = await import("@imgly/background-removal");
-        const resultBlob = await removeBackground(imageData);
-        const resultBuffer = await resultBlob.arrayBuffer();
-        const base64 = Buffer.from(resultBuffer).toString("base64");
-        const finalUrl = `data:image/png;base64,${base64}`;
-
-        saveToCache(defaultImage, finalUrl);
-        setImageUrl(finalUrl);
-      } catch (err) {
-        console.error("Failed to remove background:", err);
-      } finally {
-        setIsProcessing(false);
-      }
-    }
-
-    processImage();
-  }, [defaultImage]);
-
-  return (
-    <div className="w-full max-w-[320px] mx-auto relative">
-      {isProcessing && (
-        <div className="absolute top-4 right-4 z-50 bg-black/50 backdrop-blur-md rounded-full p-2 flex items-center gap-2">
-          <Loader2 className="w-4 h-4 text-white animate-spin" />
-          <span className="text-xs text-white font-medium">Toonifying...</span>
-        </div>
-      )}
-      <HoloCard
-        branding={{}}
-        data={{
-          name: person.fullName,
-          subtitle: `${person.avgPercent.toFixed(1)}% Avg Progress`,
-          description: aiSummary || `${person.totalCheckInAll} Check-ins`,
-          badge: badge || (
-            <div className="flex items-center gap-1">
-              <Award className="w-4 h-4" /> Rank #{rank}
-            </div>
-          ),
-          primaryId: String(person.employeeId),
-          secondaryInfo: `Check-ins: ${person.totalCheckIn}`,
-          overlayColor: color || "#ffffff",
-          overlayOpacity: 15,
-          personImage: imageUrl,
-          backgroundImage: rank === 1
-            ? "/top1-2.png" // Epic Gold/Space
-            : rank === 2
-            ? "/top2-2.png" // Cool Blue/Silver Nebula
-            : "/top3-2.png", // Warm Bronze/Orange Space
-        }}
-      />
-    </div>
-  );
-}
+import Image from "next/image";
 
 export default function Dashboard() {
   // const ASSESSMENT_SET_ID = 18892; // demo
@@ -196,6 +69,47 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [topPerformersSummary, setTopPerformersSummary] =
     useState<TopPerformersAISummary | null>(null);
+
+  // Background removal state cache
+  const [processedImages, setProcessedImages] = useState<Record<string, string>>({});
+
+  const processImage = useCallback(async (url: string) => {
+    if (!url) return;
+    if (processedImages[url]) return;
+
+    try {
+      const proxyRes = await fetch(`/api/toonify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: url }),
+      });
+
+      if (proxyRes.ok) {
+        const data = await proxyRes.json();
+        if (data.toonifiedUrl) {
+          setProcessedImages(prev => ({ ...prev, [url]: data.toonifiedUrl }));
+        }
+      }
+    } catch (err) {
+      console.error("Failed to remove background:", err);
+    }
+  }, [processedImages]);
+
+  useEffect(() => {
+    const topContributors =
+      participantDetails.length > 0
+        ? [...participantDetails]
+            .sort((a, b) => a.seq - b.seq)
+            .slice(0, 3)
+        : [];
+        
+    topContributors.forEach(p => {
+      const url = p.pictureMediumURL || p.pictureURL;
+      if (url && !processedImages[url]) {
+        processImage(url);
+      }
+    });
+  }, [participantDetails, processImage, processedImages]);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2026, 1, 12), // Feb 12, 2026
@@ -628,74 +542,94 @@ export default function Dashboard() {
 
                 return (
                   <section className="relative">
-                    <div className="mb-10 flex flex-col items-center text-center">
-                      <div className="flex items-center gap-2 mb-2">
-                        <Crown className="w-5 h-5 text-amber-500" />
-                        <h3 className="text-xl md:text-2xl font-bold text-foreground">
-                          Top Performers
-                        </h3>
+                    <div className="mb-16 flex flex-col items-center text-center relative z-20">
+                      {/* Ethereal Glow */}
+                      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-32 bg-primary/10 blur-[80px] rounded-full pointer-events-none -z-10" />
+
+                      <div className="text-5xl md:text-6xl lg:text-7xl font-semibold tracking-tighter mb-4 capitalize">
+                        <ShinyText 
+                          text="Top Performers" 
+                          disabled={false} 
+                          speed={3} 
+                          color="rgba(255,255,255,0.3)" 
+                          shineColor="#ffffff" 
+                        />
                       </div>
-                      <p className="text-muted-foreground text-sm max-w-2xl">
-                        Recognizing the outstanding execution and consistent
-                        momentum of our leading contributors.
-                      </p>
 
                       {topPerformersSummary?.teamSummary && (
-                        <div className="mt-6 bg-primary/5 border border-primary/20 rounded-xl p-4 max-w-3xl backdrop-blur-sm">
-                          <p className="text-foreground/90 text-sm font-medium">
-                            {topPerformersSummary.teamSummary}
-                          </p>
+                        <div className="mt-4 text-muted-foreground/70 text-sm md:text-base max-w-2xl px-6 font-mono font-medium tracking-wide">
+                          <p>&gt; {topPerformersSummary.teamSummary}</p>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex flex-col md:grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto px-4 md:items-end">
+                    <div className="flex flex-col md:flex-row justify-center items-end gap-4 max-w-5xl mx-auto px-4 mt-16">
                       {(() => {
-                        const badges = [
-                          <div key="gold" className="flex items-center gap-1 font-sans font-bold text-amber-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                            <Crown className="w-4 h-4 text-amber-300 drop-shadow" /> Gold Tier
-                          </div>,
-                          <div key="silver" className="flex items-center gap-1 font-sans font-bold text-slate-200 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                            <Medal className="w-4 h-4 text-slate-200 drop-shadow" /> Silver Tier
-                          </div>,
-                          <div key="bronze" className="flex items-center gap-1 font-sans font-bold text-orange-300 drop-shadow-[0_1px_3px_rgba(0,0,0,0.9)]">
-                            <Award className="w-4 h-4 text-orange-300 drop-shadow" /> Bronze Tier
-                          </div>,
-                        ];
-                        const colors = ["#fbbf24", "#94a3b8", "#b45309"];
-                        // Podium order: 2nd left, 1st center, 3rd right
+                        // Order: 2nd, 1st, 3rd for podium layout
                         return [1, 0, 2].map((origIndex) => {
                           const p = topContributors[origIndex];
                           if (!p) return null;
+                          
                           const isFirst = origIndex === 0;
-                          const aiPersonSummary = topPerformersSummary?.rankings?.[origIndex]?.summary;
+                          
                           return (
-                            <div
-                              key={p.employeeId || origIndex}
-                              className={
-                                origIndex === 0
-                                  // Gold: mobile=1st, desktop=center(2nd)
-                                  ? "order-1 md:order-2 flex flex-col items-center md:scale-[1.1] md:z-10 relative"
-                                  : origIndex === 1
-                                  // Silver: mobile=2nd, desktop=left(1st)
-                                  ? "order-2 md:order-1 flex flex-col items-center md:mt-10 md:opacity-90"
-                                  // Bronze: mobile=3rd, desktop=right(3rd)
-                                  : "order-3 md:order-3 flex flex-col items-center md:mt-10 md:opacity-90"
-                              }
+                            <div 
+                              key={p.employeeId || origIndex} 
+                              className={`flex flex-col w-full md:w-1/3 ${
+                                isFirst ? 'order-1 md:order-2 md:-translate-y-6 z-10' : 
+                                origIndex === 1 ? 'order-2 md:order-1' : 
+                                'order-3 md:order-3'
+                              }`}
                             >
-                              {isFirst && (
-                                <div className="mb-2 text-amber-400 font-bold text-sm tracking-widest uppercase drop-shadow-[0_1px_4px_rgba(0,0,0,0.8)]">
-                                  ★ #1 Champion ★
+                              <div className={`relative group w-full ${isFirst ? 'h-[320px]' : 'h-[280px]'}`}>
+                                {/* Card Border Container */}
+                                <div className={`absolute inset-0 border border-border/20 bg-background/20 backdrop-blur-sm transition-colors duration-300 rounded-2xl ${isFirst ? 'shadow-2xl' : ''}`}>
+                                  <Icon className="absolute h-5 w-5 -top-2.5 -left-2.5 text-muted-foreground/50 group-hover:text-foreground/80 transition-colors" />
+                                  <Icon className="absolute h-5 w-5 -bottom-2.5 -left-2.5 text-muted-foreground/50 group-hover:text-foreground/80 transition-colors z-30" />
+                                  <Icon className="absolute h-5 w-5 -top-2.5 -right-2.5 text-muted-foreground/50 group-hover:text-foreground/80 transition-colors" />
+                                  <Icon className="absolute h-5 w-5 -bottom-2.5 -right-2.5 text-muted-foreground/50 group-hover:text-foreground/80 transition-colors z-30" />
+                                  
+                                  {/* Watermark Number */}
+                                  <div className="absolute top-4 right-6 font-mono text-6xl font-black text-muted-foreground/5 group-hover:text-muted-foreground/10 transition-colors pointer-events-none select-none tracking-tighter z-0">
+                                    #{origIndex + 1}
+                                  </div>
                                 </div>
-                              )}
-                              <ToonifiedHoloCard
-                                person={p}
-                                rank={p.seq}
-                                color={colors[origIndex]}
-                                badge={badges[origIndex]}
-                                defaultImage={p.pictureMediumURL || p.pictureURL}
-                                aiSummary={aiPersonSummary}
-                              />
+
+                                {/* Evervault Background Effect (constrained) */}
+                                <div className="absolute inset-0 overflow-hidden rounded-2xl">
+                                  <EvervaultCard className="w-full h-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
+                                </div>
+
+                                {/* Large Pop-out Image */}
+                                <div 
+                                  className="absolute inset-x-0 bottom-0 top-0 flex items-end justify-center pointer-events-none z-10"
+                                  style={{ clipPath: 'inset(-100% 0 0 0 round 0 0 1rem 1rem)' }}
+                                >
+                                  {processedImages[p.pictureMediumURL || p.pictureURL] ? (
+                                    <Image 
+                                      src={processedImages[p.pictureMediumURL || p.pictureURL]} 
+                                      alt={p.fullName} 
+                                      width={400}
+                                      height={400}
+                                      className={`w-auto object-contain object-bottom drop-shadow-2xl transition-transform duration-500 group-hover:scale-105 origin-bottom ${isFirst ? 'h-[125%]' : 'h-[115%]'}`}
+                                    />
+                                  ) : (
+                                    <div className="flex items-center justify-center h-full">
+                                      <Loader2 className="w-6 h-6 text-foreground/50 animate-spin" />
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {/* Info Overlay (Blurred Bottom) */}
+                                <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-background/95 via-background/80 to-transparent pt-16 pb-6 px-4 flex flex-col items-center text-center z-20 rounded-b-2xl pointer-events-none">
+                                  <h4 className={`${isFirst ? 'text-xl' : 'text-lg'} font-bold text-foreground tracking-tight mb-1`}>
+                                    {p.fullName}
+                                  </h4>
+                                  <div className="text-xs font-medium text-muted-foreground">
+                                    {p.totalCheckInAll} Check-ins • {p.avgPercent.toFixed(1)}% Avg Progress
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           );
                         });
@@ -751,12 +685,6 @@ export default function Dashboard() {
 
               {/* ── Objectives ── */}
               <section className="relative bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg max-w-7xl mx-auto w-full pb-12">
-                <div className="flex items-center gap-2 mb-6">
-                  <Target className="w-5 h-5 text-indigo-500" />
-                  <h3 className="text-xl font-bold text-foreground">
-                    All Objectives
-                  </h3>
-                </div>
                 <ObjectivesSection objectives={objectives} />
               </section>
             </div>
