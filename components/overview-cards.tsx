@@ -307,7 +307,7 @@ export default function OverviewCards({ summary, participantDetails = [], object
 
     // Calculate total and missed check-ins using the new API data
     const totalCheckIns = participantDetails.reduce((acc, curr) => acc + curr.totalCheckIn, 0);
-    const missingCheckInEmployees = participantDetails.filter(p => p.totalCheckIn === 0);
+    const missingCheckInEmployees = participantDetails.filter(p => p.totalMissCheckIn > 0);
 
     const totalSubObjectives = subObjectives.length;
     const completedSubObjectives = subObjectives.filter(sub => sub.progress >= 100).length;
@@ -324,43 +324,48 @@ export default function OverviewCards({ summary, participantDetails = [], object
 
     return (
         <div className="w-full">
-            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-5 w-full">
                 {/* 1. Overall Progress (Spans 2 columns) */}
-                <div className="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-2">
-                            <Activity className="w-4 h-4 text-muted-foreground" />
-                            <span className="text-sm font-medium">Cycle Health</span>
+                <div className="col-span-1 md:col-span-2 lg:col-span-2 flex flex-col p-6 rounded-2xl border border-blue-500/20 bg-linear-to-br from-blue-500/10 via-background to-background shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
+                    <div className="absolute -right-6 -top-6 opacity-5 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none">
+                        <Activity className="w-32 h-32 text-blue-500" />
+                    </div>
+                    <div className="flex items-center justify-between mb-4 relative z-10">
+                        <div className="flex items-center gap-2.5">
+                            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/20 text-blue-500">
+                                <Activity className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-semibold text-foreground">Cycle Health</span>
                         </div>
-                        <Badge variant="secondary" className="bg-secondary/50 text-xs font-normal">Overall Progress</Badge>
+                        <Badge variant="secondary" className="bg-blue-500/10 text-blue-600 dark:text-blue-400 border-0">Overall Progress</Badge>
                     </div>
                     
-                    <div className="flex-1 flex flex-col justify-end mt-2">
+                    <div className="flex-1 flex flex-col justify-end mt-2 relative z-10">
                         <div className="flex items-baseline gap-2 mb-3">
-                            <div className="text-4xl font-semibold tracking-tight leading-none">
-                                {avgObjectiveProgress.toFixed(1)}<span className="text-xl text-muted-foreground font-normal ml-0.5">%</span>
+                            <div className="text-4xl font-bold tracking-tight text-blue-600 dark:text-blue-400 drop-shadow-sm">
+                                {avgObjectiveProgress.toFixed(1)}<span className="text-xl font-medium opacity-70 ml-0.5">%</span>
                             </div>
                         </div>
                         
                         <div className="space-y-3 mt-1">
-                            <div className="h-1.5 w-full bg-secondary rounded-full overflow-hidden flex">
+                            <div className="h-2 w-full bg-blue-950/10 dark:bg-blue-950/30 rounded-full overflow-hidden flex shadow-inner">
                                 <div className="bg-emerald-500 transition-all duration-1000" style={{ width: `${totalObjectives > 0 ? (onTrackCount / totalObjectives) * 100 : 0}%` }} />
                                 <div className="bg-amber-500 transition-all duration-1000" style={{ width: `${totalObjectives > 0 ? (atRiskCount / totalObjectives) * 100 : 0}%` }} />
                                 <div className="bg-rose-500 transition-all duration-1000" style={{ width: `${totalObjectives > 0 ? (behindCount / totalObjectives) * 100 : 0}%` }} />
                             </div>
                             
-                            <div className="flex items-center justify-between text-xs text-muted-foreground">
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                    <span>On Track <span className="font-medium text-foreground ml-0.5">{onTrackCount}</span></span>
+                            <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+                                <div className="flex items-center gap-1.5 bg-background/50 px-2 py-1 rounded-md backdrop-blur-sm">
+                                    <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                                    <span>On Track <span className="font-bold text-foreground ml-1">{onTrackCount}</span></span>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-amber-500" />
-                                    <span>At Risk <span className="font-medium text-foreground ml-0.5">{atRiskCount}</span></span>
+                                <div className="flex items-center gap-1.5 bg-background/50 px-2 py-1 rounded-md backdrop-blur-sm">
+                                    <div className="w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                                    <span>At Risk <span className="font-bold text-foreground ml-1">{atRiskCount}</span></span>
                                 </div>
-                                <div className="flex items-center gap-1.5">
-                                    <div className="w-1.5 h-1.5 rounded-full bg-rose-500" />
-                                    <span>Behind <span className="font-medium text-foreground ml-0.5">{behindCount}</span></span>
+                                <div className="flex items-center gap-1.5 bg-background/50 px-2 py-1 rounded-md backdrop-blur-sm">
+                                    <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+                                    <span>Behind <span className="font-bold text-foreground ml-1">{behindCount}</span></span>
                                 </div>
                             </div>
                         </div>
@@ -368,59 +373,74 @@ export default function OverviewCards({ summary, participantDetails = [], object
                 </div>
 
                 {/* 2. Objectives */}
-                <div className="flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Target className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Objectives</span>
+                <div className="flex flex-col p-6 rounded-2xl border border-indigo-500/20 bg-linear-to-br from-indigo-500/10 via-background to-background shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none">
+                        <Target className="w-24 h-24 text-indigo-500" />
                     </div>
-                    <div className="mt-auto">
-                        <div className="text-3xl font-semibold tracking-tight">
-                            {completedSubObjectives}
-                            <span className="text-lg text-muted-foreground font-normal ml-1">/ {totalSubObjectives}</span>
+                    <div className="flex items-center gap-2.5 mb-4 relative z-10">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-500">
+                            <Target className="w-4 h-4" />
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                        <span className="text-sm font-semibold text-foreground">Objectives</span>
+                    </div>
+                    <div className="mt-auto relative z-10">
+                        <div className="text-4xl font-bold tracking-tight text-indigo-600 dark:text-indigo-400 drop-shadow-sm">
+                            {completedSubObjectives}
+                            <span className="text-lg font-medium opacity-60 ml-1">/ {totalSubObjectives}</span>
+                        </div>
+                        <div className="text-sm font-medium text-muted-foreground mt-2 bg-background/50 inline-block px-2 py-1 rounded-md backdrop-blur-sm">
                             {subObjectiveCompletionRate.toFixed(1)}% completed
                         </div>
                     </div>
                 </div>
 
                 {/* 3. Key Results */}
-                <div className="flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center gap-2 mb-4">
-                        <CopyCheck className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Key Results</span>
+                <div className="flex flex-col p-6 rounded-2xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/10 via-background to-background shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none">
+                        <CopyCheck className="w-24 h-24 text-emerald-500" />
                     </div>
-                    <div className="mt-auto">
-                        <div className="text-3xl font-semibold tracking-tight">
-                            {completedKRs}
-                            <span className="text-lg text-muted-foreground font-normal ml-1">/ {totalKRs}</span>
+                    <div className="flex items-center gap-2.5 mb-4 relative z-10">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-500">
+                            <CopyCheck className="w-4 h-4" />
                         </div>
-                        <div className="text-sm text-muted-foreground mt-1">
+                        <span className="text-sm font-semibold text-foreground">Key Results</span>
+                    </div>
+                    <div className="mt-auto relative z-10">
+                        <div className="text-4xl font-bold tracking-tight text-emerald-600 dark:text-emerald-400 drop-shadow-sm">
+                            {completedKRs}
+                            <span className="text-lg font-medium opacity-60 ml-1">/ {totalKRs}</span>
+                        </div>
+                        <div className="text-sm font-medium text-muted-foreground mt-2 bg-background/50 inline-block px-2 py-1 rounded-md backdrop-blur-sm">
                             {krCompletionRate.toFixed(1)}% completed
                         </div>
                     </div>
                 </div>
 
                 {/* 4. Team / Contributors */}
-                <div className="flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center gap-2 mb-4">
-                        <Users className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Team</span>
+                <div className="flex flex-col p-6 rounded-2xl border border-purple-500/20 bg-linear-to-br from-purple-500/10 via-background to-background shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none">
+                        <Users className="w-24 h-24 text-purple-500" />
                     </div>
-                    <div className="mt-auto">
-                        <div className="text-3xl font-semibold tracking-tight mb-2">
+                    <div className="flex items-center gap-2.5 mb-4 relative z-10">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-purple-500/20 text-purple-500">
+                            <Users className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-semibold text-foreground">Team</span>
+                    </div>
+                    <div className="mt-auto relative z-10">
+                        <div className="text-4xl font-bold tracking-tight text-purple-600 dark:text-purple-400 drop-shadow-sm mb-3">
                             {participantDetails.length}
                         </div>
                         <div className="flex items-center">
-                            <div className="flex -space-x-2 rtl:space-x-reverse">
+                            <div className="flex -space-x-2 rtl:space-x-reverse bg-background/50 p-1 rounded-full backdrop-blur-sm">
                                 {participantDetails.slice(0, 5).map((member, i) => (
-                                    <Avatar key={member.employeeId || i} className="w-7 h-7 border-2 border-background">
+                                    <Avatar key={member.employeeId || i} className="w-8 h-8 border-2 border-background shadow-sm">
                                         <AvatarImage src={member.pictureMediumURL || member.pictureURL} alt={member.fullName} />
-                                        <AvatarFallback className="text-[10px] bg-secondary text-secondary-foreground">{member.fullName?.substring(0, 2)}</AvatarFallback>
+                                        <AvatarFallback className="text-[10px] bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 font-medium">{member.fullName?.substring(0, 2)}</AvatarFallback>
                                     </Avatar>
                                 ))}
                                 {participantDetails.length > 5 && (
-                                    <div className="flex items-center justify-center w-7 h-7 rounded-full border-2 border-background bg-secondary text-secondary-foreground text-[10px] font-medium z-10">
+                                    <div className="flex items-center justify-center w-8 h-8 rounded-full border-2 border-background bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-[10px] font-bold z-10 shadow-sm">
                                         +{participantDetails.length - 5}
                                     </div>
                                 )}
@@ -430,32 +450,37 @@ export default function OverviewCards({ summary, participantDetails = [], object
                 </div>
 
                 {/* 5. Check-ins */}
-                <div className="flex flex-col p-5 rounded-xl border bg-card text-card-foreground shadow-sm hover:shadow-md transition-all duration-200">
-                    <div className="flex items-center gap-2 mb-4">
-                        <CheckCircle2 className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Check-ins</span>
+                <div className="flex flex-col p-6 rounded-2xl border border-amber-500/20 bg-linear-to-br from-amber-500/10 via-background to-background shadow-lg hover:shadow-xl transition-all duration-300 relative overflow-hidden group">
+                    <div className="absolute -right-4 -bottom-4 opacity-5 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none">
+                        <CheckCircle2 className="w-24 h-24 text-amber-500" />
                     </div>
-                    <div className="mt-auto">
-                        <div className="text-3xl font-semibold tracking-tight mb-2">
+                    <div className="flex items-center gap-2.5 mb-4 relative z-10">
+                        <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-amber-500/20 text-amber-500">
+                            <CheckCircle2 className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-semibold text-foreground">Check-ins</span>
+                    </div>
+                    <div className="mt-auto relative z-10">
+                        <div className="text-4xl font-bold tracking-tight text-amber-600 dark:text-amber-400 drop-shadow-sm mb-3">
                             {totalCheckIns}
                         </div>
                         <div className="flex items-center">
                             {missingCheckInEmployees.length === 0 ? (
-                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                                    <CheckCircle2 className="w-3.5 h-3.5" />
-                                    <span className="text-xs font-medium">All clear</span>
+                                <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-background/50 px-2 py-1.5 rounded-md backdrop-blur-sm">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    <span className="text-xs font-bold">All clear</span>
                                 </div>
                             ) : (
-                                <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-2 bg-background/50 px-2 py-1.5 rounded-md backdrop-blur-sm">
                                     <div className="flex items-center gap-1.5 text-rose-600 dark:text-rose-400">
-                                        <UserX className="w-3.5 h-3.5" />
-                                        <span className="text-xs font-medium">{missingCheckInEmployees.length} missed</span>
+                                        <UserX className="w-4 h-4" />
+                                        <span className="text-xs font-bold">{missingCheckInEmployees.length} missed</span>
                                     </div>
-                                    <div className="flex -space-x-1.5 rtl:space-x-reverse ml-1">
+                                    <div className="flex -space-x-1.5 rtl:space-x-reverse ml-1 border-l border-border/50 pl-2">
                                         {missingCheckInEmployees.slice(0, 3).map((member, i) => (
-                                            <Avatar key={member.employeeId || i} className="w-5 h-5 border border-background">
+                                            <Avatar key={member.employeeId || i} className="w-6 h-6 border-2 border-background shadow-sm">
                                                 <AvatarImage src={member.pictureMediumURL || member.pictureURL} alt={member.fullName} />
-                                                <AvatarFallback className="text-[8px] bg-secondary text-secondary-foreground">{member.fullName?.substring(0, 2)}</AvatarFallback>
+                                                <AvatarFallback className="text-[8px] bg-rose-100 text-rose-700 dark:bg-rose-900 dark:text-rose-300 font-medium">{member.fullName?.substring(0, 2)}</AvatarFallback>
                                             </Avatar>
                                         ))}
                                     </div>
