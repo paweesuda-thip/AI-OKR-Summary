@@ -47,7 +47,7 @@ export function CheckInEngagement({ participantDetails }: CheckInEngagementProps
 
   // Top 3 Most Missed Check-ins
   const mostMissedCheckIns = [...participantDetails]
-    .filter(p => p.totalMissCheckInAll > 0 || p.totalMissCheckIn > 0)
+    .filter(p => p.totalMissCheckIn > 0)
     .sort((a, b) => b.totalMissCheckInAll - a.totalMissCheckInAll || b.totalMissCheckIn - a.totalMissCheckIn)
     .slice(0, 3);
 
@@ -86,8 +86,6 @@ export function CheckInEngagement({ participantDetails }: CheckInEngagementProps
         
         {/* Top 3 Engaged Leaderboard */}
         <div className="relative flex flex-col h-full">
-          {/* Mascot Decoration */}
-          <Image src="/gon1.png" alt="Mascot" width={96} height={96} className="absolute -top-10 -right-4 w-20 sm:w-24 h-auto z-20 drop-shadow-2xl hover:scale-110 hover:-rotate-6 transition-all duration-500" />
           
           <div className="group bg-background/40 backdrop-blur-2xl border border-white/5 dark:border-white/10 rounded-[24px] p-4 sm:p-5 shadow-2xl flex flex-col h-full relative overflow-hidden transition-all duration-300">
             <div className="absolute -top-24 -right-24 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-emerald-500/20 transition-colors duration-700" />
@@ -181,8 +179,6 @@ export function CheckInEngagement({ participantDetails }: CheckInEngagementProps
 
         {/* Top 3 Missed Leaderboard */}
         <div className="relative flex flex-col h-full mt-6 lg:mt-0">
-          {/* Mascot Decoration */}
-          <Image src="/gon2.png" alt="Mascot Attention" width={96} height={96} className="absolute -top-10 -right-4 w-20 sm:w-24 h-auto z-20 drop-shadow-2xl hover:scale-110 hover:rotate-6 transition-all duration-500" />
           
           <div className="group bg-background/40 backdrop-blur-2xl border border-white/5 dark:border-white/10 rounded-[24px] p-4 sm:p-5 shadow-2xl flex flex-col h-full relative overflow-hidden transition-all duration-300">
             <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-rose-500/10 rounded-full blur-[80px] -z-10 group-hover:bg-rose-500/20 transition-colors duration-700" />

@@ -58,7 +58,7 @@ function mapObjective(item: OkrDataRaw): Objective {
                 pointCurrent,
                 pointOKR,
                 krProgress,
-                isDone: pointOKR > 0 && pointCurrent >= pointOKR,
+                isDone: pointOKR > 0 && pointCurrent >= 100,
             };
         });
         
@@ -95,7 +95,7 @@ function mapObjective(item: OkrDataRaw): Objective {
 
 function calculateSummary(objectives: Objective[]): TeamSummary {
     const total = objectives.length;
-    const completed = objectives.filter((o) => o.progress >= 70).length;
+    const completed = objectives.filter((o) => o.progress == 100).length;
     const avgProgress = total > 0
         ? Math.round(objectives.reduce((s, o) => s + o.progress, 0) / total * 10) / 10
         : 0;

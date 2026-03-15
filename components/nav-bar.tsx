@@ -12,7 +12,7 @@ export default function NavBar() {
 
     return (
         <header className="fixed inset-x-0 top-4 z-50 flex justify-center px-4 pointer-events-none sm:top-6">
-            <div className="pointer-events-auto flex items-center justify-between gap-2 rounded-full border border-white/10 bg-[#0a0a0a]/30 p-1.5 pl-3 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] backdrop-blur-3xl backdrop-saturate-[1.5] sm:gap-6 sm:pl-4">
+            <div className="hidden pointer-events-auto items-center justify-between gap-2 rounded-full border border-white/10 bg-[#0a0a0a]/30 p-1.5 pl-3 shadow-[0_16px_40px_-8px_rgba(0,0,0,0.6)] backdrop-blur-3xl backdrop-saturate-[1.5] sm:gap-6 sm:pl-4">
                 
                 {/* Left: Logo */}
                 <div className="flex items-center gap-2.5">

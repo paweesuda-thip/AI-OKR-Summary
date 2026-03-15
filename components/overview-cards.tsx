@@ -301,69 +301,52 @@ export default function OverviewCards({ summary, participantDetails = [], object
         return [...objWithStats].sort((a, b) => b.participantsCount - a.participantsCount || b.checkInCount - a.checkInCount).slice(0, 10);
     }, [objectives]);
 
+    const subObjectives = useMemo(() => {
+        return objectives?.flatMap(o => o.subObjectives || []) || [];
+    }, [objectives]);
+
     if (!summary) return null;
 
     // Calculate total and missed check-ins using the new API data
     const totalCheckIns = participantDetails.reduce((acc, curr) => acc + curr.totalCheckIn, 0);
     const missingCheckInEmployees = participantDetails.filter(p => p.totalCheckIn === 0);
 
+    const totalSubObjectives = subObjectives.length;
+    const completedSubObjectives = subObjectives.filter(sub => sub.progress >= 100).length;
+    const subObjectiveCompletionRate = totalSubObjectives > 0 ? (completedSubObjectives / totalSubObjectives) * 100 : 0;
+
     const {
-        totalObjectives, completedObjectives, objectiveCompletionRate,
         totalKRs, completedKRs, krCompletionRate,
-        avgObjectiveProgress, onTrackCount,
+        avgObjectiveProgress, onTrackCount, totalObjectives
     } = summary;
 
     return (
         <div className="flex flex-col gap-6">
-            <Card className="shadow-sm border-border overflow-hidden bg-card/40 backdrop-blur-lg rounded-3xl">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 sm:px-8 pt-6 pb-4 border-b border-border/40 gap-4 bg-muted/20">
-                    <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shadow-inner">
-                            <Target className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                            <h2 className="text-xl font-bold text-foreground tracking-tight">Overview</h2>
-                            <p className="text-sm text-muted-foreground mt-0.5 font-medium">OKR Progress Summary</p>
-                        </div>
-                    </div>
-                    
-                    {/* <Tabs defaultValue="current" value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
-                        <TabsList className="bg-background/50 border border-border/40 backdrop-blur-md p-1 h-auto rounded-xl">
-                            <TabsTrigger value="current" className="data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-md py-1.5 px-4 rounded-lg transition-all font-semibold">
-                                Current Cycle
-                            </TabsTrigger>
-                            <TabsTrigger value="all" className="data-[state=active]:bg-card data-[state=active]:text-foreground data-[state=active]:shadow-md py-1.5 px-4 rounded-lg transition-all font-semibold text-muted-foreground">
-                                All Quarters
-                            </TabsTrigger>
-                        </TabsList>
-                    </Tabs> */}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 p-6 bg-transparent w-full">
+            <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 w-full">
                     {/* 1. Objectives */}
-                    <div className="bg-background/40 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
                         <div className="absolute inset-0 bg-linear-to-br from-indigo-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Objectives</span>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Objectives</span>
                             <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center">
                                 <Target className="w-4 h-4 text-indigo-500" />
                             </div>
                         </div>
                         <div className="relative z-10">
                             <div className="text-4xl font-bold text-foreground mb-1 tracking-tight">
-                                {completedObjectives}/{totalObjectives}
+                                {completedSubObjectives}/{totalSubObjectives}
                             </div>
                             <div className="text-sm text-muted-foreground font-medium">
-                                Completion rate {objectiveCompletionRate?.toFixed(1)}%
+                                Completion rate {subObjectiveCompletionRate?.toFixed(1)}%
                             </div>
                         </div>
                     </div>
 
                     {/* 2. Key Results */}
-                    <div className="bg-background/40 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
                         <div className="absolute inset-0 bg-linear-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Key Results</span>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Key Results</span>
                             <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
                                 <CopyCheck className="w-4 h-4 text-emerald-500" />
                             </div>
@@ -378,30 +361,11 @@ export default function OverviewCards({ summary, participantDetails = [], object
                         </div>
                     </div>
 
-                    {/* 3. Avg Progress */}
-                    <div className="bg-background/40 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-linear-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                        <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Avg Progress</span>
-                            <div className="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center">
-                                <TrendingUp className="w-4 h-4 text-amber-500" />
-                            </div>
-                        </div>
-                        <div className="relative z-10">
-                            <div className="text-4xl font-bold text-amber-500 mb-1 tracking-tight">
-                                {avgObjectiveProgress?.toFixed(1)}%
-                            </div>
-                            <div className="text-sm text-muted-foreground font-medium">
-                                Current cycle average
-                            </div>
-                        </div>
-                    </div>
-
                     {/* 4. Total Check-in (Replaces Contributors) */}
-                    <div className="bg-background/40 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
                         <div className="absolute inset-0 bg-linear-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Total Check-in</span>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Total Check-in</span>
                             <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center">
                                 <CheckCircle2 className="w-4 h-4 text-blue-500" />
                             </div>
@@ -417,10 +381,10 @@ export default function OverviewCards({ summary, participantDetails = [], object
                     </div>
 
                     {/* 5. Missing Check-ins */}
-                    <div className="bg-background/40 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
                         <div className="absolute inset-0 bg-linear-to-br from-rose-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Missed Check-ins</span>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Missed Check-ins</span>
                             <div className="w-8 h-8 rounded-full bg-rose-500/10 flex items-center justify-center">
                                 <UserX className="w-4 h-4 text-rose-500" />
                             </div>
@@ -452,10 +416,10 @@ export default function OverviewCards({ summary, participantDetails = [], object
                     </div>
 
                     {/* 6. Team Members (Avatar Group) */}
-                    <div className="bg-background/40 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden group">
+                    <div className="bg-muted/10 hover:bg-muted/20 transition-colors backdrop-blur-xl rounded-3xl p-6 flex flex-col justify-between relative overflow-hidden group">
                         <div className="absolute inset-0 bg-linear-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                         <div className="flex items-start justify-between mb-4 relative z-10">
-                            <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Contributors</span>
+                            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">Contributors</span>
                             <div className="w-8 h-8 rounded-full bg-purple-500/10 flex items-center justify-center">
                                 <Users className="w-4 h-4 text-purple-500" />
                             </div>
@@ -481,7 +445,7 @@ export default function OverviewCards({ summary, participantDetails = [], object
                     </div>
                 </div>
 
-                <div className="bg-background/40 border-t border-border/30 px-8 py-6 flex items-center gap-6">
+                <div className="bg-muted/10 backdrop-blur-xl rounded-3xl px-8 py-6 flex flex-col md:flex-row md:items-center gap-6 mt-2">
                     <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
                         Current Cycle — Overall Progress
                     </span>
@@ -510,11 +474,10 @@ export default function OverviewCards({ summary, participantDetails = [], object
                         </div>
                     </div>
                 </div>
-            </Card>
 
             {/* Top Active Objectives Section */}
             {objectives.length > 0 && topObjectives.length > 0 && (
-                <div className="flex flex-col items-center gap-10 mt-16 mb-8 relative">
+                <div id="Pre-delete" className="hidden flex-col items-center gap-10 mt-16 mb-8 relative">
                     {/* Background decoration for the header */}
                     <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-3xl h-32 bg-linear-to-b from-primary/5 to-transparent blur-2xl pointer-events-none -z-10" />
                     
@@ -543,7 +506,7 @@ export default function OverviewCards({ summary, participantDetails = [], object
                     <div className="flex justify-center w-full relative z-10">
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 w-full max-w-6xl">
                             {topObjectives.map((obj, index) => (
-                                <TopObjectiveCard key={index} obj={obj} rank={index + 1} />
+                                <TopObjectiveCard key={obj.objectiveId || index} obj={obj} rank={index + 1} />
                             ))}
                         </div>
                     </div>

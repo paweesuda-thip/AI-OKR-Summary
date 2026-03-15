@@ -28,19 +28,15 @@ import { format } from "date-fns";
 import OverviewCards from "./overview-cards";
 import ObjectivesSection from "./objectives-section";
 import type { TopPerformersAISummary } from "./top-performers-section";
-import NeedsAttentionSection from "./needs-attention-section";
 import AISummaryPanel from "./ai-summary-panel";
 import { SimpleChatbot } from "./ai-element/simple-chatbot";
 import FilterBar from "./filter-bar";
-import AtRiskSection from "./at-risk-section";
 import PeriodComparisonSection from "./period-comparison-section";
 import ShinyText from "@/components/react-bits/ShinyText";
-import LightRays from "@/components/react-bits/LightRays";
 import CardSwap, { Card } from "@/components/react-bits/CardSwap";
 import MagicRings from "@/components/react-bits/MagicRings";
 import { CheckInEngagement } from "@/components/check-in-engagement";
 import ClickSpark from "@/components/react-bits/ClickSpark";
-import { LayoutTextFlip } from "@/components/ui/layout-text-flip";
 import { EvervaultCard, Icon } from "@/components/ui/evervault-card";
 
 import apiService from "@/lib/services/api-service";
@@ -51,6 +47,7 @@ import {
   ParticipantDetailRaw,
 } from "@/lib/types/okr";
 import Image from "next/image";
+import ProgressUpdateSection from "./progress-update-section";
 
 export default function Dashboard() {
   // const ASSESSMENT_SET_ID = 18892; // demo
@@ -281,7 +278,7 @@ export default function Dashboard() {
     >
       <div className="w-full pb-12">
         {/* Hero Section */}
-        <section className="relative overflow-hidden rounded-[2.5rem] border border-border/40 bg-card/40 px-6 py-8 shadow-2xl backdrop-blur-2xl sm:px-10 lg:px-12">
+        <section className="hidden relative overflow-hidden rounded-[2.5rem] border border-border/40 bg-card/40 px-6 py-8 shadow-2xl backdrop-blur-2xl sm:px-10 lg:px-12">
           {/* Inner subtle glow */}
           <div className="pointer-events-none absolute inset-0 bg-linear-to-br from-white/3 to-transparent opacity-50 dark:from-white/2" />
 
@@ -519,17 +516,13 @@ export default function Dashboard() {
         ) : (
           <main className="mt-8 px-4 sm:px-8 lg:px-12 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1600px] mx-auto">
             {/* Header & Global Filters */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-10 gap-6">
               <div>
-                <h2 className="text-3xl font-bold tracking-tight text-foreground">
-                  Team Execution
+                <h2 className="text-3xl md:text-4xl font-bold tracking-tight text-foreground">
+                  Statio OKR
                 </h2>
-                <p className="text-muted-foreground mt-2 text-lg">
-                  Monitor momentum and surface coaching opportunities.
-                </p>
               </div>
-
-              <div className="shrink-0 flex items-center gap-4 flex-wrap">
+              <div className="flex-shrink-0 w-full md:w-auto">
                 <FilterBar
                   dateRange={dateRange}
                   setDateRange={setDateRange}
@@ -540,7 +533,7 @@ export default function Dashboard() {
             </div>
 
             {/* ── Overview Metrics Strip ── */}
-            <section className="mb-20">
+            <section className="border-b border-border/10 pb-10">
               <OverviewCards
                 summary={teamSummary}
                 participantDetails={participantDetails}
@@ -568,17 +561,6 @@ export default function Dashboard() {
                         <Sparkles className="w-4 h-4 text-primary" />
                         <span className="text-[11px] font-bold tracking-widest uppercase text-foreground">Hall of Fame</span>
                       </div>
-
-                      <div className="text-4xl md:text-5xl lg:text-6xl font-bold tracking-tighter mb-6 capitalize leading-none">
-                        <ShinyText 
-                          text="Top Performers" 
-                          disabled={false} 
-                          speed={3} 
-                          color="rgba(255,255,255,0.4)" 
-                          shineColor="#ffffff" 
-                        />
-                      </div>
-
                       {topPerformersSummary?.teamSummary && (
                         <div className="mt-6 text-muted-foreground text-lg md:text-xl max-w-3xl px-6 font-medium leading-relaxed">
                           {topPerformersSummary.teamSummary}
@@ -649,7 +631,7 @@ export default function Dashboard() {
                                     {p.fullName}
                                   </h4>
                                   <div className="text-xs font-medium text-muted-foreground">
-                                    {p.totalCheckInAll} Check-ins • {p.avgPercent.toFixed(1)}% Avg Progress
+                                    {p.totalCheckIn} Check-ins • {p.avgPercent.toFixed(1)}% Avg Progress
                                   </div>
                                 </div>
                               </div>
@@ -669,16 +651,46 @@ export default function Dashboard() {
 
               {/* ── Focus Areas (Unboxed) ── */}
               <section className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
-                <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                  <NeedsAttentionSection contributors={contributors} />
-                </div>
-                <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                  <AtRiskSection atRiskObjectives={atRiskObjectives} />
-                </div>
+                {(() => {
+                  const allSubObjectives = objectives.flatMap(o => o.subObjectives || []);
+                  
+                  // Filter and sort for Top 3 (Highest positive progress updates)
+                  const topUpdates = [...allSubObjectives]
+                    .filter(sub => sub.objectiveOwnerType === 1 && (sub.progressUpdate || 0) > 0)
+                    .sort((a, b) => (b.progressUpdate || 0) - (a.progressUpdate || 0))
+                    .slice(0, 3);
+
+                  // Filter and sort for Bottom 3 (Lowest/Negative progress updates)
+                  const bottomUpdates = [...allSubObjectives]
+                    .filter(sub => sub.objectiveOwnerType === 1)
+                    .sort((a, b) => (a.progressUpdate || 0) - (b.progressUpdate || 0))
+                    .slice(0, 3);
+
+                  return (
+                    <>
+                      <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
+                        <ProgressUpdateSection 
+                          title="Trending" 
+                          description="Objectives with the highest progress jumps"
+                          subObjectives={topUpdates} 
+                          type="top" 
+                        />
+                      </div>
+                      <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
+                        <ProgressUpdateSection 
+                          title="Unpopular" 
+                          description="Objectives needing more momentum"
+                          subObjectives={bottomUpdates} 
+                          type="bottom" 
+                        />
+                      </div>
+                    </>
+                  );
+                })()}
               </section>
 
               {/* ── Period Comparison ── */}
-              <section className="relative bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg max-w-7xl mx-auto w-full">
+              <section className="hidden relative bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg max-w-7xl mx-auto w-full">
                 <div className="flex items-center gap-2 mb-6">
                   <TrendingUp className="w-5 h-5 text-blue-500" />
                   <h3 className="text-xl font-bold text-foreground">

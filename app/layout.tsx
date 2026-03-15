@@ -5,7 +5,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import Aurora from "@/components/react-bits/Aurora";
 
 export const metadata: Metadata = {
-  title: "Stratio - OKR Team Dashboard",
+  title: "Statio OKR",
   description: "Enterprise OKR dashboard with AI insights",
 };
 
@@ -34,7 +34,7 @@ export default function RootLayout({
                         />
                     </div>
                     <NavBar />
-                    <div className="relative flex-1 pt-24">
+                    <div className="relative flex-1 pt-12">
                         {children}
                     </div>
                 </div>
