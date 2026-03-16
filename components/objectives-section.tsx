@@ -326,7 +326,7 @@ export default function ObjectivesSection({ objectives = [] }: { objectives?: Ob
                                 key={f}
                                 variant={filter === f ? "default" : "outline"}
                                 onClick={() => handleFilter(f)}
-                                className={`rounded-full px-6 py-5 text-sm font-bold tracking-wide transition-all ${
+                                className={`rounded-full px-6 py-5 text-sm font-bold tracking-wide transition-all cursor-pointer ${
                                     filter === f
                                         ? 'shadow-[0_0_20px_rgba(255,255,255,0.1)]'
                                         : 'bg-background/40 hover:bg-background/60 border-border/50'

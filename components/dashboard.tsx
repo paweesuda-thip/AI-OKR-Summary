@@ -166,7 +166,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-4">
               <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
                 <DrawerTrigger asChild>
-                  <Button className="rounded-full px-4 py-4 sm:px-6 sm:py-5 text-xs sm:text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 gap-2">
+                  <Button className="rounded-full cursor-pointer px-4 py-4 sm:px-6 sm:py-5 text-xs sm:text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 gap-2">
                     <Sparkles className="w-4 h-4" />
                     <span className="hidden sm:inline">AI Performance Insight</span>
                     <span className="sm:hidden">AI Insight</span>

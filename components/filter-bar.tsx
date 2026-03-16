@@ -32,7 +32,7 @@ export default function FilterBar({
       </div>
 
       <div className={`transition-all duration-300 ${isOverall ? 'opacity-50 pointer-events-none grayscale-[0.5]' : 'opacity-100'}`}>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 cursor-pointer">
           <DatePickerWithRange date={dateRange} setDate={setDateRange} disabled={isOverall} />
         </div>
       </div>
