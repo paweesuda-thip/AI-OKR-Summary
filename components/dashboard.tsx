@@ -2,11 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react";
 import {
-  Loader2,
   AlertCircle,
   X,
   Sparkles,
   TrendingUp,
+  Trophy,
+  Crown,
+  Medal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -21,7 +23,7 @@ import PeriodComparisonSection from "./period-comparison-section";
 import MagicRings from "@/components/react-bits/MagicRings";
 import { CheckInEngagement } from "@/components/check-in-engagement";
 import ClickSpark from "@/components/react-bits/ClickSpark";
-import { EvervaultCard } from "@/components/ui/evervault-card";
+import Image from "next/image";
 import {
   Drawer,
   DrawerContent,
@@ -42,7 +44,6 @@ import ProgressUpdateSection from "./progress-update-section";
 import { FloatingAiChat } from "./floating-ai-chat";
 import { ModeToggle } from "@/components/mode-toggle";
 import ShinyText from "@/components/react-bits/ShinyText";
-import { TransparentImage } from "@/components/transparent-image";
 
 export default function Dashboard() {
   // const ASSESSMENT_SET_ID = 18892; // demo
@@ -280,72 +281,83 @@ export default function Dashboard() {
 
               return (
                 <section className="relative">
-                  <div className="mb-8 flex flex-col items-center text-center relative z-20 pb-8">
-                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-border/50 bg-background/50 backdrop-blur-md mb-8 shadow-sm">
-                      <Sparkles className="w-4 h-4 text-primary" />
-                      <span className="text-[11px] font-bold tracking-widest uppercase text-foreground">Hall of Fame</span>
-                    </div>
+                  {/* Section Header — Apple-style minimal */}
+                  <div className="mb-12 flex flex-col items-center text-center">
+                    <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-muted-foreground/60 mb-2">Top Performers</span>
+                    <h3 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Hall of Fame</h3>
                   </div>
 
-                  <div className="flex flex-col md:flex-row justify-center items-end gap-4 max-w-5xl mx-auto px-4 mt-8">
+                  {/* Podium Grid — Editorial Portrait Cards */}
+                  <div className="flex flex-col md:flex-row justify-center items-end gap-5 lg:gap-6 max-w-4xl mx-auto px-4">
                     {(() => {
-                      // Order: 2nd, 1st, 3rd for podium layout
+                      const rankConfig = [
+                        { icon: Crown, accent: 'text-amber-500 dark:text-amber-400', accentBg: 'bg-amber-500/10 dark:bg-amber-400/10', ring: 'ring-amber-500/20 dark:ring-amber-400/20', glow: 'hover:shadow-amber-200/20 dark:hover:shadow-amber-500/10' },
+                        { icon: Medal, accent: 'text-zinc-400 dark:text-zinc-500', accentBg: 'bg-zinc-400/10 dark:bg-zinc-500/10', ring: 'ring-zinc-400/20 dark:ring-zinc-500/20', glow: 'hover:shadow-zinc-200/20 dark:hover:shadow-zinc-500/10' },
+                        { icon: Trophy, accent: 'text-orange-500 dark:text-orange-400', accentBg: 'bg-orange-500/10 dark:bg-orange-400/10', ring: 'ring-orange-500/20 dark:ring-orange-400/20', glow: 'hover:shadow-orange-200/20 dark:hover:shadow-orange-500/10' },
+                      ];
+
                       return [1, 0, 2].map((origIndex) => {
                         const p = topContributors[origIndex];
                         if (!p) return null;
-                        
+
                         const isFirst = origIndex === 0;
-                        
+                        const config = rankConfig[origIndex];
+                        const RankIcon = config.icon;
+
                         return (
-                          <div 
-                            key={p.employeeId || origIndex} 
-                            className={`flex flex-col w-full md:w-1/3 overflow-hidden ${
-                              isFirst ? 'order-1 md:order-2 md:-translate-y-6 z-10' : 
-                              origIndex === 1 ? 'order-2 md:order-1' : 
+                          <div
+                            key={p.employeeId || origIndex}
+                            className={`group relative flex flex-col w-full md:w-1/3 ${
+                              isFirst ? 'order-1 md:order-2 md:-translate-y-5 z-10' :
+                              origIndex === 1 ? 'order-2 md:order-1' :
                               'order-3 md:order-3'
                             }`}
                           >
-                            <div className={`relative group w-full overflow-hidden ${isFirst ? 'h-[320px]' : 'h-[280px]'}`}>
-                              {/* Card Border Container */}
-                              <div className={`absolute inset-0 border border-border/40 dark:border-border/60 bg-background/40 backdrop-blur-md transition-colors duration-300 rounded-2xl ${isFirst ? 'shadow-lg ring-1 ring-black/5 dark:ring-white/10' : 'shadow-md'}`}>
-                                {/* Watermark Number */}
-                                <div className={`absolute top-4 right-6 font-mono text-6xl font-black italic transition-colors pointer-events-none select-none tracking-tighter z-10 opacity-75 text-foreground/80 drop-shadow-sm`}>
-                                  #{origIndex + 1}
+                            <div className={`relative overflow-hidden rounded-2xl bg-background/50 dark:bg-zinc-900/50 border border-border/30 dark:border-white/6 transition-all duration-500 hover:border-border/50 dark:hover:border-white/12 ${isFirst ? 'shadow-xl' : 'shadow-lg'} ${config.glow}`}>
+                              {/* Portrait Photo */}
+                              <div className={`relative w-full ${isFirst ? 'aspect-3/4' : 'aspect-4/5'} overflow-hidden bg-muted/30`}>
+                                {(p.pictureMediumURL || p.pictureURL) ? (
+                                  <Image
+                                    src={p.pictureMediumURL || p.pictureURL}
+                                    alt={p.fullName}
+                                    fill
+                                    className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
+                                    unoptimized
+                                    sizes="(max-width: 768px) 100vw, 33vw"
+                                  />
+                                ) : (
+                                  <div className="absolute inset-0 bg-muted/40 flex items-center justify-center">
+                                    <span className="text-4xl font-light text-muted-foreground/40">{p.fullName?.charAt(0)}</span>
+                                  </div>
+                                )}
+
+                                {/* Cinematic gradient overlay */}
+                                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+
+                                {/* Rank pill — top left */}
+                                <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md ${config.accentBg} ${config.ring} ring-1`}>
+                                  <RankIcon className={`w-3 h-3 ${config.accent}`} />
+                                  <span className={`text-[11px] font-bold ${config.accent}`}>#{origIndex + 1}</span>
+                                </div>
+
+                                {/* Name overlay — bottom of photo */}
+                                <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+                                  <h4 className={`${isFirst ? 'text-xl' : 'text-lg'} font-semibold text-white tracking-tight leading-tight drop-shadow-sm`}>
+                                    {p.fullName}
+                                  </h4>
                                 </div>
                               </div>
 
-                              {/* Evervault Background Effect (constrained) */}
-                              <div className="absolute inset-0 overflow-hidden rounded-2xl">
-                                <EvervaultCard className="w-full h-full opacity-60 group-hover:opacity-100 transition-opacity duration-500" />
-                              </div>
-
-                              {/* Large Pop-out Image */}
-                              <div 
-                                className="absolute inset-x-0 bottom-0 top-0 flex items-end justify-center pointer-events-none z-10"
-                                style={{ clipPath: 'inset(-100% 0 0 0 round 0 0 1rem 1rem)' }}
-                              >
-                                {(p.pictureMediumURL || p.pictureURL) ? (
-                                  <TransparentImage 
-                                    src={p.pictureMediumURL || p.pictureURL} 
-                                    alt={p.fullName} 
-                                    className={`w-auto object-contain object-bottom drop-shadow-2xl transition-transform duration-500 group-hover:scale-105 origin-bottom ${isFirst ? 'h-[125%]' : 'h-[115%]'}`}
-                                    width={500}
-                                    height={500}
-                                  />
-                                ) : (
-                                  <div className="flex items-center justify-center h-full">
-                                    <Loader2 className="w-6 h-6 text-foreground/50 animate-spin" />
-                                  </div>
-                                )}
-                              </div>
-                              
-                              {/* Info Overlay (Blurred Bottom) */}
-                              <div className="absolute inset-x-0 bottom-0 bg-linear-to-t from-background/95 via-background/80 to-transparent pt-16 pb-6 px-4 flex flex-col items-center text-center z-20 rounded-b-2xl pointer-events-none">
-                                <h4 className={`${isFirst ? 'text-xl' : 'text-lg'} font-bold text-foreground tracking-tight mb-1`}>
-                                  {p.fullName}
-                                </h4>
-                                <div className="text-xs font-medium text-muted-foreground">
-                                  {p.totalCheckIn} Check-ins • {p.avgPercent.toFixed(1)}% Avg Progress
+                              {/* Stats row */}
+                              <div className="px-4 py-3 flex items-center justify-between">
+                                <div className="flex flex-col">
+                                  <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">Progress</span>
+                                  <span className={`text-sm font-semibold tabular-nums ${config.accent}`}>{p.avgPercent.toFixed(1)}%</span>
+                                </div>
+                                <div className="w-px h-7 bg-border/30 dark:bg-white/6" />
+                                <div className="flex flex-col items-end">
+                                  <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">Check-ins</span>
+                                  <span className="text-sm font-semibold text-foreground tabular-nums">{p.totalCheckIn}</span>
                                 </div>
                               </div>
                             </div>

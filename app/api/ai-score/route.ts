@@ -2,8 +2,8 @@ import { NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { createAnthropic } from '@ai-sdk/anthropic';
 
-// Allow streaming responses up to 30 seconds
-export const maxDuration = 30;
+// Allow responses up to 60 seconds
+export const maxDuration = 60;
 
 interface AIScoreResponse {
   score: number;
@@ -77,6 +77,56 @@ const parseModelResponse = (text: string): AIScoreResponse | null => {
   };
 };
 
+// Strip heavy/unnecessary fields and cap array sizes to reduce token count
+const trimDashboardData = (data: Record<string, unknown>) => {
+  const { summary, objectives, contributors, atRisk } = data as {
+    summary: Record<string, unknown> | null;
+    objectives: Record<string, unknown>[];
+    contributors: Record<string, unknown>[];
+    atRisk: Record<string, unknown>[];
+  };
+
+  // Keep summary as-is (small object)
+  const trimmedSummary = summary;
+
+  // Trim objectives: keep top-level info + sub-objective summaries (no KR details)
+  const MAX_OBJECTIVES = 15;
+  const trimmedObjectives = (objectives || []).slice(0, MAX_OBJECTIVES).map((obj) => ({
+    objectiveName: obj.objectiveName,
+    ownerTeam: obj.ownerTeam,
+    progress: obj.progress,
+    status: obj.status,
+    impactLevel: obj.impactLevel,
+    subObjectives: ((obj.subObjectives as Record<string, unknown>[]) || []).map((sub) => ({
+      title: sub.title,
+      progress: sub.progress,
+      progressUpdate: sub.progressUpdate,
+      status: sub.status,
+      krCount: ((sub.details as unknown[]) || []).length,
+    })),
+  }));
+
+  // Trim contributors: remove pictureURL, limit count, flatten objectives
+  const MAX_CONTRIBUTORS = 15;
+  const trimmedContributors = (contributors || []).slice(0, MAX_CONTRIBUTORS).map((c) => ({
+    fullName: c.fullName,
+    totalPointCurrent: c.totalPointCurrent,
+    totalPointOKR: c.totalPointOKR,
+    krCount: c.krCount,
+    checkInCount: c.checkInCount,
+    avgObjectiveProgress: c.avgObjectiveProgress,
+  }));
+
+  // At-risk: just names + progress
+  const trimmedAtRisk = (atRisk || []).map((obj) => ({
+    objectiveName: obj.objectiveName,
+    progress: obj.progress,
+    status: obj.status,
+  }));
+
+  return { summary: trimmedSummary, objectives: trimmedObjectives, contributors: trimmedContributors, atRisk: trimmedAtRisk };
+};
+
 export async function POST(req: Request) {
   try {
     const { dashboardData } = await req.json();
@@ -84,6 +134,8 @@ export async function POST(req: Request) {
     if (!dashboardData) {
       return NextResponse.json({ error: 'Missing dashboard data' }, { status: 400 });
     }
+
+    const trimmedData = trimDashboardData(dashboardData);
 
     // Check if API key is provided
     const apiKey = process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY;
@@ -122,24 +174,14 @@ export async function POST(req: Request) {
       apiKey: apiKey,
     });
 
-    const prompt = `
-      You are an expert OKR coach and performance analyst with a bold, modern, and inspiring tone.
-      Analyze the following OKR team dashboard data and provide:
-      1. A score out of 10 for the team's overall performance. (Return only a number between 1-10)
-      2. A concise, structured review of their performance and actionable suggestions. 
-         IMPORTANT: The review MUST be in Thai language. Use Markdown formatting (headings like ###, bold text **, bullet points -) to make it easy to read. Include relevant emojis.
+    const prompt = `You are an expert OKR coach. Analyze this team dashboard data and return a JSON object with:
+- "score": number 1-10
+- "review": concise structured review in Thai with Markdown (###, **, -) and emojis
 
-      Dashboard Data:
-      ${JSON.stringify(dashboardData, null, 2)}
-      
-      Format your response exactly as a JSON object:
-      {
-        "score": number,
-        "review": "string with markdown formatting in Thai"
-      }
+Data:
+${JSON.stringify(trimmedData)}
 
-      IMPORTANT: Return only raw JSON. Do not wrap with markdown code fences.
-    `;
+Return ONLY raw JSON, no code fences.`;
 
     const { text } = await generateText({
       model: anthropic('claude-3-haiku-20240307'),

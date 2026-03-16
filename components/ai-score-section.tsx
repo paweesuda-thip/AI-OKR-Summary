@@ -53,11 +53,16 @@ export function AIScoreSection({
     
     setIsGeneratingScore(true);
     setError(null);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 55_000);
+
     try {
       const response = await fetch('/api/ai-score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ dashboardData })
+        body: JSON.stringify({ dashboardData }),
+        signal: controller.signal,
       });
       
       if (!response.ok) throw new Error('Failed to generate score');
@@ -69,8 +74,14 @@ export function AIScoreSection({
       onAiScoreResultChange(normalized);
     } catch (err) {
       console.error(err);
-      setError('ไม่สามารถสร้างคะแนนประเมินได้ กรุณาลองใหม่อีกครั้ง');
+      const isTimeout = err instanceof DOMException && err.name === 'AbortError';
+      setError(
+        isTimeout
+          ? 'การวิเคราะห์ใช้เวลานานเกินไป กรุณาลองใหม่อีกครั้ง'
+          : 'ไม่สามารถสร้างคะแนนประเมินได้ กรุณาลองใหม่อีกครั้ง'
+      );
     } finally {
+      clearTimeout(timeout);
       setIsGeneratingScore(false);
     }
   };
