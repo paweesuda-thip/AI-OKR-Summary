@@ -1,17 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Button } from "@/components/ui/button";
-import { 
-  Send, 
-  Minimize2, 
-  Maximize2, 
-  Sparkles,
-  RefreshCw,
-  ChevronDown
-} from "lucide-react";
 import { nanoid } from "nanoid";
-import { cn } from "@/lib/utils";
 
 interface Message {
   id: string;
@@ -32,6 +22,43 @@ const suggestions = [
   "ข้อเสนอแนะในการพัฒนาทีมมีอะไรบ้าง?",
 ];
 
+// Inline SVG Icons
+const SparkleIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+  </svg>
+);
+
+const SendIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="22" y1="2" x2="11" y2="13" /><polygon points="22 2 15 22 11 13 2 9 22 2" />
+  </svg>
+);
+
+const MinimizeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="4 14 10 14 10 20" /><polyline points="20 10 14 10 14 4" /><line x1="14" y1="10" x2="21" y2="3" /><line x1="3" y1="21" x2="10" y2="14" />
+  </svg>
+);
+
+const MaximizeIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="15 3 21 3 21 9" /><polyline points="9 21 3 21 3 15" /><line x1="21" y1="3" x2="14" y2="10" /><line x1="3" y1="21" x2="10" y2="14" />
+  </svg>
+);
+
+const RefreshIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="23 4 23 10 17 10" /><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+  </svg>
+);
+
+const ChevronDownIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
 export function FloatingAiChat({ dashboardData }: FloatingAiChatProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -39,7 +66,7 @@ export function FloatingAiChat({ dashboardData }: FloatingAiChatProps) {
     {
       id: nanoid(),
       from: "assistant",
-      content: "สวัสดีครับ ผมคือ Strategic OKR Advisor ผู้ช่วย AI ของคุณ \nมีข้อมูลอะไรเกี่ยวกับผลการดำเนินงานของทีมที่คุณอยากให้ผมช่วยวิเคราะห์หรือสรุปให้ฟังไหมครับ?",
+      content: "สวัสดีครับ ผมคือ Spartan AI Advisor ผู้ช่วย AI ของคุณ \nมีข้อมูลอะไรเกี่ยวกับผลการดำเนินงานของทีมที่คุณอยากให้ผมช่วยวิเคราะห์หรือสรุปให้ฟังไหมครับ?",
       timestamp: new Date(),
     },
   ]);
@@ -139,117 +166,110 @@ export function FloatingAiChat({ dashboardData }: FloatingAiChatProps) {
 
   if (!isOpen) {
     return (
-      <Button
+      <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-12 px-6 rounded-full shadow-[0_8px_30px_rgb(0,0,0,0.12)] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md hover:bg-white dark:hover:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium tracking-wide transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.16)] hover:-translate-y-0.5 z-50 flex items-center justify-center border border-zinc-200/80 dark:border-zinc-700/80"
+        className="fixed bottom-6 right-6 h-11 px-5 rounded-full bg-[#F7931A]/10 text-[#F7931A] font-mono font-semibold text-xs border border-[#F7931A]/20 hover:bg-[#F7931A]/15 hover:shadow-[0_0_20px_-5px_rgba(247,147,26,0.4)] transition-all z-50 flex items-center gap-2 backdrop-blur-md"
       >
+        <SparkleIcon />
         Ask AI
-      </Button>
+      </button>
     );
   }
 
   return (
     <div 
-      className={cn(
-        "fixed right-6 bottom-6 z-50 flex flex-col bg-white/80 dark:bg-zinc-950/80 backdrop-blur-xl border border-zinc-200/50 dark:border-zinc-800/50 shadow-[0_8px_40px_rgb(0,0,0,0.08)] dark:shadow-[0_8px_40px_rgb(0,0,0,0.4)] transition-all duration-300 overflow-hidden",
+      className={`fixed right-6 bottom-6 z-50 flex flex-col bg-[#0F1115]/90 backdrop-blur-2xl border border-white/[0.06] shadow-[0_8px_40px_rgb(0,0,0,0.4)] transition-all duration-300 overflow-hidden rounded-2xl ${
         isExpanded 
-          ? "w-[800px] h-[80vh] sm:right-10 sm:bottom-10 rounded-[24px]" 
-          : "w-[380px] h-[600px] rounded-[24px]"
-      )}
+          ? "w-[800px] h-[80vh] sm:right-10 sm:bottom-10" 
+          : "w-[380px] h-[560px]"
+      }`}
     >
-      {/* Minimal Header */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-md z-10">
-        <div className="flex items-center gap-3">
-          <div className="bg-zinc-100 dark:bg-zinc-900 p-2 rounded-xl border border-zinc-200 dark:border-zinc-800">
-            <Sparkles className="w-4 h-4 text-zinc-900 dark:text-zinc-100" />
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] bg-[#0F1115]/80 backdrop-blur-md z-10">
+        <div className="flex items-center gap-2.5">
+          <div className="bg-[#F7931A]/10 p-1.5 rounded-lg border border-[#F7931A]/20">
+            <SparkleIcon />
           </div>
           <div>
-            <h3 className="font-semibold text-sm tracking-tight text-zinc-900 dark:text-zinc-100">AI Assistant</h3>
-            <p className="text-[11px] text-zinc-500 dark:text-zinc-400 flex items-center gap-1.5 font-medium">
+            <h3 className="font-heading font-semibold text-sm text-white tracking-tight">Spartan AI</h3>
+            <p className="text-[10px] font-mono text-[#94A3B8] flex items-center gap-1.5">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-400 dark:bg-zinc-500 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-500 dark:bg-zinc-400"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
               </span>
-              Connected to Workspace
+              CONNECTED
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1 text-zinc-500">
-          <Button variant="ghost" size="icon" onClick={clearChat} className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full" title="New Chat">
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsExpanded(!isExpanded)} className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full hidden sm:flex">
-            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-          </Button>
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)} className="h-8 w-8 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-100 rounded-full">
-            <ChevronDown className="h-5 w-5" />
-          </Button>
+        <div className="flex items-center gap-1">
+          <button onClick={clearChat} className="h-7 w-7 flex items-center justify-center text-[#94A3B8] hover:text-white rounded-lg hover:bg-white/[0.05] transition-colors" title="New Chat">
+            <RefreshIcon />
+          </button>
+          <button onClick={() => setIsExpanded(!isExpanded)} className="h-7 w-7 hidden sm:flex items-center justify-center text-[#94A3B8] hover:text-white rounded-lg hover:bg-white/[0.05] transition-colors">
+            {isExpanded ? <MinimizeIcon /> : <MaximizeIcon />}
+          </button>
+          <button onClick={() => setIsOpen(false)} className="h-7 w-7 flex items-center justify-center text-[#94A3B8] hover:text-white rounded-lg hover:bg-white/[0.05] transition-colors">
+            <ChevronDownIcon />
+          </button>
         </div>
       </div>
 
-      {/* Messages Area */}
+      {/* Messages */}
       <div className="relative flex-1 overflow-hidden">
-        {/* Grid Background */}
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[length:24px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
+        <div className="absolute inset-0 bg-grid-pattern-subtle opacity-30" />
         
         <div 
           ref={scrollRef}
-          className="relative h-full overflow-y-auto p-5 space-y-6 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-800"
+          className="relative h-full overflow-y-auto p-4 space-y-4"
         >
           {messages.map((message) => (
             <div
               key={message.id}
               className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`flex gap-3 max-w-[85%] ${message.from === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
-                
+              <div className={`flex gap-2 max-w-[85%] ${message.from === 'user' ? 'flex-row-reverse' : 'flex-row'}`}>
                 <div className="flex-shrink-0 mt-auto mb-1">
                   {message.from === 'assistant' ? (
-                    <div className="h-7 w-7 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 shadow-sm">
-                      <Sparkles className="h-3.5 w-3.5 text-zinc-900 dark:text-zinc-100" />
+                    <div className="h-6 w-6 rounded-full bg-[#F7931A]/10 flex items-center justify-center border border-[#F7931A]/20">
+                      <SparkleIcon />
                     </div>
                   ) : (
-                    <div className="h-7 w-7 rounded-full bg-zinc-900 dark:bg-zinc-100 flex items-center justify-center shadow-sm">
-                      <span className="text-[10px] font-bold text-white dark:text-zinc-900">ME</span>
+                    <div className="h-6 w-6 rounded-full bg-white/10 flex items-center justify-center border border-white/10">
+                      <span className="text-[9px] font-mono font-bold text-white/70">ME</span>
                     </div>
                   )}
                 </div>
 
                 <div
-                  className={cn(
-                    "px-4 py-3 rounded-[20px] text-[13px] leading-relaxed shadow-sm whitespace-pre-wrap",
+                  className={`px-3.5 py-2.5 rounded-2xl text-[13px] leading-relaxed whitespace-pre-wrap ${
                     message.from === 'user'
-                      ? "bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 rounded-br-sm"
-                      : "bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md text-zinc-800 dark:text-zinc-200 border border-zinc-200/50 dark:border-zinc-800/50 rounded-bl-sm"
-                  )}
+                      ? "bg-[#F7931A]/10 text-white border border-[#F7931A]/20 rounded-br-sm"
+                      : "bg-white/[0.03] text-white/80 border border-white/[0.06] rounded-bl-sm"
+                  }`}
                 >
                   {message.content}
-                  <div className={cn(
-                    "text-[10px] mt-2 text-right font-medium",
-                    message.from === 'user' ? "text-zinc-400 dark:text-zinc-500" : "text-zinc-400"
-                  )}>
+                  <div className={`text-[9px] mt-1.5 text-right font-mono ${
+                    message.from === 'user' ? "text-[#F7931A]/50" : "text-[#94A3B8]/50"
+                  }`}>
                     {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </div>
-
               </div>
             </div>
           ))}
           
           {isLoading && (
             <div className="flex justify-start">
-              <div className="flex gap-3 max-w-[85%] flex-row">
+              <div className="flex gap-2 max-w-[85%] flex-row">
                 <div className="flex-shrink-0 mt-auto mb-1">
-                  <div className="h-7 w-7 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center border border-zinc-200 dark:border-zinc-700 shadow-sm">
-                    <Sparkles className="h-3.5 w-3.5 text-zinc-900 dark:text-zinc-100 animate-pulse" />
+                  <div className="h-6 w-6 rounded-full bg-[#F7931A]/10 flex items-center justify-center border border-[#F7931A]/20 animate-pulse">
+                    <SparkleIcon />
                   </div>
                 </div>
-                <div className="px-4 py-4 rounded-[20px] bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md border border-zinc-200/50 dark:border-zinc-800/50 rounded-bl-sm shadow-sm flex items-center gap-2">
-                  <div className="flex gap-1.5">
-                    <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-                    <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-                    <div className="w-1.5 h-1.5 bg-zinc-400 rounded-full animate-bounce"></div>
-                  </div>
+                <div className="px-4 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] rounded-bl-sm flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 bg-[#F7931A] rounded-full animate-bounce [animation-delay:-0.3s]" />
+                  <div className="w-1.5 h-1.5 bg-[#F7931A] rounded-full animate-bounce [animation-delay:-0.15s]" />
+                  <div className="w-1.5 h-1.5 bg-[#F7931A] rounded-full animate-bounce" />
                 </div>
               </div>
             </div>
@@ -257,15 +277,15 @@ export function FloatingAiChat({ dashboardData }: FloatingAiChatProps) {
         </div>
       </div>
 
-      {/* Input Area */}
-      <div className="p-4 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-md border-t border-zinc-200/50 dark:border-zinc-800/50 z-10">
+      {/* Input */}
+      <div className="p-3 bg-[#0F1115]/80 backdrop-blur-md border-t border-white/[0.06] z-10">
         {messages.length <= 1 && (
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-1.5 mb-3">
             {suggestions.map((suggestion, index) => (
               <button
                 key={index}
                 onClick={() => handleSuggestionClick(suggestion)}
-                className="text-[11px] font-medium px-3 py-1.5 rounded-full bg-white dark:bg-zinc-900 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 border border-zinc-200 dark:border-zinc-800 transition-all shadow-sm hover:shadow"
+                className="text-[10px] font-mono font-medium px-2.5 py-1 rounded-full bg-white/[0.03] text-[#94A3B8] hover:text-[#F7931A] border border-white/[0.06] hover:border-[#F7931A]/20 transition-all"
               >
                 {suggestion}
               </button>
@@ -273,7 +293,7 @@ export function FloatingAiChat({ dashboardData }: FloatingAiChatProps) {
           </div>
         )}
 
-        <div className="relative flex items-end gap-2 bg-white dark:bg-zinc-900 rounded-[20px] border border-zinc-200 dark:border-zinc-800 focus-within:ring-4 focus-within:ring-zinc-100 dark:focus-within:ring-zinc-800/50 focus-within:border-zinc-300 dark:focus-within:border-zinc-700 transition-all p-2 shadow-sm">
+        <div className="relative flex items-end gap-2 bg-white/[0.03] rounded-xl border border-white/[0.06] focus-within:border-[#F7931A]/30 focus-within:shadow-[0_0_15px_-5px_rgba(247,147,26,0.2)] transition-all p-2">
           <textarea
             ref={textareaRef}
             value={input}
@@ -281,21 +301,20 @@ export function FloatingAiChat({ dashboardData }: FloatingAiChatProps) {
             onKeyPress={handleKeyPress}
             placeholder={dashboardData ? "Ask me anything..." : "Loading data context..."}
             disabled={!dashboardData || isLoading}
-            className="w-full resize-none bg-transparent px-3 py-2 text-[13px] placeholder:text-zinc-400 focus:outline-none min-h-[40px] max-h-[120px] scrollbar-thin text-zinc-900 dark:text-zinc-100"
+            className="w-full resize-none bg-transparent px-2 py-1.5 text-[13px] placeholder:text-[#94A3B8]/40 focus:outline-none min-h-[36px] max-h-[120px] text-white font-body"
             style={{ height: 'auto' }}
           />
-          <Button
+          <button
             onClick={() => handleSend()}
             disabled={!input.trim() || isLoading || !dashboardData}
-            size="icon"
-            className="h-10 w-10 shrink-0 rounded-2xl bg-zinc-900 dark:bg-zinc-100 hover:bg-zinc-800 dark:hover:bg-zinc-200 text-white dark:text-zinc-900 transition-colors shadow-sm disabled:opacity-50"
+            className="h-8 w-8 shrink-0 rounded-lg bg-[#F7931A] hover:bg-[#F7931A]/80 text-[#030304] flex items-center justify-center transition-colors disabled:opacity-30"
           >
-            <Send className="w-4 h-4 ml-0.5" />
-          </Button>
+            <SendIcon />
+          </button>
         </div>
         {!dashboardData && (
-          <p className="text-[10px] text-zinc-500 mt-2 text-center font-medium">
-            Waiting for OKR data to sync...
+          <p className="text-[9px] font-mono text-[#94A3B8]/50 mt-2 text-center">
+            Waiting for OKR data sync...
           </p>
         )}
       </div>

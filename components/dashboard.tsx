@@ -1,29 +1,17 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  AlertCircle,
-  X,
-  Sparkles,
-  TrendingUp,
-  Trophy,
-  Crown,
-  Medal,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 
 import { AIScoreResult, AIScoreSection } from "./ai-score-section";
-import OverviewCards from "./overview-cards";
-import ObjectivesSection from "./objectives-section";
 import FilterBar from "./filter-bar";
-import PeriodComparisonSection from "./period-comparison-section";
-import MagicRings from "@/components/react-bits/MagicRings";
-import { CheckInEngagement } from "@/components/check-in-engagement";
-import ClickSpark from "@/components/react-bits/ClickSpark";
-import Image from "next/image";
+import SuggestionsPanel from "./suggestions-panel";
+import TeamComparison from "./team-comparison";
+import HallOfFame from "./hall-of-fame";
+import ContributionMatrix from "./contribution-matrix";
+import { FloatingAiChat } from "./floating-ai-chat";
+
 import {
   Drawer,
   DrawerContent,
@@ -40,37 +28,56 @@ import {
   TeamSummary,
   ParticipantDetailRaw,
 } from "@/lib/types/okr";
-import ProgressUpdateSection from "./progress-update-section";
-import { FloatingAiChat } from "./floating-ai-chat";
-import { ModeToggle } from "@/components/mode-toggle";
-import ShinyText from "@/components/react-bits/ShinyText";
+
+// ── Inline SVG Icons ──────────────────────────────────────
+const SpartanShield = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+    <path
+      d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3z"
+      fill="url(#spartan-grad)"
+      fillOpacity="0.15"
+      stroke="url(#spartan-grad)"
+      strokeWidth="1.5"
+    />
+    <path d="M12 6v6l4 2" stroke="url(#spartan-grad)" strokeWidth="1.5" strokeLinecap="round" />
+    <defs>
+      <linearGradient id="spartan-grad" x1="3" y1="2" x2="21" y2="22">
+        <stop stopColor="#F7931A" />
+        <stop offset="1" stopColor="#FFD600" />
+      </linearGradient>
+    </defs>
+  </svg>
+);
+
+const SparkleIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+  </svg>
+);
 
 export default function Dashboard() {
-  // const ASSESSMENT_SET_ID = 18892; // demo
-  // const ORGANIZATION_ID = 18477; // demo
-  const ASSESSMENT_SET_ID = 185467; // prod
-  const ORGANIZATION_ID = 18477; // prod
+  const ASSESSMENT_SET_ID = 185467;
+  const ORGANIZATION_ID = 18477;
 
   const [teamSummary, setTeamSummary] = useState<TeamSummary | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
   const [contributors, setContributors] = useState<ContributorSum[]>([]);
   const [atRiskObjectives, setAtRiskObjectives] = useState<Objective[]>([]);
-
-  const [participantDetails, setParticipantDetails] = useState<
-    ParticipantDetailRaw[]
-  >([]);
+  const [participantDetails, setParticipantDetails] = useState<ParticipantDetailRaw[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2026, 1, 12), // Feb 12, 2026
-    to: new Date(2026, 2, 15), // Mar 15, 2026
+    from: new Date(2026, 1, 12),
+    to: new Date(2026, 2, 15),
   });
   const [isOverall, setIsOverall] = useState(false);
   const [aiScoreResult, setAiScoreResult] = useState<AIScoreResult | null>(null);
-
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+
+  // Active navigation section
+  const [activeSection, setActiveSection] = useState("suggestions");
 
   const dashboardData = {
     summary: teamSummary,
@@ -110,14 +117,11 @@ export default function Dashboard() {
       setParticipantDetails(participantResult || []);
     } catch (err: unknown) {
       console.error("Dashboard fetch error:", err);
-      const errorObj = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
+      const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
       setError(
         errorObj?.response?.data?.message ||
-          errorObj?.message ||
-          "Unable to load data. Please check your connection.",
+        errorObj?.message ||
+        "Unable to load data. Please check your connection."
       );
     } finally {
       setLoading(false);
@@ -128,332 +132,204 @@ export default function Dashboard() {
     fetchDashboard();
   }, [fetchDashboard]);
 
+  // Nav items
+  const navItems = [
+    { id: "suggestions", label: "Strategic" },
+    { id: "teams", label: "Teams" },
+    { id: "hall-of-fame", label: "Hall of Fame" },
+    { id: "objectives", label: "Objectives" },
+  ];
+
   return (
-    <ClickSpark
-      sparkColor="#fff"
-      sparkSize={10}
-      sparkRadius={15}
-      sparkCount={8}
-      duration={400}
-    >
-      <div className="w-full pb-12 min-h-screen">
-        {/* ── Fixed Global Header ── */}
-        <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-2xl transition-all duration-300">
-          <div className="flex items-center justify-between px-4 sm:px-8 lg:px-12 h-20 max-w-[1600px] mx-auto gap-4">
-            
-            {/* Left: Branding */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="flex flex-col">
-                <h1 className="mb-1 text-lg leading-none font-semibold tracking-tight">
-                  <ShinyText 
-                    text="Statio OKR" 
-                    speed={3} 
-                    className="drop-shadow-sm" 
-                    backgroundImage="linear-gradient(90deg, #0ea5e9, #6366f1, #a855f7, #ec4899, #0ea5e9)"
-                  />
-                </h1>
-                <span className="text-[11px] text-zinc-500 font-medium flex items-center gap-1.5 uppercase tracking-wider">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-400 dark:bg-zinc-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-500 dark:bg-zinc-400"></span>
-                  </span>
-                  Live Dashboard
+    <div className="w-full pb-12 min-h-screen">
+      {/* ═══ SPARTAN HEADER ═══ */}
+      <header className="fixed inset-x-0 top-0 z-50 glass border-b border-white/[0.06]">
+        <div className="flex items-center justify-between px-4 sm:px-8 lg:px-12 h-16 max-w-[1600px] mx-auto gap-4">
+
+          {/* Left: Spartan Branding */}
+          <div className="flex items-center gap-3 shrink-0">
+            <SpartanShield />
+            <div className="flex flex-col">
+              <h1 className="text-lg leading-none font-heading font-bold tracking-tight">
+                <span className="text-gradient-spartan">SPARTAN</span>
+                <span className="text-white/40 font-normal ml-1.5">OKR</span>
+              </h1>
+              <span className="text-[10px] font-mono text-[#94A3B8] flex items-center gap-1.5 tracking-widest uppercase mt-0.5">
+                <span className="relative flex h-1.5 w-1.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-400" />
                 </span>
-              </div>
+                LIVE
+              </span>
             </div>
+          </div>
 
-            {/* Right: Controls */}
-            <div className="flex items-center gap-4">
-              <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
-                <DrawerTrigger asChild>
-                  <Button className="rounded-full cursor-pointer px-4 py-4 sm:px-6 sm:py-5 text-xs sm:text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    <span className="hidden sm:inline">AI Performance Insight</span>
-                    <span className="sm:hidden">AI Insight</span>
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="h-[90vh] bg-background/95 backdrop-blur-3xl border-border/50">
-                  <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
-                    <DrawerHeader className="shrink-0 text-center sm:text-left">
-                      <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-2">
-                        <Sparkles className="w-6 h-6 text-indigo-500" />
-                        AI OKR Intelligence
-                      </DrawerTitle>
-                      <DrawerDescription>
-                        Deep dive into strategic insights, team performance
-                        patterns, and actionable recommendations.
-                      </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="flex-1 overflow-y-auto mt-4 pr-2 relative">
-                      {/* Magic Rings subtle background glow inside drawer */}
-                      <div className="pointer-events-none fixed inset-0 z-0 opacity-20 dark:opacity-30 blur-xl">
-                        <MagicRings
-                          color="#6366f1"
-                          colorTwo="#a855f7"
-                          speed={0.3}
-                          ringCount={3}
-                          attenuation={20}
-                          lineThickness={2}
-                          baseRadius={0.4}
-                          opacity={0.5}
-                          followMouse={false}
-                        />
-                      </div>
-                      <div className="relative z-10 h-full">
-                        <AIScoreSection
-                          teamSummary={teamSummary}
-                          dashboardData={dashboardData}
-                          aiScoreResult={aiScoreResult}
-                          onAiScoreResultChange={setAiScoreResult}
-                        />
-                      </div>
-                    </div>
+          {/* Center: Section Nav */}
+          <nav className="hidden md:flex items-center gap-1 bg-white/[0.03] border border-white/[0.06] rounded-full px-1 py-1">
+            {navItems.map(item => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveSection(item.id);
+                  document.getElementById(`section-${item.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className={`text-xs font-mono font-semibold px-4 py-1.5 rounded-full transition-all ${
+                  activeSection === item.id
+                    ? "bg-[#F7931A]/10 text-[#F7931A] border border-[#F7931A]/20"
+                    : "text-[#94A3B8] hover:text-white border border-transparent"
+                }`}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+
+          {/* Right: Controls */}
+          <div className="flex items-center gap-3">
+            {/* AI Insight Button */}
+            <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
+              <DrawerTrigger asChild>
+                <button className="flex items-center gap-2 px-4 py-2 rounded-full text-xs font-mono font-semibold bg-[#F7931A]/10 text-[#F7931A] border border-[#F7931A]/20 hover:bg-[#F7931A]/15 hover:shadow-[0_0_20px_-5px_rgba(247,147,26,0.4)] transition-all">
+                  <SparkleIcon />
+                  <span className="hidden sm:inline">AI Insight</span>
+                </button>
+              </DrawerTrigger>
+              <DrawerContent className="h-[90vh] bg-[#0F1115]/95 backdrop-blur-3xl border-white/[0.06]">
+                <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
+                  <DrawerHeader className="shrink-0 text-center sm:text-left">
+                    <DrawerTitle className="text-2xl font-heading text-gradient-spartan flex items-center justify-center sm:justify-start gap-2">
+                      <SparkleIcon />
+                      AI OKR Intelligence
+                    </DrawerTitle>
+                    <DrawerDescription className="text-[#94A3B8]">
+                      Deep dive into strategic insights, team performance patterns, and actionable recommendations.
+                    </DrawerDescription>
+                  </DrawerHeader>
+                  <div className="flex-1 overflow-y-auto mt-4 pr-2 relative z-10">
+                    <AIScoreSection
+                      teamSummary={teamSummary}
+                      dashboardData={dashboardData}
+                      aiScoreResult={aiScoreResult}
+                      onAiScoreResultChange={setAiScoreResult}
+                    />
                   </div>
-                </DrawerContent>
-              </Drawer>
+                </div>
+              </DrawerContent>
+            </Drawer>
 
-              <div className="hidden xl:block h-8 w-px bg-border/50" />
+            <div className="hidden xl:block h-8 w-px bg-white/[0.06]" />
 
-              <div className="hidden xl:block">
-                <FilterBar
-                  dateRange={dateRange}
-                  setDateRange={setDateRange}
-                  isOverall={isOverall}
-                  setIsOverall={setIsOverall}
-                />
-              </div>
-              
-              <div className="hidden xl:block h-8 w-px bg-border/50" />
-              
-              <div className="flex items-center gap-2">
-                <ModeToggle />
-              </div>
+            {/* Date Filter */}
+            <div className="hidden xl:block">
+              <FilterBar
+                dateRange={dateRange}
+                setDateRange={setDateRange}
+                isOverall={isOverall}
+                setIsOverall={setIsOverall}
+              />
             </div>
-
           </div>
-        </header>
+        </div>
+      </header>
 
-        {error && (
-          <div className="mx-6 sm:mx-10 mt-28 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300 max-w-[1600px] xl:mx-auto">
-            <div className="flex items-center gap-4 text-base text-destructive">
-              <AlertCircle className="w-6 h-6 shrink-0" />
-              <span className="font-medium">{error}</span>
+      {/* ═══ ERROR BANNER ═══ */}
+      {error && (
+        <div className="mx-6 sm:mx-10 mt-20 px-6 py-4 bg-red-500/5 border border-red-500/20 rounded-xl flex items-center justify-between max-w-[1600px] xl:mx-auto">
+          <div className="flex items-center gap-3 text-sm text-red-400">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <span className="font-body font-medium">{error}</span>
+          </div>
+          <button onClick={() => setError("")} className="text-red-400 hover:text-red-300 transition-colors p-1">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      )}
+
+      {/* ═══ MAIN CONTENT ═══ */}
+      <main className={`relative mt-24 mb-16 mx-auto px-4 sm:px-8 lg:px-12 max-w-7xl transition-opacity duration-300 ${loading ? "opacity-50 pointer-events-none" : ""}`}>
+        
+        {/* ── HERO 3D SECTION ── */}
+        <section className="relative w-full py-20 flex flex-col md:flex-row items-center justify-between gap-12 mb-16">
+          {/* Background Ambient Glow */}
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#F7931A]/10 rounded-full blur-[120px] pointer-events-none" />
+          
+          {/* Left: Headline & Text */}
+          <div className="z-10 flex-1 space-y-6">
+            <h2 className="text-5xl md:text-7xl font-heading font-bold tracking-tighter leading-none">
+              <span className="text-white block">Mission</span>
+              <span className="text-gradient-spartan">Command</span>
+            </h2>
+            <p className="text-[#94A3B8] text-lg font-body max-w-md leading-relaxed">
+              Real-time synchronization of objectives, key results, and live team performance telemetry.
+            </p>
+            <div className="flex gap-4 pt-4">
+              <button className="h-12 px-6 rounded-full bg-gradient-to-r from-[#EA580C] to-[#F7931A] text-[#030304] font-mono font-bold uppercase tracking-widest text-xs shadow-[0_0_20px_-5px_rgba(234,88,12,0.5)] hover:shadow-[0_0_30px_-5px_rgba(247,147,26,0.6)] hover:scale-105 transition-all duration-300">
+                Execute Plan
+              </button>
+              <button className="h-12 px-6 rounded-full border-2 border-white/20 text-white font-mono font-bold uppercase tracking-widest text-xs hover:border-[#F7931A]/50 hover:bg-[#F7931A]/10 transition-all duration-300">
+                View Ledger
+              </button>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setError("")}
-              className="text-destructive hover:text-destructive hover:bg-destructive/20"
-            >
-              <X className="w-5 h-5" />
-            </Button>
           </div>
-        )}
 
-        {/* ── Content ── */}
-        <main className={`relative pt-28 px-4 sm:px-8 lg:px-12 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1600px] mx-auto ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
+          {/* Right: Spinning Orbital Rings & Floating Cards */}
+          <div className="relative w-full md:w-[450px] h-[350px] md:h-[450px] flex items-center justify-center shrink-0">
+            {/* The Orb */}
+            <div className="absolute w-32 h-32 rounded-full bg-gradient-to-tr from-[#EA580C] to-[#FFD600] animate-float shadow-[0_0_50px_rgba(247,147,26,0.6)]" />
+            
+            {/* Outer Ring */}
+            <div className="absolute w-[300px] h-[300px] md:w-[400px] md:h-[400px] rounded-full border border-white/10 border-t-[#F7931A]/60 animate-[spin_10s_linear_infinite]" />
+            
+            {/* Inner Ring */}
+            <div className="absolute w-[200px] h-[200px] md:w-[280px] md:h-[280px] rounded-full border border-white/10 border-b-[#FFD600]/60 animate-[spin_15s_linear_infinite_reverse]" />
 
-          {/* ── Overview Metrics Strip ── */}
-          <section className="mb-10">
-            <OverviewCards
+            {/* Bouncing Cards */}
+            <div className="absolute -top-4 -left-4 glass-light p-4 rounded-xl border-t-[#F7931A]/50 animate-bounce [animation-duration:3s]">
+              <p className="text-[10px] font-mono text-[#94A3B8] uppercase tracking-widest mb-1">Total KRs</p>
+              <p className="text-xl font-heading font-bold text-white">{teamSummary?.totalKRs || 0}</p>
+            </div>
+            
+            <div className="absolute -bottom-8 right-8 glass-orange p-4 rounded-xl border-b-[#FFD600]/50 animate-bounce [animation-duration:4s] [animation-delay:1s]">
+              <p className="text-[10px] font-mono text-[#F7931A] uppercase tracking-widest mb-1">Avg Progress</p>
+              <p className="text-xl font-heading font-bold text-white">{teamSummary?.avgObjectiveProgress?.toFixed(1) || "0.0"}%</p>
+            </div>
+          </div>
+        </section>
+
+        <div className="flex flex-col gap-16 relative z-10">
+
+          {/* ── Section 1: Strategic Suggestions ── */}
+          <section id="section-suggestions" className="scroll-mt-32">
+            <SuggestionsPanel
               summary={teamSummary}
-              participantDetails={participantDetails}
               objectives={objectives}
+              participantDetails={participantDetails}
             />
           </section>
 
-          {/* ── Main Layout: Dashboard Style ── */}
-          <div className="flex flex-col gap-12">
-            {/* ── Top Performers (HoloCard Leaderboard) ── */}
-            {(() => {
-              const topContributors =
-                participantDetails.length > 0
-                  ? [...participantDetails]
-                      .sort((a, b) => a.seq - b.seq)
-                      .slice(0, 3)
-                  : loading ? [
-                      { employeeId: 'skel-1', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw,
-                      { employeeId: 'skel-2', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw,
-                      { employeeId: 'skel-3', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw
-                    ] : [];
+          {/* ── Section 2: Team Comparison ── */}
+          <section id="section-teams" className="scroll-mt-24">
+              <TeamComparison />
+          </section>
 
-              if (topContributors.length === 0) return null;
+          {/* ── Section 3: Hall of Fame ── */}
+          <section id="section-hall-of-fame" className="scroll-mt-24">
+            <HallOfFame participantDetails={participantDetails} />
+          </section>
 
-              return (
-                <section className="relative">
-                  {/* Section Header — Apple-style minimal */}
-                  <div className="mb-12 flex flex-col items-center text-center">
-                    <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-muted-foreground/60 mb-2">Top Performers</span>
-                    <h3 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Hall of Fame</h3>
-                  </div>
-
-                  {/* Podium Grid — Editorial Portrait Cards */}
-                  <div className="flex flex-col md:flex-row justify-center items-end gap-5 lg:gap-6 max-w-4xl mx-auto px-4">
-                    {(() => {
-                      const rankConfig = [
-                        { icon: Crown, accent: 'text-amber-500 dark:text-amber-400', accentBg: 'bg-amber-500/10 dark:bg-amber-400/10', ring: 'ring-amber-500/20 dark:ring-amber-400/20', glow: 'hover:shadow-amber-200/20 dark:hover:shadow-amber-500/10' },
-                        { icon: Medal, accent: 'text-zinc-400 dark:text-zinc-500', accentBg: 'bg-zinc-400/10 dark:bg-zinc-500/10', ring: 'ring-zinc-400/20 dark:ring-zinc-500/20', glow: 'hover:shadow-zinc-200/20 dark:hover:shadow-zinc-500/10' },
-                        { icon: Trophy, accent: 'text-orange-500 dark:text-orange-400', accentBg: 'bg-orange-500/10 dark:bg-orange-400/10', ring: 'ring-orange-500/20 dark:ring-orange-400/20', glow: 'hover:shadow-orange-200/20 dark:hover:shadow-orange-500/10' },
-                      ];
-
-                      return [1, 0, 2].map((origIndex) => {
-                        const p = topContributors[origIndex];
-                        if (!p) return null;
-
-                        const isFirst = origIndex === 0;
-                        const config = rankConfig[origIndex];
-                        const RankIcon = config.icon;
-
-                        return (
-                          <div
-                            key={p.employeeId || origIndex}
-                            className={`group relative flex flex-col w-full md:w-1/3 ${
-                              isFirst ? 'order-1 md:order-2 md:-translate-y-5 z-10' :
-                              origIndex === 1 ? 'order-2 md:order-1' :
-                              'order-3 md:order-3'
-                            }`}
-                          >
-                            <div className={`relative overflow-hidden rounded-2xl bg-background/50 dark:bg-zinc-900/50 border border-border/30 dark:border-white/6 transition-all duration-500 hover:border-border/50 dark:hover:border-white/12 ${isFirst ? 'shadow-xl' : 'shadow-lg'} ${config.glow}`}>
-                              {/* Portrait Photo */}
-                              <div className={`relative w-full ${isFirst ? 'aspect-3/4' : 'aspect-4/5'} overflow-hidden bg-muted/30`}>
-                                {(p.pictureMediumURL || p.pictureURL) ? (
-                                  <Image
-                                    src={p.pictureMediumURL || p.pictureURL}
-                                    alt={p.fullName}
-                                    fill
-                                    className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.04]"
-                                    unoptimized
-                                    sizes="(max-width: 768px) 100vw, 33vw"
-                                  />
-                                ) : (
-                                  <div className="absolute inset-0 bg-muted/40 flex items-center justify-center">
-                                    <span className="text-4xl font-light text-muted-foreground/40">{p.fullName?.charAt(0)}</span>
-                                  </div>
-                                )}
-
-                                {/* Cinematic gradient overlay */}
-                                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
-
-                                {/* Rank pill — top left */}
-                                <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md ${config.accentBg} ${config.ring} ring-1`}>
-                                  <RankIcon className={`w-3 h-3 ${config.accent}`} />
-                                  <span className={`text-[11px] font-bold ${config.accent}`}>#{origIndex + 1}</span>
-                                </div>
-
-                                {/* Name overlay — bottom of photo */}
-                                <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
-                                  <h4 className={`${isFirst ? 'text-xl' : 'text-lg'} font-semibold text-white tracking-tight leading-tight drop-shadow-sm`}>
-                                    {p.fullName}
-                                  </h4>
-                                </div>
-                              </div>
-
-                              {/* Stats row */}
-                              <div className="px-4 py-3 flex items-center justify-between">
-                                <div className="flex flex-col">
-                                  <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">Progress</span>
-                                  <span className={`text-sm font-semibold tabular-nums ${config.accent}`}>{p.avgPercent.toFixed(1)}%</span>
-                                </div>
-                                <div className="w-px h-7 bg-border/30 dark:bg-white/6" />
-                                <div className="flex flex-col items-end">
-                                  <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">Check-ins</span>
-                                  <span className="text-sm font-semibold text-foreground tabular-nums">{p.totalCheckIn}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                </section>
-              );
-            })()}
-
-            {/* ── Check-In Engagement (Top/Bottom Check-ins) ── */}
-            <section className="relative max-w-7xl mx-auto w-full">
-              <CheckInEngagement participantDetails={participantDetails} />
-            </section>
-
-            {/* ── Focus Areas (Unboxed) ── */}
-            <section className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
-              {(() => {
-                const allSubObjectives = objectives.flatMap(o => o.subObjectives || []);
-                
-                // Filter and sort for Top 3 (Highest positive progress updates)
-                const topUpdates = [...allSubObjectives]
-                  .filter(sub => sub.objectiveOwnerType === 1 && (sub.progressUpdate || 0) > 0)
-                  .sort((a, b) => (b.progressUpdate || 0) - (a.progressUpdate || 0))
-                  .slice(0, 3);
-
-                // Filter and sort for Bottom 3 (Lowest/Negative progress updates)
-                const bottomUpdates = [...allSubObjectives]
-                  .filter(sub => sub.objectiveOwnerType === 1)
-                  .sort((a, b) => (a.progressUpdate || 0) - (b.progressUpdate || 0))
-                  .slice(0, 3);
-
-                return (
-                  <>
-                    <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                      <ProgressUpdateSection 
-                        title="Trending" 
-                        description="Objectives with the highest progress jumps"
-                        subObjectives={topUpdates} 
-                        type="top" 
-                      />
-                    </div>
-                    <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                      <ProgressUpdateSection 
-                        title="Unpopular" 
-                        description="Objectives needing more momentum"
-                        subObjectives={bottomUpdates} 
-                        type="bottom" 
-                      />
-                    </div>
-                  </>
-                );
-              })()}
-            </section>
-
-            {/* ── Period Comparison ── */}
-            <section className="hidden relative bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg max-w-7xl mx-auto w-full">
-              <div className="flex items-center gap-2 mb-6">
-                <TrendingUp className="w-5 h-5 text-blue-500" />
-                <h3 className="text-xl font-bold text-foreground">
-                  Momentum Comparison
-                </h3>
-              </div>
-              <PeriodComparisonSection
-                comparison={{
-                  currentCompletionRate:
-                    teamSummary?.objectiveCompletionRate || 0,
-                  previousCompletionRate:
-                    (teamSummary?.objectiveCompletionRate || 0) - 5,
-                  completionRateDelta: 5,
-                  currentAvgProgress: teamSummary?.avgObjectiveProgress || 0,
-                  previousAvgProgress:
-                    (teamSummary?.avgObjectiveProgress || 0) - 8,
-                  avgProgressDelta: 8,
-                  currentCheckInCount: teamSummary?.totalKRs || 0,
-                  previousCheckInCount: (teamSummary?.totalKRs || 0) - 12,
-                  checkInCountDelta: 12,
-                  progressTrend:
-                    "Upward trend observed mostly in engineering teams",
-                  engagementTrend: "Consistent weekly check-ins maintained",
-                }}
-              />
-            </section>
-
-            {/* ── Objectives ── */}
-            <section className="relative bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg max-w-7xl mx-auto w-full pb-12">
-              <ObjectivesSection objectives={objectives} />
-            </section>
-          </div>
+          {/* ── Section 4: Contribution Matrix (Objectives) ── */}
+          <section id="section-objectives" className="scroll-mt-24">
+              <ContributionMatrix objectives={objectives} />
+          </section>
+        </div>
 
         {/* ── Floating AI Chat ── */}
         <FloatingAiChat dashboardData={dashboardData} />
-        </main>
-      </div>
-    </ClickSpark>
+      </main>
+    </div>
   );
 }
