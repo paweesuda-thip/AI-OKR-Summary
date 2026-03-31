@@ -29,6 +29,13 @@ const CrownIcon = ({ className = "" }: { className?: string }) => (
   </svg>
 );
 
+const CloseIcon = ({ className = "" }: { className?: string }) => (
+  <svg className={className} width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
+
 const paceGroupConfig: Record<string, { color: string; border: string; bg: string; label: string }> = {
   Elite: { color: "text-[#FFD600]", border: "border-[#FFD600]/30", bg: "bg-[#FFD600]/5", label: "ELITE PACE" },
   Strong: { color: "text-[#F7931A]", border: "border-[#F7931A]/30", bg: "bg-[#F7931A]/5", label: "STRONG PACE" },
@@ -48,6 +55,8 @@ interface HallOfFameProps {
 
 export default function HallOfFame({ participantDetails }: HallOfFameProps) {
   const [viewMode, setViewMode] = useState<"list" | "chart">("list");
+  const [selectedPerson, setSelectedPerson] = useState<HallOfFameEntry | null>(null);
+
   const entries = useMemo(() => {
     return generateHallOfFameEntries(
       participantDetails.map(p => ({
@@ -73,8 +82,8 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
   const podiumOrder = [1, 0, 2];
 
   return (
-    <div className="w-full space-y-8 animate-fade-in">
-      {/* Structural Backdrop lines replacing mud blurs */}
+    <div className="w-full space-y-8 animate-fade-in relative z-10">
+      {/* Structural Backdrop lines */}
       <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#FFD600]/20 to-transparent -z-10" />
 
       {/* Header */}
@@ -112,24 +121,25 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
           const isFirst = origIndex === 0;
 
           return (
-            <div
+            <button
               key={entry.employeeId}
-              className={`group relative flex flex-col w-full md:w-1/3 mb-4 md:mb-0 transition-all duration-300 hover:-translate-y-2 ${
+              onClick={() => setSelectedPerson(entry)}
+              className={`group relative flex flex-col w-full md:w-1/3 mb-4 md:mb-0 transition-all duration-300 hover:-translate-y-2 cursor-pointer text-left ${
                 isFirst ? "order-1 md:order-2 md:-translate-y-6 z-20" :
                 origIndex === 1 ? "order-2 md:order-1 z-10" : "order-3 z-10"
               }`}
             >
-              <div className={`relative overflow-hidden rounded-sm border transition-all duration-500 bg-[#0F1115] ${
+              <div className={`relative overflow-hidden rounded-sm border transition-all duration-500 bg-[#0F1115] w-full ${
                 isFirst ? "border-[#FFD600]/60 shadow-[4px_4px_0_rgba(255,214,0,0.3)]" : "border-white/10 hover:border-white/30 hover:shadow-[4px_4px_0_rgba(255,255,255,0.1)]"
               }`}>
-                {/* Photo Strip */}
+                {/* Photo Strip - Grayscale Removed */}
                 <div className={`relative w-full ${isFirst ? "aspect-[3/4]" : "aspect-[4/5]"} overflow-hidden bg-[#0A0C10] border-b border-white/5`}>
                   {(entry.pictureMediumURL || entry.pictureURL) ? (
                     <Image
                       src={entry.pictureMediumURL || entry.pictureURL}
                       alt={entry.fullName}
                       fill
-                      className="object-cover object-top filter grayscale group-hover:grayscale-0 transition-all duration-700 ease-out group-hover:scale-105"
+                      className="object-cover object-top transition-all duration-700 ease-out group-hover:scale-105"
                       unoptimized
                       sizes="(max-width: 768px) 100vw, 33vw"
                     />
@@ -185,7 +195,7 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
                   </div>
                 </div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>
@@ -240,13 +250,21 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
                       return null;
                     }}
                   />
-                  <Scatter name="Runners" data={entries}>
+                  <Scatter 
+                    name="Runners" 
+                    data={entries} 
+                    onClick={(e) => { 
+                      // Payload contains the entry when scattered circle clicked
+                      if (e && e.payload) setSelectedPerson(e.payload); 
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     {entries.map((entry, index) => {
                       let fillCol = "#94A3B8";
                       if (entry.paceGroup === "Elite") fillCol = "#FFD600";
                       if (entry.paceGroup === "Strong") fillCol = "#F7931A";
                       if (entry.paceGroup === "Growing") fillCol = "#3B82F6";
-                      return <Cell key={`cell-${index}`} fill={fillCol} />;
+                      return <Cell key={`cell-${index}`} fill={fillCol} className="hover:opacity-80 transition-opacity" />;
                     })}
                   </Scatter>
                 </ScatterChart>
@@ -273,9 +291,10 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
                   {/* Members */}
                   <div className="divide-y divide-white/[0.03] max-h-[300px] overflow-y-auto">
                     {members.map((entry, idx) => (
-                      <div
+                      <button
                         key={entry.employeeId}
-                        className="group px-4 py-2.5 flex items-center gap-3 hover:bg-white/[0.03] transition-colors cursor-default relative overflow-hidden"
+                        onClick={() => setSelectedPerson(entry)}
+                        className="group w-full px-4 py-2.5 flex items-center gap-3 hover:bg-white/[0.03] transition-colors cursor-pointer relative overflow-hidden text-left"
                       >
                          <div className={`absolute left-0 top-0 bottom-0 w-[2px] opacity-0 group-hover:opacity-100 transition-opacity ${config.bg.replace('bg-', 'bg-').replace('/5', '')}`} style={{ backgroundColor: config.color.replace('text-', '') }} />
                         {/* Rank */}
@@ -284,14 +303,15 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
                         </span>
 
                         {/* Avatar */}
-                        <div className="w-6 h-6 rounded-sm bg-[#1A1D24] border border-white/10 shrink-0 overflow-hidden mix-blend-luminosity group-hover:mix-blend-normal transition-all duration-300">
+                        {/* Grayscale removed completely as requested */}
+                        <div className="w-6 h-6 rounded-sm bg-[#1A1D24] border border-white/10 shrink-0 overflow-hidden transition-all duration-300">
                           {(entry.pictureMediumURL || entry.pictureURL) ? (
                             <Image
                               src={entry.pictureMediumURL || entry.pictureURL}
                               alt={entry.fullName}
                               width={24}
                               height={24}
-                              className="object-cover w-full h-full"
+                              className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
                               unoptimized
                             />
                           ) : (
@@ -302,7 +322,7 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
                         </div>
 
                         {/* Name */}
-                        <div className="flex-1 min-w-0 pr-2">
+                        <div className="flex-1 min-w-0 pr-2 group-hover:translate-x-1 transition-transform">
                            <span className="text-xs font-heading font-bold text-white/80 truncate block uppercase tracking-tight group-hover:text-white transition-colors">
                              {entry.fullName}
                            </span>
@@ -326,7 +346,7 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
                              {entry.trend.toUpperCase()}
                            </span>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </div>
@@ -335,6 +355,104 @@ export default function HallOfFame({ participantDetails }: HallOfFameProps) {
           </div>
         )}
       </div>
+
+      {/* ── Modal Profile Gimmick ── */}
+      {selectedPerson && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md animate-fade-in" onClick={() => setSelectedPerson(null)} />
+          
+          <div className="relative z-10 w-full max-w-sm bg-[#0F1115] border border-white/10 shadow-[0_0_50px_-10px_rgba(247,147,26,0.3)] flex flex-col overflow-hidden animate-fade-in">
+             <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#FFD600] to-[#F7931A]" />
+             
+             <button onClick={() => setSelectedPerson(null)} className="absolute top-3 right-3 text-[#475569] hover:text-white z-20 transition-colors">
+               <CloseIcon className="w-5 h-5" />
+             </button>
+
+             <div className="relative h-32 bg-[#0A0C10]">
+               {selectedPerson.pictureURL ? (
+                  <Image src={selectedPerson.pictureURL} alt={selectedPerson.fullName} fill className="object-cover opacity-60" unoptimized />
+               ) : (
+                 <div className="w-full h-full bg-[#1A1D24] flex items-center justify-center">
+                   <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center border border-white/10">
+                     <span className="text-3xl font-heading font-black text-white/30 uppercase">{selectedPerson.fullName.charAt(0)}</span>
+                   </div>
+                 </div>
+               )}
+               <div className="absolute inset-0 bg-gradient-to-t from-[#0F1115] to-transparent" />
+               <div className="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(0,0,0,0.25)_1px,transparent_1px)] bg-[size:100%_4px,4px_100%] opacity-20 pointer-events-none" />
+               
+               {/* Floating Rank */}
+               <div className="absolute bottom-[-16px] left-6">
+                 <div className="w-16 h-16 rounded-sm bg-[#0F1115] border border-white/10 flex items-center justify-center shadow-xl">
+                   {selectedPerson.pictureURL ? (
+                     <Image src={selectedPerson.pictureURL} alt={selectedPerson.fullName} width={60} height={60} className="object-cover" unoptimized/>
+                   ) : (
+                     <span className="text-2xl font-heading font-black text-white uppercase">{selectedPerson.fullName.charAt(0)}</span>
+                   )}
+                 </div>
+               </div>
+             </div>
+
+             <div className="pt-6 px-6 pb-6">
+               <div className="flex justify-between items-start mb-6">
+                 <div>
+                   <h3 className="text-xl font-heading font-black text-white uppercase tracking-tight leading-none mb-1">
+                     {selectedPerson.fullName}
+                   </h3>
+                   <span className={`text-[10px] font-mono tracking-widest uppercase font-bold px-2 py-0.5 rounded border ${paceGroupConfig[selectedPerson.paceGroup]?.border} ${paceGroupConfig[selectedPerson.paceGroup]?.color}`}>
+                     {selectedPerson.paceGroup} NODE
+                   </span>
+                 </div>
+                 
+                 <div className="text-right">
+                   <span className="text-[9px] font-mono font-bold text-[#475569] tracking-[0.2em] uppercase block mb-1">GLOBAL RANK</span>
+                   <span className="text-lg font-mono font-black text-[#FFD600] tabular-nums">#{entries.indexOf(selectedPerson) + 1}</span>
+                 </div>
+               </div>
+
+               <div className="space-y-4">
+                 {/* Progress Stats */}
+                 <div>
+                   <div className="flex items-center justify-between mb-2">
+                     <span className="text-[10px] font-mono font-bold text-[#475569] tracking-widest uppercase">Telemetry Sync</span>
+                     <span className="font-mono text-sm font-bold text-white tabular-nums">{selectedPerson.avgPercent.toFixed(1)}%</span>
+                   </div>
+                   <div className="h-1.5 w-full bg-[#030304] border border-white/5 overflow-hidden">
+                     <div 
+                       className="h-full bg-[#F7931A] transition-all duration-1000 shadow-[0_0_10px_#F7931A]"
+                       style={{ width: `${Math.min(selectedPerson.avgPercent, 100)}%` }}
+                     />
+                   </div>
+                 </div>
+
+                 {/* KPI Blocks */}
+                 <div className="grid grid-cols-2 gap-3 pt-2">
+                   <div className="bg-[#030304] border border-white/5 p-3 flex flex-col items-center justify-center text-center group/kpi hover:border-[#F7931A]/30 transition-colors">
+                     <span className="text-[9px] font-mono font-bold text-[#475569] tracking-widest uppercase mb-1">Score Matrix</span>
+                     <span className="text-lg font-mono font-black text-emerald-400 group-hover/kpi:text-emerald-300 transition-colors uppercase">{selectedPerson.weightedScore}</span>
+                   </div>
+                   <div className="bg-[#030304] border border-white/5 p-3 flex flex-col items-center justify-center text-center group/kpi hover:border-[#F7931A]/30 transition-colors">
+                     <span className="text-[9px] font-mono font-bold text-[#475569] tracking-widest uppercase mb-1">Consistency</span>
+                     <span className="text-lg font-mono font-black text-white group-hover/kpi:text-white transition-colors uppercase">{selectedPerson.consistencyRate}%</span>
+                   </div>
+                   <div className="bg-[#030304] border border-white/5 p-3 flex flex-col items-center justify-center text-center group/kpi hover:border-[#F7931A]/30 transition-colors">
+                     <span className="text-[9px] font-mono font-bold text-[#475569] tracking-widest uppercase mb-1">Total Logs</span>
+                     <span className="text-lg font-mono font-black text-[#3B82F6] group-hover/kpi:text-[#60A5FA] transition-colors uppercase">{selectedPerson.totalCheckIn}</span>
+                   </div>
+                   <div className="bg-[#030304] border border-white/5 p-3 flex flex-col items-center justify-center text-center group/kpi hover:border-[#F7931A]/30 transition-colors relative overflow-hidden">
+                     <span className="text-[9px] font-mono font-bold text-[#475569] tracking-widest uppercase mb-1">Streak</span>
+                     <div className="flex items-center gap-1 group-hover/kpi:scale-110 transition-transform">
+                       <FlameIcon className="text-[#F7931A] w-4 h-4" />
+                       <span className="text-lg font-mono font-black text-[#F7931A] uppercase">{selectedPerson.streak}</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+               
+             </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
