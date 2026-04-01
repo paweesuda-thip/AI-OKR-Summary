@@ -132,3 +132,50 @@ export interface ParticipantDetailRaw {
   totalMissCheckIn: number;
   avgPercent: number;
 }
+
+// ─── Extended types for new dashboard ─────────────────────────────────────────
+
+export interface TeamComparisonData {
+  teamId: string;
+  teamName: string;
+  logoColor: string;
+  memberCount: number;
+  avgProgress: number;
+  krCompletionRate: number;
+  checkInRate: number;
+  consistencyScore: number;
+  objectiveCount: number;
+  onTrackPercent: number;
+}
+
+export interface HallOfFameEntry {
+  employeeId: number;
+  fullName: string;
+  fullName_EN: string;
+  pictureURL: string;
+  teamName: string;
+  place: number;
+  compositeScore: number;
+  weights: {
+    krDifficulty: number;
+    progressScore: number;
+    checkInScore: number;
+    consistencyScore: number;
+  };
+  avgPercent: number;
+  totalCheckIn: number;
+  streakWeeks: number;
+  trend: 'rising' | 'stable' | 'declining';
+}
+
+export interface Suggestion {
+  id: string;
+  type: 'warning' | 'boost' | 'insight' | 'milestone';
+  title: string;
+  description: string;
+  metric?: string;
+  target?: string;
+  urgency: 'high' | 'medium' | 'low';
+}
+
+export type TeamFilterMode = 'overall' | 'spartan' | 'pegasus' | 'unicorn' | 'product-owner';
