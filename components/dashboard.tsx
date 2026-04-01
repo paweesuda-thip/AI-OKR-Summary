@@ -35,6 +35,7 @@ import TeamArena from "./team-arena";
 import HallOfFame from "./hall-of-fame";
 import ObjectiveContributions from "./objective-contributions";
 import MomentumSection from "./momentum-section";
+import ChartsSection from "./charts-section";
 import { generateSuggestions } from "@/lib/mock/suggestions";
 
 const TEAM_ACCENT_MAP: Record<string, { color: string; rgb: string; glow: string }> = {
@@ -266,13 +267,18 @@ export default function Dashboard() {
               <HallOfFame teamFilter={teamFilter} />
             </section>
 
-            {/* Section D: Momentum */}
+            {/* Section D: Analytics Charts */}
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
+              <ChartsSection />
+            </section>
+
+            {/* Section E: Momentum */}
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms]">
               <MomentumSection objectives={objectives} />
             </section>
 
-            {/* Section E: Objective Contributions */}
-            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-[400ms]">
+            {/* Section F: Objective Contributions */}
+            <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-500">
               <ObjectiveContributions objectives={objectives} />
             </section>
 
