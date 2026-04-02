@@ -1,6 +1,7 @@
 "use client";
 
-import { IconChart } from "@/components/icons";
+import { useState } from "react";
+import { IconChart, IconArrowTrend, IconFlame, IconSword, IconTarget } from "@/components/icons";
 import {
   ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
@@ -119,171 +120,235 @@ const scatterData = [
 ];
 
 /* ══════════════════════════════════════════
+   Tab definitions
+   ══════════════════════════════════════════ */
+
+type TabKey = "progress" | "engagement" | "comparison" | "objectives";
+
+const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
+  { key: "progress",   label: "Progress",   icon: <IconArrowTrend size={14} /> },
+  { key: "engagement", label: "Engagement", icon: <IconFlame size={14} /> },
+  { key: "comparison", label: "Comparison", icon: <IconSword size={14} /> },
+  { key: "objectives", label: "Objectives", icon: <IconTarget size={14} /> },
+];
+
+/* ══════════════════════════════════════════
+   Tab content renderers
+   ══════════════════════════════════════════ */
+
+function ProgressTab() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <ChartCard title="Monthly OKR Progress" subtitle="Team progress trends across months">
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={monthlyProgressData} barCategoryGap="18%">
+            <CartesianGrid {...GRID} />
+            <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+            <YAxis domain={[0, 100]} tick={AXIS_TICK} axisLine={false} tickLine={false} unit="%" />
+            <Tooltip {...TT} />
+            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+            <Bar dataKey="Spartan" fill={COLORS.spartan} radius={[4, 4, 0, 0]} maxBarSize={18} />
+            <Bar dataKey="Pegasus" fill={COLORS.pegasus} radius={[4, 4, 0, 0]} maxBarSize={18} />
+            <Bar dataKey="Unicorn" fill={COLORS.unicorn} radius={[4, 4, 0, 0]} maxBarSize={18} />
+            <Bar dataKey="Product Owner" fill={COLORS.po} radius={[4, 4, 0, 0]} maxBarSize={18} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="KR Completion" subtitle="Cumulative key results over time">
+        <ResponsiveContainer width="100%" height={300}>
+          <AreaChart data={krCumulative}>
+            <defs>
+              <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={COLORS.emerald} stopOpacity={0.3} />
+                <stop offset="95%" stopColor={COLORS.emerald} stopOpacity={0} />
+              </linearGradient>
+              <linearGradient id="gradInProgress" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={COLORS.pegasus} stopOpacity={0.25} />
+                <stop offset="95%" stopColor={COLORS.pegasus} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...GRID} />
+            <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+            <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+            <Tooltip {...TT} />
+            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+            <Area type="monotone" dataKey="Completed" stroke={COLORS.emerald} fill="url(#gradCompleted)" strokeWidth={2.5} dot={{ r: 3, fill: COLORS.emerald, strokeWidth: 0 }} />
+            <Area type="monotone" dataKey="In Progress" stroke={COLORS.pegasus} fill="url(#gradInProgress)" strokeWidth={2} dot={{ r: 2.5, fill: COLORS.pegasus, strokeWidth: 0 }} />
+          </AreaChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}
+
+function EngagementTab() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <ChartCard title="Check-in Activity" subtitle="Engagement metrics over time">
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={checkInTrends}>
+            <CartesianGrid {...GRID} />
+            <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
+            <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
+            <Tooltip {...TT} />
+            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+            <Line type="monotone" dataKey="Check-ins" stroke={COLORS.pegasus} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.pegasus }} activeDot={{ r: 5, strokeWidth: 0 }} />
+            <Line type="monotone" dataKey="Weekly Active" stroke={COLORS.emerald} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.emerald }} activeDot={{ r: 5, strokeWidth: 0 }} />
+            <Line type="monotone" dataKey="Missed" stroke={COLORS.rose} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 2.5, fill: COLORS.rose }} />
+          </LineChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Check-in vs Progress" subtitle="Scatter correlation — bubble size = streak weeks">
+        <ResponsiveContainer width="100%" height={300}>
+          <ScatterChart>
+            <CartesianGrid {...GRID} />
+            <XAxis type="number" dataKey="x" name="Check-ins" tick={AXIS_TICK} axisLine={false} tickLine={false} label={{ value: "Check-ins", position: "insideBottom", offset: -2, style: { fill: "rgba(255,255,255,0.3)", fontSize: 9 } }} />
+            <YAxis type="number" dataKey="y" name="Progress %" tick={AXIS_TICK} axisLine={false} tickLine={false} domain={[30, 100]} label={{ value: "Progress %", angle: -90, position: "insideLeft", offset: 10, style: { fill: "rgba(255,255,255,0.3)", fontSize: 9 } }} />
+            <ZAxis type="number" dataKey="z" range={[40, 260]} />
+            <Tooltip
+              {...TT}
+              formatter={(value: number, name: string) => {
+                if (name === "Check-ins") return [value, "Check-ins"];
+                if (name === "Progress %") return [`${value}%`, "Progress"];
+                return [value, name];
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+            {scatterData.map((s, i) => (
+              <Scatter key={s.group} name={s.group} data={s.data} fill={SCATTER_PALETTE[i]} fillOpacity={0.7} strokeWidth={0} />
+            ))}
+          </ScatterChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}
+
+function ComparisonTab() {
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+      <ChartCard title="Objective Status" subtitle="Distribution by current status">
+        <ResponsiveContainer width="100%" height={300}>
+          <PieChart>
+            <Pie
+              data={statusDistribution}
+              cx="50%"
+              cy="50%"
+              innerRadius={65}
+              outerRadius={100}
+              paddingAngle={3}
+              dataKey="value"
+              stroke="none"
+              animationBegin={200}
+              animationDuration={800}
+            >
+              {statusDistribution.map((_entry, i) => (
+                <Cell key={i} fill={PIE_PALETTE[i]} className="drop-shadow-sm" />
+              ))}
+            </Pie>
+            <Tooltip {...TT} />
+            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
+          </PieChart>
+        </ResponsiveContainer>
+      </ChartCard>
+
+      <ChartCard title="Team Capabilities" subtitle="Multi-axis performance comparison">
+        <ResponsiveContainer width="100%" height={300}>
+          <RadarChart data={radarData}>
+            <PolarGrid stroke="rgba(255,255,255,0.06)" />
+            <PolarAngleAxis dataKey="axis" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 9 }} />
+            <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+            <Radar name="Spartan" dataKey="Spartan" stroke={COLORS.spartan} fill={COLORS.spartan} fillOpacity={0.12} strokeWidth={2} />
+            <Radar name="Pegasus" dataKey="Pegasus" stroke={COLORS.pegasus} fill={COLORS.pegasus} fillOpacity={0.08} strokeWidth={1.5} />
+            <Radar name="Unicorn" dataKey="Unicorn" stroke={COLORS.unicorn} fill={COLORS.unicorn} fillOpacity={0.12} strokeWidth={2} />
+            <Radar name="Product Owner" dataKey="Product Owner" stroke={COLORS.po} fill={COLORS.po} fillOpacity={0.08} strokeWidth={1.5} />
+            <Legend wrapperStyle={{ fontSize: 9, paddingTop: 4 }} />
+          </RadarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}
+
+function ObjectivesTab() {
+  return (
+    <div className="max-w-4xl mx-auto">
+      <ChartCard title="Top Objectives by Progress" subtitle="Highest progress objectives — stacked by team ownership">
+        <ResponsiveContainer width="100%" height={340}>
+          <BarChart data={topObjectives} layout="vertical" barCategoryGap="20%">
+            <CartesianGrid {...GRID} horizontal={false} />
+            <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={false} tickLine={false} unit="%" />
+            <YAxis type="category" dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 9 }} axisLine={false} tickLine={false} width={140} />
+            <Tooltip {...TT} />
+            <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
+            <Bar dataKey="Spartan" stackId="a" fill={COLORS.spartan} radius={[0, 0, 0, 0]} maxBarSize={16} />
+            <Bar dataKey="Pegasus" stackId="a" fill={COLORS.pegasus} radius={[0, 0, 0, 0]} maxBarSize={16} />
+            <Bar dataKey="Unicorn" stackId="a" fill={COLORS.unicorn} radius={[0, 4, 4, 0]} maxBarSize={16} />
+            <Bar dataKey="Product Owner" stackId="a" fill={COLORS.po} radius={[0, 4, 4, 0]} maxBarSize={16} />
+          </BarChart>
+        </ResponsiveContainer>
+      </ChartCard>
+    </div>
+  );
+}
+
+const TAB_CONTENT: Record<TabKey, () => React.JSX.Element> = {
+  progress: ProgressTab,
+  engagement: EngagementTab,
+  comparison: ComparisonTab,
+  objectives: ObjectivesTab,
+};
+
+/* ══════════════════════════════════════════
    Component
    ══════════════════════════════════════════ */
 
 export default function ChartsSection() {
+  const [activeTab, setActiveTab] = useState<TabKey>("progress");
+  const ActiveContent = TAB_CONTENT[activeTab];
+
   return (
-    <div className="w-full space-y-6">
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
-          <IconChart size={16} className="text-cyan-400" />
+    <div className="w-full">
+      {/* Header + Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+            <IconChart size={16} className="text-cyan-400" />
+          </div>
+          <div>
+            <h2 className="text-lg font-bold tracking-tight">Analytics Overview</h2>
+            <p className="text-xs text-muted-foreground">Switch tabs to explore different dimensions</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-lg font-bold tracking-tight">Analytics Overview</h2>
-          <p className="text-xs text-muted-foreground">Comprehensive performance comparison across multiple dimensions</p>
+
+        {/* Tab switcher */}
+        <div className="flex items-center gap-1 p-1 rounded-xl bg-secondary/50 border border-border/40">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`
+                relative px-3.5 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all duration-300
+                ${activeTab === tab.key
+                  ? "bg-white/10 text-foreground shadow-sm border border-white/10"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/5"
+                }
+              `}
+            >
+              <span className="flex items-center gap-1.5">
+                {tab.icon}
+                <span className="hidden sm:inline">{tab.label}</span>
+              </span>
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* ── Row 1: Grouped Bar + Line ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Grouped Bar — Monthly Progress */}
-        <ChartCard title="Monthly OKR Progress" subtitle="Team progress trends across months">
-          <ResponsiveContainer width="100%" height={280}>
-            <BarChart data={monthlyProgressData} barCategoryGap="18%">
-              <CartesianGrid {...GRID} />
-              <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <YAxis domain={[0, 100]} tick={AXIS_TICK} axisLine={false} tickLine={false} unit="%" />
-              <Tooltip {...TT} />
-              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
-              <Bar dataKey="Spartan" fill={COLORS.spartan} radius={[4, 4, 0, 0]} maxBarSize={18} />
-              <Bar dataKey="Pegasus" fill={COLORS.pegasus} radius={[4, 4, 0, 0]} maxBarSize={18} />
-              <Bar dataKey="Unicorn" fill={COLORS.unicorn} radius={[4, 4, 0, 0]} maxBarSize={18} />
-              <Bar dataKey="Product Owner" fill={COLORS.po} radius={[4, 4, 0, 0]} maxBarSize={18} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        {/* Line — Check-in Trends */}
-        <ChartCard title="Check-in Activity" subtitle="Engagement metrics over time">
-          <ResponsiveContainer width="100%" height={280}>
-            <LineChart data={checkInTrends}>
-              <CartesianGrid {...GRID} />
-              <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <Tooltip {...TT} />
-              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
-              <Line type="monotone" dataKey="Check-ins" stroke={COLORS.pegasus} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.pegasus }} activeDot={{ r: 5, strokeWidth: 0 }} />
-              <Line type="monotone" dataKey="Weekly Active" stroke={COLORS.emerald} strokeWidth={2.5} dot={{ r: 3, fill: COLORS.emerald }} activeDot={{ r: 5, strokeWidth: 0 }} />
-              <Line type="monotone" dataKey="Missed" stroke={COLORS.rose} strokeWidth={2} strokeDasharray="5 5" dot={{ r: 2.5, fill: COLORS.rose }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
-
-      {/* ── Row 2: Donut + Radar + Area ── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {/* Donut — Status Distribution */}
-        <ChartCard title="Objective Status" subtitle="Distribution by current status">
-          <ResponsiveContainer width="100%" height={260}>
-            <PieChart>
-              <Pie
-                data={statusDistribution}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={90}
-                paddingAngle={3}
-                dataKey="value"
-                stroke="none"
-                animationBegin={200}
-                animationDuration={800}
-              >
-                {statusDistribution.map((entry, i) => (
-                  <Cell key={i} fill={PIE_PALETTE[i]} className="drop-shadow-sm" />
-                ))}
-              </Pie>
-              <Tooltip {...TT} />
-              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
-            </PieChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        {/* Radar — Team Capabilities */}
-        <ChartCard title="Team Capabilities" subtitle="Multi-axis performance comparison">
-          <ResponsiveContainer width="100%" height={260}>
-            <RadarChart data={radarData}>
-              <PolarGrid stroke="rgba(255,255,255,0.06)" />
-              <PolarAngleAxis dataKey="axis" tick={{ fill: "rgba(255,255,255,0.45)", fontSize: 9 }} />
-              <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
-              <Radar name="Spartan" dataKey="Spartan" stroke={COLORS.spartan} fill={COLORS.spartan} fillOpacity={0.12} strokeWidth={2} />
-              <Radar name="Pegasus" dataKey="Pegasus" stroke={COLORS.pegasus} fill={COLORS.pegasus} fillOpacity={0.08} strokeWidth={1.5} />
-              <Radar name="Unicorn" dataKey="Unicorn" stroke={COLORS.unicorn} fill={COLORS.unicorn} fillOpacity={0.12} strokeWidth={2} />
-              <Radar name="Product Owner" dataKey="Product Owner" stroke={COLORS.po} fill={COLORS.po} fillOpacity={0.08} strokeWidth={1.5} />
-              <Legend wrapperStyle={{ fontSize: 9, paddingTop: 4 }} />
-            </RadarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        {/* Area — Cumulative KR Completion */}
-        <ChartCard title="KR Completion" subtitle="Cumulative key results over time">
-          <ResponsiveContainer width="100%" height={260}>
-            <AreaChart data={krCumulative}>
-              <defs>
-                <linearGradient id="gradCompleted" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLORS.emerald} stopOpacity={0.3} />
-                  <stop offset="95%" stopColor={COLORS.emerald} stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="gradInProgress" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={COLORS.pegasus} stopOpacity={0.25} />
-                  <stop offset="95%" stopColor={COLORS.pegasus} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...GRID} />
-              <XAxis dataKey="month" tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <YAxis tick={AXIS_TICK} axisLine={false} tickLine={false} />
-              <Tooltip {...TT} />
-              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 4 }} />
-              <Area type="monotone" dataKey="Completed" stroke={COLORS.emerald} fill="url(#gradCompleted)" strokeWidth={2.5} dot={{ r: 3, fill: COLORS.emerald, strokeWidth: 0 }} />
-              <Area type="monotone" dataKey="In Progress" stroke={COLORS.pegasus} fill="url(#gradInProgress)" strokeWidth={2} dot={{ r: 2.5, fill: COLORS.pegasus, strokeWidth: 0 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      </div>
-
-      {/* ── Row 3: Horizontal Bar + Scatter ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Horizontal Bar — Top Objectives */}
-        <ChartCard title="Top Objectives" subtitle="Highest progress objectives by team ownership">
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={topObjectives} layout="vertical" barCategoryGap="20%">
-              <CartesianGrid {...GRID} horizontal={false} />
-              <XAxis type="number" domain={[0, 100]} tick={AXIS_TICK} axisLine={false} tickLine={false} unit="%" />
-              <YAxis type="category" dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 9 }} axisLine={false} tickLine={false} width={120} />
-              <Tooltip {...TT} />
-              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
-              <Bar dataKey="Spartan" stackId="a" fill={COLORS.spartan} radius={[0, 0, 0, 0]} maxBarSize={14} />
-              <Bar dataKey="Pegasus" stackId="a" fill={COLORS.pegasus} radius={[0, 0, 0, 0]} maxBarSize={14} />
-              <Bar dataKey="Unicorn" stackId="a" fill={COLORS.unicorn} radius={[0, 4, 4, 0]} maxBarSize={14} />
-              <Bar dataKey="Product Owner" stackId="a" fill={COLORS.po} radius={[0, 4, 4, 0]} maxBarSize={14} />
-            </BarChart>
-          </ResponsiveContainer>
-        </ChartCard>
-
-        {/* Scatter — Check-in vs Progress Correlation */}
-        <ChartCard title="Check-in vs Progress" subtitle="Scatter correlation — bubble size = streak weeks">
-          <ResponsiveContainer width="100%" height={300}>
-            <ScatterChart>
-              <CartesianGrid {...GRID} />
-              <XAxis type="number" dataKey="x" name="Check-ins" tick={AXIS_TICK} axisLine={false} tickLine={false} label={{ value: "Check-ins", position: "insideBottom", offset: -2, style: { fill: "rgba(255,255,255,0.3)", fontSize: 9 } }} />
-              <YAxis type="number" dataKey="y" name="Progress %" tick={AXIS_TICK} axisLine={false} tickLine={false} domain={[30, 100]} label={{ value: "Progress %", angle: -90, position: "insideLeft", offset: 10, style: { fill: "rgba(255,255,255,0.3)", fontSize: 9 } }} />
-              <ZAxis type="number" dataKey="z" range={[40, 260]} />
-              <Tooltip
-                {...TT}
-                formatter={(value: number, name: string) => {
-                  if (name === "Check-ins") return [value, "Check-ins"];
-                  if (name === "Progress %") return [`${value}%`, "Progress"];
-                  return [value, name];
-                }}
-              />
-              <Legend wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
-              {scatterData.map((s, i) => (
-                <Scatter key={s.group} name={s.group} data={s.data} fill={SCATTER_PALETTE[i]} fillOpacity={0.7} strokeWidth={0} />
-              ))}
-            </ScatterChart>
-          </ResponsiveContainer>
-        </ChartCard>
+      {/* Active tab content */}
+      <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" key={activeTab}>
+        <ActiveContent />
       </div>
     </div>
   );

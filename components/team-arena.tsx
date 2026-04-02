@@ -20,6 +20,23 @@ const TEAM_COLORS: Record<string, string> = {
   "product-owner": "#f59e0b",
 };
 
+const TT_STYLE = {
+  contentStyle: {
+    background: "rgba(10,10,20,0.92)",
+    border: "1px solid rgba(255,255,255,0.08)",
+    borderRadius: 10,
+    fontSize: 11,
+    backdropFilter: "blur(12px)",
+    boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+    padding: "8px 12px",
+  },
+  itemStyle: { color: "rgba(255,255,255,0.8)" },
+  labelStyle: { color: "rgba(255,255,255,0.5)", fontWeight: 600, fontSize: 10 },
+  cursor: { fill: "rgba(255,255,255,0.03)" },
+};
+
+const LEGEND_STYLE = { fontSize: 10, color: "rgba(255,255,255,0.6)" };
+
 function radarData(teams: TeamComparisonData[]) {
   const axes = [
     { key: "avgProgress", label: "Progress" },
@@ -79,31 +96,33 @@ export default function TeamArena({ teamFilter }: TeamArenaProps) {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart */}
-        <div className="lg:col-span-2 p-4 rounded-xl border border-border/30 bg-card/40 min-h-[320px]">
+        <div className="lg:col-span-2 p-4 rounded-xl border border-border/30 bg-card/40">
           {teamFilter === "overall" || chartType === "radar" ? (
-            <ResponsiveContainer width="100%" height={300}>
+            <ResponsiveContainer width="100%" height={260}>
               {chartType === "radar" ? (
                 <RadarChart data={radarData(teamFilter === "overall" ? mockTeamComparisons : [teams[0] || mockTeamComparisons[0]])}>
                   <PolarGrid stroke="rgba(255,255,255,0.06)" />
                   <PolarAngleAxis dataKey="axis" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Tooltip {...TT_STYLE} />
                   {(teamFilter === "overall" ? mockTeamComparisons : [teams[0] || mockTeamComparisons[0]]).map((t) => (
                     <Radar key={t.teamId} name={t.teamName} dataKey={t.teamId} stroke={TEAM_COLORS[t.teamId]} fill={TEAM_COLORS[t.teamId]} fillOpacity={0.15} strokeWidth={2} />
                   ))}
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Legend wrapperStyle={LEGEND_STYLE} />
                 </RadarChart>
               ) : (
-                <BarChart data={barData(teamFilter === "overall" ? mockTeamComparisons : teams)}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                  <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }} axisLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} />
-                  <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 11 }} />
-                  <Bar dataKey="progress" name="Progress" radius={[4, 4, 0, 0]}>
+                <BarChart data={barData(teamFilter === "overall" ? mockTeamComparisons : teams)} barCategoryGap="20%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                  <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} tickLine={false} />
+                  <Tooltip {...TT_STYLE} />
+                  <Legend wrapperStyle={LEGEND_STYLE} />
+                  <Bar dataKey="progress" name="Progress" radius={[4, 4, 0, 0]} maxBarSize={24}>
                     {(teamFilter === "overall" ? mockTeamComparisons : teams).map((t) => (
                       <Cell key={t.teamId} fill={TEAM_COLORS[t.teamId]} />
                     ))}
                   </Bar>
-                  <Bar dataKey="krDone" name="KR Done" radius={[4, 4, 0, 0]} fillOpacity={0.6}>
+                  <Bar dataKey="krDone" name="KR Done" radius={[4, 4, 0, 0]} fillOpacity={0.6} maxBarSize={24}>
                     {(teamFilter === "overall" ? mockTeamComparisons : teams).map((t) => (
                       <Cell key={t.teamId} fill={TEAM_COLORS[t.teamId]} />
                     ))}
@@ -112,14 +131,15 @@ export default function TeamArena({ teamFilter }: TeamArenaProps) {
               )}
             </ResponsiveContainer>
           ) : (
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={barData(teams)}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }} axisLine={false} />
-                <YAxis domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} />
-                <Tooltip contentStyle={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, fontSize: 11 }} />
-                <Bar dataKey="progress" name="Progress" fill={TEAM_COLORS[teamFilter] || "#dc2626"} radius={[4, 4, 0, 0]} />
-                <Bar dataKey="checkIn" name="Check-in" fill={TEAM_COLORS[teamFilter] || "#dc2626"} fillOpacity={0.5} radius={[4, 4, 0, 0]} />
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={barData(teams)} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+                <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <YAxis domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} tickLine={false} />
+                <Tooltip {...TT_STYLE} />
+                <Legend wrapperStyle={LEGEND_STYLE} />
+                <Bar dataKey="progress" name="Progress" fill={TEAM_COLORS[teamFilter] || "#dc2626"} radius={[4, 4, 0, 0]} maxBarSize={28} />
+                <Bar dataKey="checkIn" name="Check-in" fill={TEAM_COLORS[teamFilter] || "#dc2626"} fillOpacity={0.5} radius={[4, 4, 0, 0]} maxBarSize={28} />
               </BarChart>
             </ResponsiveContainer>
           )}
