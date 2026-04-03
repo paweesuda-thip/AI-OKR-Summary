@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { IconChart, IconArrowTrend, IconFlame, IconSword, IconTarget } from "@/components/icons";
+import { TeamFilterMode, TeamSummary, Objective, ContributorSum, ParticipantDetailRaw } from "@/lib/types/okr";
 import {
   ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell,
@@ -11,6 +12,14 @@ import {
   AreaChart, Area,
   ScatterChart, Scatter, ZAxis,
 } from "recharts";
+
+interface ChartsSectionProps {
+  teamFilter: TeamFilterMode;
+  teamSummary: TeamSummary | null;
+  objectives: Objective[];
+  contributors: ContributorSum[];
+  participantDetails: ParticipantDetailRaw[];
+}
 
 /* ── Shared tooltip style ── */
 const TT = {
@@ -136,7 +145,7 @@ const TABS: { key: TabKey; label: string; icon: React.ReactNode }[] = [
    Tab content renderers
    ══════════════════════════════════════════ */
 
-function ProgressTab() {
+function ProgressTab({ teamFilter, teamSummary, objectives, contributors, participantDetails }: ChartsSectionProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <ChartCard title="Monthly OKR Progress" subtitle="Team progress trends across months">
@@ -182,7 +191,7 @@ function ProgressTab() {
   );
 }
 
-function EngagementTab() {
+function EngagementTab({ teamFilter, teamSummary, objectives, contributors, participantDetails }: ChartsSectionProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <ChartCard title="Check-in Activity" subtitle="Engagement metrics over time">
@@ -226,7 +235,7 @@ function EngagementTab() {
   );
 }
 
-function ComparisonTab() {
+function ComparisonTab({ teamFilter, teamSummary, objectives, contributors, participantDetails }: ChartsSectionProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
       <ChartCard title="Objective Status" subtitle="Distribution by current status">
@@ -272,7 +281,7 @@ function ComparisonTab() {
   );
 }
 
-function ObjectivesTab() {
+function ObjectivesTab({ teamFilter, teamSummary, objectives, contributors, participantDetails }: ChartsSectionProps) {
   return (
     <div className="max-w-4xl mx-auto">
       <ChartCard title="Top Objectives by Progress" subtitle="Highest progress objectives — stacked by team ownership">
@@ -294,7 +303,7 @@ function ObjectivesTab() {
   );
 }
 
-const TAB_CONTENT: Record<TabKey, () => React.JSX.Element> = {
+const TAB_CONTENT: Record<TabKey, (props: ChartsSectionProps) => React.JSX.Element> = {
   progress: ProgressTab,
   engagement: EngagementTab,
   comparison: ComparisonTab,
@@ -305,8 +314,18 @@ const TAB_CONTENT: Record<TabKey, () => React.JSX.Element> = {
    Component
    ══════════════════════════════════════════ */
 
-export default function ChartsSection() {
+export default function ChartsSection({ teamFilter, teamSummary, objectives, contributors, participantDetails }: ChartsSectionProps) {
   const [activeTab, setActiveTab] = useState<TabKey>("progress");
+  
+  // Create props object to pass to tabs
+  const tabProps = useMemo(() => ({
+    teamFilter,
+    teamSummary,
+    objectives,
+    contributors,
+    participantDetails
+  }), [teamFilter, teamSummary, objectives, contributors, participantDetails]);
+
   const ActiveContent = TAB_CONTENT[activeTab];
 
   return (
@@ -348,7 +367,7 @@ export default function ChartsSection() {
 
       {/* Active tab content */}
       <div className="animate-in fade-in slide-in-from-bottom-2 duration-300" key={activeTab}>
-        <ActiveContent />
+        <ActiveContent {...tabProps} />
       </div>
     </div>
   );

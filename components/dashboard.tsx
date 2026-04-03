@@ -252,24 +252,24 @@ export default function Dashboard() {
 
           {/* Section A: Command Center — Suggestion-driven KPIs */}
           <section className="mb-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <CommandCenter summary={teamSummary} suggestions={suggestions} />
+            <CommandCenter summary={teamSummary} suggestions={suggestions} participantDetails={participantDetails} />
           </section>
 
           <div className="flex flex-col gap-12">
 
             {/* Section B: Team Arena */}
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
-              <TeamArena teamFilter={teamFilter} />
+              <TeamArena teamFilter={teamFilter} teamSummary={teamSummary} contributors={contributors} />
             </section>
 
             {/* Section C: Hall of Fame */}
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200">
-              <HallOfFame teamFilter={teamFilter} />
+              <HallOfFame teamFilter={teamFilter} contributors={contributors} participantDetails={participantDetails} />
             </section>
 
             {/* Section D: Analytics Charts */}
             <section className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-300">
-              <ChartsSection />
+              <ChartsSection teamFilter={teamFilter} teamSummary={teamSummary} objectives={objectives} contributors={contributors} participantDetails={participantDetails} />
             </section>
 
             {/* Section E: Momentum */}

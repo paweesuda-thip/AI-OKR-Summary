@@ -1,6 +1,6 @@
 "use client";
 
-import { TeamFilterMode, TeamComparisonData } from "@/lib/types/okr";
+import { TeamFilterMode, TeamComparisonData, TeamSummary, ContributorSum } from "@/lib/types/okr";
 import { mockTeamComparisons } from "@/lib/mock/teams";
 import { IconUsers } from "@/components/icons";
 import {
@@ -11,6 +11,8 @@ import { useState } from "react";
 
 interface TeamArenaProps {
   teamFilter: TeamFilterMode;
+  teamSummary: TeamSummary | null;
+  contributors: ContributorSum[];
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -65,13 +67,37 @@ function barData(teams: TeamComparisonData[]) {
   }));
 }
 
-export default function TeamArena({ teamFilter }: TeamArenaProps) {
+export default function TeamArena({ teamFilter, teamSummary, contributors }: TeamArenaProps) {
   const [chartType, setChartType] = useState<"radar" | "bar">("radar");
+
+  const spartanCheckInRate = contributors.length > 0
+    ? Math.round((contributors.filter((c) => c.checkInCount > 0).length / contributors.length) * 100)
+    : 0;
+
+  const mergedTeams = mockTeamComparisons.map((t) => {
+    if (t.teamId === "spartan" && teamSummary) {
+      return {
+        ...t,
+        memberCount: teamSummary.totalContributors,
+        avgProgress: teamSummary.avgObjectiveProgress,
+        krCompletionRate: teamSummary.krCompletionRate,
+        checkInRate: spartanCheckInRate,
+        objectiveCount: teamSummary.totalObjectives,
+        onTrackPercent: teamSummary.totalObjectives > 0
+          ? Math.round((teamSummary.onTrackCount / teamSummary.totalObjectives) * 100)
+          : 0,
+      };
+    }
+    return t;
+  });
+
   const teams = teamFilter === "overall"
-    ? mockTeamComparisons
-    : mockTeamComparisons.filter((t) => t.teamId === teamFilter);
+    ? mergedTeams
+    : mergedTeams.filter((t) => t.teamId === teamFilter);
 
   const singleTeam = teamFilter !== "overall" ? teams[0] : null;
+  const radarDisplayTeams = teamFilter === "overall" ? mergedTeams : (teams.length > 0 ? [teams[0]] : [mergedTeams[0]]);
+  const displayTeams = teamFilter === "overall" ? mergedTeams : teams;
 
   return (
     <div className="w-full">
@@ -100,30 +126,30 @@ export default function TeamArena({ teamFilter }: TeamArenaProps) {
           {teamFilter === "overall" || chartType === "radar" ? (
             <ResponsiveContainer width="100%" height={260}>
               {chartType === "radar" ? (
-                <RadarChart data={radarData(teamFilter === "overall" ? mockTeamComparisons : [teams[0] || mockTeamComparisons[0]])}>
+                <RadarChart data={radarData(radarDisplayTeams)}>
                   <PolarGrid stroke="rgba(255,255,255,0.06)" />
                   <PolarAngleAxis dataKey="axis" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }} />
                   <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
                   <Tooltip {...TT_STYLE} />
-                  {(teamFilter === "overall" ? mockTeamComparisons : [teams[0] || mockTeamComparisons[0]]).map((t) => (
+                  {radarDisplayTeams.map((t) => (
                     <Radar key={t.teamId} name={t.teamName} dataKey={t.teamId} stroke={TEAM_COLORS[t.teamId]} fill={TEAM_COLORS[t.teamId]} fillOpacity={0.15} strokeWidth={2} />
                   ))}
                   <Legend wrapperStyle={LEGEND_STYLE} />
                 </RadarChart>
               ) : (
-                <BarChart data={barData(teamFilter === "overall" ? mockTeamComparisons : teams)} barCategoryGap="20%">
+                <BarChart data={barData(displayTeams)} barCategoryGap="20%">
                   <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
                   <XAxis dataKey="name" tick={{ fill: "rgba(255,255,255,0.5)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 10 }} axisLine={false} tickLine={false} />
                   <Tooltip {...TT_STYLE} />
                   <Legend wrapperStyle={LEGEND_STYLE} />
                   <Bar dataKey="progress" name="Progress" radius={[4, 4, 0, 0]} maxBarSize={24}>
-                    {(teamFilter === "overall" ? mockTeamComparisons : teams).map((t) => (
+                    {displayTeams.map((t) => (
                       <Cell key={t.teamId} fill={TEAM_COLORS[t.teamId]} />
                     ))}
                   </Bar>
                   <Bar dataKey="krDone" name="KR Done" radius={[4, 4, 0, 0]} fillOpacity={0.6} maxBarSize={24}>
-                    {(teamFilter === "overall" ? mockTeamComparisons : teams).map((t) => (
+                    {displayTeams.map((t) => (
                       <Cell key={t.teamId} fill={TEAM_COLORS[t.teamId]} />
                     ))}
                   </Bar>
@@ -147,7 +173,7 @@ export default function TeamArena({ teamFilter }: TeamArenaProps) {
 
         {/* Team Stats Cards */}
         <div className="flex flex-col gap-3">
-          {(teamFilter === "overall" ? mockTeamComparisons : teams).map((t) => (
+          {displayTeams.map((t) => (
             <div key={t.teamId} className="p-3 rounded-lg border border-border/30 bg-card/40 hover:bg-card/60 transition-colors">
               <div className="flex items-center gap-2 mb-2">
                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: TEAM_COLORS[t.teamId] }} />

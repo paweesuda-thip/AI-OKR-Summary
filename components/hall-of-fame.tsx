@@ -1,12 +1,15 @@
 "use client";
 
 import { mockHallOfFame } from "@/lib/mock/hall-of-fame";
+import { ContributorSum, HallOfFameEntry, TeamFilterMode, ParticipantDetailRaw } from "@/lib/types/okr";
 import { IconTrophy, IconCrown } from "@/components/icons";
 import { useState, Fragment } from "react";
 import Image from "next/image";
 
 interface HallOfFameProps {
-  teamFilter?: string;
+  teamFilter?: TeamFilterMode;
+  contributors?: ContributorSum[];
+  participantDetails?: ParticipantDetailRaw[];
 }
 
 const TEAM_COLORS: Record<string, string> = {
@@ -67,13 +70,78 @@ function ScoreBar({ label, value, max = 100, color }: { label: string; value: nu
   );
 }
 
-export default function HallOfFame({ teamFilter = "overall" }: HallOfFameProps) {
+export default function HallOfFame({ teamFilter = "overall", contributors = [], participantDetails = [] }: HallOfFameProps) {
   const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  // Transform real contributors into HallOfFame format
+  const realEntries: HallOfFameEntry[] = contributors.map((c, idx) => {
+    // Find matching participant details
+    const participant = participantDetails.find(p => p.fullName === c.fullName || p.fullName_EN === c.fullName);
+    
+    // Generate deterministic mock values based on name length to avoid Math.random() during render
+    const pseudoRandomHash = (c.fullName.length * c.krCount * 17) % 100;
+    const consistencyScore = c.krCount > 0 ? 80 + (pseudoRandomHash % 15) : 50; 
+    const krDifficulty = 75 + (pseudoRandomHash % 20);
+
+    // Generate composite score based on available metrics
+    const progressScore = c.avgObjectiveProgress;
+    
+    // Use actual check-ins from participant details if available
+    const totalCheckIn = participant?.totalCheckIn ?? c.checkInCount;
+    const totalCheckInAll = participant?.totalCheckInAll ?? 4;
+    const checkInScore = totalCheckInAll > 0 ? Math.min((totalCheckIn / totalCheckInAll) * 100, 100) : 0; 
+
+    // Weights: Progress(40%), Check-in(30%), Consistency(15%), KR Diff(15%)
+    const compositeScore = (progressScore * 0.4) + (checkInScore * 0.3) + (consistencyScore * 0.15) + (krDifficulty * 0.15);
+
+    return {
+      employeeId: participant?.employeeId ?? idx + 1000,
+      fullName: participant?.fullName ?? c.fullName,
+      fullName_EN: participant?.fullName_EN ?? c.fullName,
+      pictureURL: participant?.pictureMediumURL ?? participant?.pictureURL ?? c.pictureURL,
+      teamName: "Spartan",
+      place: participant?.seq ?? 0, // Use seq from API as place if available
+      compositeScore,
+      weights: {
+        krDifficulty,
+        progressScore,
+        checkInScore,
+        consistencyScore
+      },
+      avgPercent: participant?.avgPercent ?? c.avgObjectiveProgress,
+      totalCheckIn: totalCheckIn,
+      streakWeeks: totalCheckIn > 0 ? totalCheckIn : 0,
+      trend: (participant?.avgPercent ?? c.avgObjectiveProgress) >= 70 ? 'rising' : ((participant?.avgPercent ?? c.avgObjectiveProgress) >= 40 ? 'stable' : 'declining')
+    };
+  });
+
+  // Merge real Spartan data with mock data for other teams
+  const allEntries = [
+    ...realEntries,
+    ...mockHallOfFame.filter(e => e.teamName !== "Spartan")
+  ];
+
+  // Sort by API 'seq' first (for real data), then composite score for others
+  allEntries.sort((a, b) => {
+    if (a.place !== 0 && b.place !== 0) {
+      return a.place - b.place;
+    }
+    if (a.place !== 0) return -1;
+    if (b.place !== 0) return 1;
+    return b.compositeScore - a.compositeScore;
+  });
+
+  // Update places for entries that didn't have a seq
+  allEntries.forEach((e, idx) => {
+    if (e.place === 0) {
+      e.place = idx + 1;
+    }
+  });
 
   const entries =
     teamFilter === "overall"
-      ? mockHallOfFame
-      : mockHallOfFame.filter((e) => e.teamName.toLowerCase().replace(" ", "-") === teamFilter);
+      ? allEntries
+      : allEntries.filter((e) => e.teamName.toLowerCase().replace(" ", "-") === teamFilter);
 
   const podium = entries.slice(0, 3);
 
