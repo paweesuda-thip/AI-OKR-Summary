@@ -83,19 +83,19 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                             <div className="grid grid-cols-2 gap-6 pt-6 border-t border-border/30 shrink-0">
                                 <div className="flex flex-col gap-2">
                                     <div className="flex items-center gap-2 text-muted-foreground">
-                                        <TargetIcon className="w-4 h-4 text-primary/70" />
-                                        <p className="text-xs font-bold uppercase tracking-widest">Key Results</p>
-                                    </div>
-                                    <p className="text-lg font-bold text-foreground pl-6">
-                                        <span className="text-emerald-500">{doneCount}</span> / {totalCount}
-                                    </p>
+                                    <TargetIcon className="w-4 h-4 text-primary/70" />
+                                    <p className="text-xs font-bold uppercase tracking-widest">Key Results</p>
                                 </div>
+                                <p className="text-lg font-bold text-foreground pl-6">
+                                    <span className="text-emerald-500">{doneCount}</span> / {totalCount}
+                                </p>
+                            </div>
 
-                                <div className="flex flex-col gap-2">
-                                    <div className="flex items-center gap-2 text-muted-foreground">
-                                        <Users className="w-4 h-4 text-primary/70" />
-                                        <p className="text-xs font-bold uppercase tracking-widest">Team</p>
-                                    </div>
+                            <div className="flex flex-col gap-2">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Users className="w-4 h-4 text-primary/70" />
+                                    <p className="text-xs font-bold uppercase tracking-widest">Team</p>
+                                </div>
                                     <div className="flex -space-x-2 pl-6">
                                         {contributors.slice(0, 3).map((c, i) => (
                                             <AvatarInfoTooltip

@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import {
   AlertCircle,
   X,
-  Sparkles,
   TrendingUp,
   Trophy,
   Crown,
@@ -15,23 +14,14 @@ import { Button } from "@/components/ui/button";
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 
-import { AIScoreResult, AIScoreSection } from "./ai-score-section";
+import { AIScoreResult } from "./ai-score-section";
 import OverviewCards from "./overview-cards";
 import ObjectivesSection from "./objectives-section";
-import FilterBar from "./filter-bar";
 import PeriodComparisonSection from "./period-comparison-section";
-import MagicRings from "@/components/react-bits/MagicRings";
 import { CheckInEngagement } from "@/components/check-in-engagement";
 import ClickSpark from "@/components/react-bits/ClickSpark";
 import Image from "next/image";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerDescription,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+
 
 import apiService from "@/lib/services/api-service";
 import {
@@ -42,14 +32,22 @@ import {
 } from "@/lib/types/okr";
 import ProgressUpdateSection from "./progress-update-section";
 import { FloatingAiChat } from "./floating-ai-chat";
-import { ModeToggle } from "@/components/mode-toggle";
-import ShinyText from "@/components/react-bits/ShinyText";
+import { getCycleOptions, getGroupedOrgOptions } from "@/lib/utils/org-leaf";
+import DashboardSidebar from "./dashboard-sidebar";
 
 export default function Dashboard() {
-  // const ASSESSMENT_SET_ID = 18892; // demo
-  // const ORGANIZATION_ID = 18477; // demo
-  const ASSESSMENT_SET_ID = 185467; // prod
-  const ORGANIZATION_ID = 18477; // prod
+  const cycleOptions = getCycleOptions();
+  const currentCycle = cycleOptions.find(c => c.isCurrentCycle) || cycleOptions[0];
+  
+  const groupedOrgOptions = getGroupedOrgOptions();
+  let defaultOrgId = 18477;
+  const hasDefaultOrg = groupedOrgOptions.some(g => g.options.some(o => o.organizationId === 18477));
+  if (!hasDefaultOrg && groupedOrgOptions.length > 0 && groupedOrgOptions[0].options.length > 0) {
+    defaultOrgId = groupedOrgOptions[0].options[0].organizationId;
+  }
+
+  const [assessmentSetId, setAssessmentSetId] = useState(currentCycle?.setId || 185467);
+  const [organizationId, setOrganizationId] = useState(defaultOrgId);
 
   const [teamSummary, setTeamSummary] = useState<TeamSummary | null>(null);
   const [objectives, setObjectives] = useState<Objective[]>([]);
@@ -71,6 +69,7 @@ export default function Dashboard() {
   const [aiScoreResult, setAiScoreResult] = useState<AIScoreResult | null>(null);
 
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const dashboardData = {
     summary: teamSummary,
@@ -90,14 +89,14 @@ export default function Dashboard() {
 
       const [result, participantResult] = await Promise.all([
         apiService.getOKRTeamDashboard({
-          assessmentSetId: ASSESSMENT_SET_ID,
-          organizationId: ORGANIZATION_ID,
+          assessmentSetId,
+          organizationId,
           dateStart,
           dateEnd,
         }),
         apiService.getParticipantDetails({
-          assessmentSetId: ASSESSMENT_SET_ID,
-          organizationId: ORGANIZATION_ID,
+          assessmentSetId,
+          organizationId,
           dateStart,
           dateEnd,
         }),
@@ -122,7 +121,7 @@ export default function Dashboard() {
     } finally {
       setLoading(false);
     }
-  }, [dateRange, isOverall]);
+  }, [dateRange, isOverall, assessmentSetId, organizationId]);
 
   useEffect(() => {
     fetchDashboard();
@@ -136,122 +135,47 @@ export default function Dashboard() {
       sparkCount={8}
       duration={400}
     >
-      <div className="w-full pb-12 min-h-screen">
-        {/* ── Fixed Global Header ── */}
-        <header className="fixed inset-x-0 top-0 z-50 border-b border-zinc-200/50 dark:border-zinc-800/50 bg-white/60 dark:bg-zinc-950/60 backdrop-blur-2xl transition-all duration-300">
-          <div className="flex items-center justify-between px-4 sm:px-8 lg:px-12 h-20 max-w-[1600px] mx-auto gap-4">
-            
-            {/* Left: Branding */}
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="flex flex-col">
-                <h1 className="mb-1 text-lg leading-none font-semibold tracking-tight">
-                  <ShinyText 
-                    text="Statio OKR" 
-                    speed={3} 
-                    className="drop-shadow-sm" 
-                    backgroundImage="linear-gradient(90deg, #0ea5e9, #6366f1, #a855f7, #ec4899, #0ea5e9)"
-                  />
-                </h1>
-                <span className="text-[11px] text-zinc-500 font-medium flex items-center gap-1.5 uppercase tracking-wider">
-                  <span className="relative flex h-1.5 w-1.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-zinc-400 dark:bg-zinc-500 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-zinc-500 dark:bg-zinc-400"></span>
-                  </span>
-                  Live Dashboard
-                </span>
+      <div className="flex h-svh w-full overflow-hidden">
+        <DashboardSidebar
+          assessmentSetId={assessmentSetId}
+          setAssessmentSetId={setAssessmentSetId}
+          organizationId={organizationId}
+          setOrganizationId={setOrganizationId}
+          loading={loading}
+          aiDrawerOpen={aiDrawerOpen}
+          setAiDrawerOpen={setAiDrawerOpen}
+          teamSummary={teamSummary}
+          dashboardData={dashboardData}
+          aiScoreResult={aiScoreResult}
+          setAiScoreResult={setAiScoreResult}
+          dateRange={dateRange}
+          setDateRange={setDateRange}
+          isOverall={isOverall}
+          setIsOverall={setIsOverall}
+          isOpen={sidebarOpen}
+          setIsOpen={setSidebarOpen}
+        />
+
+        {/* ── Main Content ── */}
+        <main className="relative flex-1 min-w-0 overflow-y-auto">
+          <div className={`bg-transparent relative z-10 flex-1 pb-12 pt-6 px-4 sm:px-8 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1920px] mx-auto w-full ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
+
+          {error && (
+            <div className="mb-8 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300 w-full">
+              <div className="flex items-center gap-4 text-base text-destructive">
+                <AlertCircle className="w-6 h-6 shrink-0" />
+                <span className="font-medium">{error}</span>
               </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setError("")}
+                className="text-destructive hover:text-destructive hover:bg-destructive/20"
+              >
+                <X className="w-5 h-5" />
+              </Button>
             </div>
-
-            {/* Right: Controls */}
-            <div className="flex items-center gap-4">
-              <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
-                <DrawerTrigger asChild>
-                  <Button className="rounded-full cursor-pointer px-4 py-4 sm:px-6 sm:py-5 text-xs sm:text-sm font-semibold shadow-lg transition-all hover:scale-[1.02] active:scale-[0.98] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    <span className="hidden sm:inline">AI Performance Insight</span>
-                    <span className="sm:hidden">AI Insight</span>
-                  </Button>
-                </DrawerTrigger>
-                <DrawerContent className="h-[90vh] bg-background/95 backdrop-blur-3xl border-border/50">
-                  <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
-                    <DrawerHeader className="shrink-0 text-center sm:text-left">
-                      <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-2">
-                        <Sparkles className="w-6 h-6 text-indigo-500" />
-                        AI OKR Intelligence
-                      </DrawerTitle>
-                      <DrawerDescription>
-                        Deep dive into strategic insights, team performance
-                        patterns, and actionable recommendations.
-                      </DrawerDescription>
-                    </DrawerHeader>
-                    <div className="flex-1 overflow-y-auto mt-4 pr-2 relative">
-                      {/* Magic Rings subtle background glow inside drawer */}
-                      <div className="pointer-events-none fixed inset-0 z-0 opacity-20 dark:opacity-30 blur-xl">
-                        <MagicRings
-                          color="#6366f1"
-                          colorTwo="#a855f7"
-                          speed={0.3}
-                          ringCount={3}
-                          attenuation={20}
-                          lineThickness={2}
-                          baseRadius={0.4}
-                          opacity={0.5}
-                          followMouse={false}
-                        />
-                      </div>
-                      <div className="relative z-10 h-full">
-                        <AIScoreSection
-                          teamSummary={teamSummary}
-                          dashboardData={dashboardData}
-                          aiScoreResult={aiScoreResult}
-                          onAiScoreResultChange={setAiScoreResult}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </DrawerContent>
-              </Drawer>
-
-              <div className="hidden xl:block h-8 w-px bg-border/50" />
-
-              <div className="hidden xl:block">
-                <FilterBar
-                  dateRange={dateRange}
-                  setDateRange={setDateRange}
-                  isOverall={isOverall}
-                  setIsOverall={setIsOverall}
-                />
-              </div>
-              
-              <div className="hidden xl:block h-8 w-px bg-border/50" />
-              
-              <div className="flex items-center gap-2">
-                <ModeToggle />
-              </div>
-            </div>
-
-          </div>
-        </header>
-
-        {error && (
-          <div className="mx-6 sm:mx-10 mt-28 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300 max-w-[1600px] xl:mx-auto">
-            <div className="flex items-center gap-4 text-base text-destructive">
-              <AlertCircle className="w-6 h-6 shrink-0" />
-              <span className="font-medium">{error}</span>
-            </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setError("")}
-              className="text-destructive hover:text-destructive hover:bg-destructive/20"
-            >
-              <X className="w-5 h-5" />
-            </Button>
-          </div>
-        )}
-
-        {/* ── Content ── */}
-        <main className={`relative pt-28 px-4 sm:px-8 lg:px-12 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1600px] mx-auto ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
+          )}
 
           {/* ── Overview Metrics Strip ── */}
           <section className="mb-10">
@@ -288,7 +212,7 @@ export default function Dashboard() {
                   </div>
 
                   {/* Podium Grid — Editorial Portrait Cards */}
-                  <div className="flex flex-col md:flex-row justify-center items-end gap-5 lg:gap-6 max-w-4xl mx-auto px-4">
+                  <div className="flex flex-col md:flex-row justify-center items-end gap-5 lg:gap-6 max-w-4xl mx-auto px-4 w-full">
                     {(() => {
                       const rankConfig = [
                         { icon: Crown, accent: 'text-amber-500 dark:text-amber-400', accentBg: 'bg-amber-500/10 dark:bg-amber-400/10', ring: 'ring-amber-500/20 dark:ring-amber-400/20', glow: 'hover:shadow-amber-200/20 dark:hover:shadow-amber-500/10' },
@@ -315,7 +239,7 @@ export default function Dashboard() {
                           >
                             <div className={`relative overflow-hidden rounded-2xl bg-background/50 dark:bg-zinc-900/50 border border-border/30 dark:border-white/6 transition-all duration-500 hover:border-border/50 dark:hover:border-white/12 ${isFirst ? 'shadow-xl' : 'shadow-lg'} ${config.glow}`}>
                               {/* Portrait Photo */}
-                              <div className={`relative w-full ${isFirst ? 'aspect-3/4' : 'aspect-4/5'} overflow-hidden bg-muted/30`}>
+                              <div className={`relative w-full ${isFirst ? 'aspect-[3/4]' : 'aspect-[4/5]'} overflow-hidden bg-muted/30`}>
                                 {(p.pictureMediumURL || p.pictureURL) ? (
                                   <Image
                                     src={p.pictureMediumURL || p.pictureURL}
@@ -332,7 +256,7 @@ export default function Dashboard() {
                                 )}
 
                                 {/* Cinematic gradient overlay */}
-                                <div className="absolute inset-0 bg-linear-to-t from-black/70 via-black/20 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
 
                                 {/* Rank pill — top left */}
                                 <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md ${config.accentBg} ${config.ring} ring-1`}>
@@ -376,7 +300,7 @@ export default function Dashboard() {
             </section>
 
             {/* ── Focus Areas (Unboxed) ── */}
-            <section className="relative grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
+            <section className="relative grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
               {(() => {
                 const allSubObjectives = objectives.flatMap(o => o.subObjectives || []);
                 
@@ -397,15 +321,15 @@ export default function Dashboard() {
                     <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
                       <ProgressUpdateSection 
                         title="Trending" 
-                        description="Objectives with the highest progress jumps"
+                        description="Tasks with the highest acceleration"
                         subObjectives={topUpdates} 
                         type="top" 
                       />
                     </div>
                     <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
                       <ProgressUpdateSection 
-                        title="Unpopular" 
-                        description="Objectives needing more momentum"
+                        title="Needs Attention" 
+                        description="Tasks losing momentum"
                         subObjectives={bottomUpdates} 
                         type="bottom" 
                       />
@@ -450,8 +374,9 @@ export default function Dashboard() {
             </section>
           </div>
 
-        {/* ── Floating AI Chat ── */}
-        <FloatingAiChat dashboardData={dashboardData} />
+          {/* ── Floating AI Chat ── */}
+          <FloatingAiChat dashboardData={dashboardData} />
+          </div>
         </main>
       </div>
     </ClickSpark>

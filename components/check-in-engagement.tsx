@@ -194,7 +194,7 @@ export function CheckInEngagement({ participantDetails }: CheckInEngagementProps
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-white/70 tracking-tight">Top 3 Missed</h3>
+                  <h3 className="text-lg font-bold bg-clip-text text-transparent bg-linear-to-r from-white to-white/70 tracking-tight">Missed Check-ins</h3>
                   <p className="text-[10px] text-rose-400/80 mt-0.5 font-medium uppercase tracking-widest">Needs Attention</p>
                 </div>
               </div>
