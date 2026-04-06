@@ -1,18 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Card } from "@/components/ui/card";
-import { CopyCheck, Target, Users, CheckCircle2, Activity, UserX, ArrowUpRight, Gauge, Zap, Flag, Timer } from "lucide-react";
+import { CopyCheck, Target, Users, CheckCircle2, Activity, UserX, ArrowUpRight, Gauge, Flag, Timer } from "lucide-react";
 import { TeamSummary, ParticipantDetailRaw, Objective, KrDetail } from "@/lib/types/okr";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
-import ShinyText from "@/components/react-bits/ShinyText";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { AvatarInfoTooltip, AvatarOverflowTooltip } from "@/components/ui/avatar-tooltip";
 
@@ -338,141 +332,119 @@ export default function OverviewCards({ summary, participantDetails = [], object
     const totalObjectives = summary?.totalObjectives || 0;
     const atRiskCount = summary?.atRiskCount || 0;
     const behindCount = summary?.behindCount || 0;
+    const teamSize = participantDetails.length;
+    const missingCheckInRate = teamSize > 0 ? (missingCheckInEmployees.length / teamSize) * 100 : 0;
+    const onTrackPercent = totalObjectives > 0 ? (onTrackCount / totalObjectives) * 100 : 0;
+    const atRiskPercent = totalObjectives > 0 ? (atRiskCount / totalObjectives) * 100 : 0;
+    const behindPercent = totalObjectives > 0 ? (behindCount / totalObjectives) * 100 : 0;
 
     return (
         <TooltipProvider delay={120}>
             <div className="w-full">
-                {/* ── Single-Row Metric Strip ── */}
-                <div className="flex flex-col gap-4 w-full">
-
-                    {/* Top row: 5 compact cards */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 w-full">
-
-                        {/* Cycle Health */}
-                        <div className="relative overflow-hidden rounded-2xl border border-blue-500/20 bg-background/80 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-blue-400/40 group">
-                            <div className="absolute -right-3 -top-3 opacity-[0.04] group-hover:opacity-[0.08] group-hover:rotate-12 transition-all duration-500">
-                                <Activity className="w-20 h-20 text-blue-400" />
-                            </div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/15 text-blue-500 group-hover:scale-110 transition-transform duration-300">
-                                    <Activity className="h-3.5 w-3.5" />
-                                </span>
-                                <span className="text-xs font-semibold text-blue-500 dark:text-blue-400">Cycle Health</span>
-                            </div>
-                            <div className="text-3xl font-black tracking-tighter text-foreground leading-none">
-                                {avgObjectiveProgress.toFixed(1)}%
-                            </div>
-                            <div className="mt-3 flex gap-1.5 flex-wrap">
-                                <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                    <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />{onTrackCount}
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
-                                    <div className="w-1 h-1 rounded-full bg-amber-500" />{atRiskCount}
-                                </span>
-                                <span className="inline-flex items-center gap-1 rounded-md bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                                    <div className="w-1 h-1 rounded-full bg-rose-500" />{behindCount}
-                                </span>
-                            </div>
-                            <div className="mt-2 h-1.5 w-full rounded-full bg-muted/50 overflow-hidden flex">
-                                <div className="bg-emerald-500 transition-all duration-700" style={{ width: `${totalObjectives > 0 ? (onTrackCount / totalObjectives) * 100 : 0}%` }} />
-                                <div className="bg-amber-500 transition-all duration-700" style={{ width: `${totalObjectives > 0 ? (atRiskCount / totalObjectives) * 100 : 0}%` }} />
-                                <div className="bg-rose-500 transition-all duration-700" style={{ width: `${totalObjectives > 0 ? (behindCount / totalObjectives) * 100 : 0}%` }} />
-                            </div>
-                        </div>
-
-                        {/* Objectives */}
-                        <div className="relative overflow-hidden rounded-2xl border border-indigo-500/20 bg-background/80 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-indigo-400/40 group">
-                            <div className="absolute -right-3 -top-3 opacity-[0.04] group-hover:opacity-[0.08] group-hover:rotate-12 transition-all duration-500">
-                                <Target className="w-20 h-20 text-indigo-400" />
-                            </div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-500/15 text-indigo-500 group-hover:scale-110 transition-transform duration-300">
-                                    <Target className="h-3.5 w-3.5" />
-                                </span>
-                                <span className="text-xs font-semibold text-indigo-500 dark:text-indigo-400">Objectives</span>
-                            </div>
-                            <div className="flex items-end gap-1.5">
-                                <span className="text-3xl font-black tracking-tight text-foreground leading-none">{completedSubObjectives}</span>
-                                <span className="text-lg font-medium text-muted-foreground/50 pb-0.5">/ {totalSubObjectives}</span>
-                            </div>
-                            <div className="mt-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                                {subObjectiveCompletionRate.toFixed(1)}% completed
-                            </div>
-                        </div>
-
-                        {/* Key Results */}
-                        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/20 bg-background/80 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-400/40 group">
-                            <div className="absolute -right-3 -top-3 opacity-[0.04] group-hover:opacity-[0.08] group-hover:rotate-12 transition-all duration-500">
-                                <CopyCheck className="w-20 h-20 text-emerald-400" />
-                            </div>
-                            <div className="flex items-center gap-2 mb-3">
-                                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-500 group-hover:scale-110 transition-transform duration-300">
-                                    <CopyCheck className="h-3.5 w-3.5" />
-                                </span>
-                                <span className="text-xs font-semibold text-emerald-500 dark:text-emerald-400">Key Results</span>
-                            </div>
-                            <div className="flex items-end gap-1.5">
-                                <span className="text-3xl font-black tracking-tight text-foreground leading-none">{completedKRs}</span>
-                                <span className="text-lg font-medium text-muted-foreground/50 pb-0.5">/ {totalKRs}</span>
-                            </div>
-                            <div className="mt-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
-                                {krCompletionRate.toFixed(1)}% completed
-                            </div>
-                        </div>
-
-                        {/* Team */}
-                        <div className="relative overflow-hidden rounded-2xl border border-purple-500/20 bg-background/80 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-purple-400/40 group">
-                            <div className="absolute -right-3 -top-3 opacity-[0.04] group-hover:opacity-[0.08] group-hover:rotate-12 transition-all duration-500">
-                                <Users className="w-20 h-20 text-purple-400" />
-                            </div>
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-500/15 text-purple-500 group-hover:scale-110 transition-transform duration-300">
-                                        <Users className="h-3.5 w-3.5" />
-                                    </span>
-                                    <span className="text-xs font-semibold text-purple-500 dark:text-purple-400">Team</span>
+                <div className="grid w-full grid-cols-1 gap-3 lg:grid-cols-12">
+                    <section className="relative overflow-hidden rounded-3xl border border-sky-500/20 bg-gradient-to-br from-sky-500/[0.10] via-background to-background p-5 lg:col-span-8">
+                        <div className="pointer-events-none absolute right-0 top-0 h-28 w-28 translate-x-6 -translate-y-6 rounded-full bg-sky-500/10 blur-2xl" />
+                        <div className="relative z-10">
+                            <div className="mb-3 flex items-center justify-between">
+                                <div className="inline-flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-sky-600 dark:text-sky-300">
+                                    <Gauge className="h-3.5 w-3.5" />
+                                    Cycle Health
                                 </div>
-                                <span className="text-2xl font-black tracking-tight text-foreground">{participantDetails.length}</span>
+                                <span className="text-xs font-medium text-muted-foreground">Live overview</span>
                             </div>
-                            <div className="flex -space-x-1.5 mt-auto">
-                                {participantDetails.slice(0, 5).map((member, i) => (
-                                    <AvatarInfoTooltip
-                                        key={member.employeeId || `${member.fullName || "member"}-${i}`}
-                                        fullName={member.fullName}
-                                        pictureURL={member.pictureMediumURL || member.pictureURL}
-                                        avatarClassName="h-7 w-7 border-2 border-background shadow-sm hover:z-10 transition-transform hover:scale-110"
-                                        fallbackClassName="bg-purple-100 text-[9px] font-semibold text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-                                    />
-                                ))}
-                                {participantDetails.length > 5 && (
-                                    <AvatarOverflowTooltip
-                                        members={participantDetails.map(member => ({
-                                            fullName: member.fullName,
-                                            pictureURL: member.pictureMediumURL || member.pictureURL,
-                                        }))}
-                                        hiddenCount={participantDetails.length - 5}
-                                        label="Team members"
-                                        triggerClassName="z-10 flex h-7 w-7 cursor-help items-center justify-center rounded-full border-2 border-background bg-purple-100 text-[9px] font-bold text-purple-700 shadow-sm dark:bg-purple-900 dark:text-purple-300 hover:scale-110 transition-transform"
-                                    />
-                                )}
+
+                            <div className="mb-4 flex items-end gap-2">
+                                <div className="text-5xl font-black leading-none tracking-[-0.03em] text-foreground">
+                                    {avgObjectiveProgress.toFixed(1)}%
+                                </div>
+                                <span className="pb-1 text-sm font-medium text-muted-foreground">avg objective progress</span>
+                            </div>
+
+                            <div className="mb-3 grid grid-cols-3 gap-2 text-xs">
+                                <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 px-3 py-2">
+                                    <div className="mb-1 font-semibold text-emerald-600 dark:text-emerald-400">On Track</div>
+                                    <div className="text-lg font-bold text-foreground">{onTrackCount}</div>
+                                </div>
+                                <div className="rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2">
+                                    <div className="mb-1 font-semibold text-amber-600 dark:text-amber-400">At Risk</div>
+                                    <div className="text-lg font-bold text-foreground">{atRiskCount}</div>
+                                </div>
+                                <div className="rounded-xl border border-rose-500/25 bg-rose-500/10 px-3 py-2">
+                                    <div className="mb-1 font-semibold text-rose-600 dark:text-rose-400">Behind</div>
+                                    <div className="text-lg font-bold text-foreground">{behindCount}</div>
+                                </div>
+                            </div>
+
+                            <div className="h-2 w-full overflow-hidden rounded-full bg-muted/60">
+                                <div className="flex h-full w-full">
+                                    <div className="bg-emerald-500 transition-all duration-700" style={{ width: `${onTrackPercent}%` }} />
+                                    <div className="bg-amber-500 transition-all duration-700" style={{ width: `${atRiskPercent}%` }} />
+                                    <div className="bg-rose-500 transition-all duration-700" style={{ width: `${behindPercent}%` }} />
+                                </div>
                             </div>
                         </div>
+                    </section>
 
-                        {/* Check-ins */}
-                        <div className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-background/80 p-4 transition-all duration-300 hover:-translate-y-0.5 hover:border-amber-400/40 group col-span-2 sm:col-span-1">
-                            <div className="absolute -right-3 -top-3 opacity-[0.04] group-hover:opacity-[0.08] group-hover:rotate-12 transition-all duration-500">
-                                <CheckCircle2 className="w-20 h-20 text-amber-400" />
+                    <section className="rounded-3xl border border-indigo-500/20 bg-background/80 p-4 lg:col-span-4">
+                        <div className="mb-4 flex items-center justify-between">
+                            <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-indigo-500 dark:text-indigo-300">
+                                <Flag className="h-4 w-4" />
+                                Delivery
                             </div>
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/15 text-amber-500 group-hover:scale-110 transition-transform duration-300">
-                                        <CheckCircle2 className="h-3.5 w-3.5" />
-                                    </span>
-                                    <span className="text-xs font-semibold text-amber-500 dark:text-amber-400">Check-ins</span>
+                            <Activity className="h-4 w-4 text-muted-foreground" />
+                        </div>
+                        <div className="space-y-4">
+                            <div>
+                                <div className="mb-1 flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground">Objectives</span>
+                                    <span className="font-semibold text-foreground">{subObjectiveCompletionRate.toFixed(1)}%</span>
                                 </div>
-                                <span className="text-2xl font-black tracking-tight text-foreground">{totalCheckIns}</span>
+                                <div className="mb-1 text-xl font-black tracking-tight text-foreground">
+                                    {completedSubObjectives} <span className="text-base font-semibold text-muted-foreground">/ {totalSubObjectives}</span>
+                                </div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+                                    <div className="h-full rounded-full bg-indigo-500 transition-all duration-700" style={{ width: `${subObjectiveCompletionRate}%` }} />
+                                </div>
                             </div>
-                            <div className="mt-auto">
+                            <div>
+                                <div className="mb-1 flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground">Key Results</span>
+                                    <span className="font-semibold text-foreground">{krCompletionRate.toFixed(1)}%</span>
+                                </div>
+                                <div className="mb-1 text-xl font-black tracking-tight text-foreground">
+                                    {completedKRs} <span className="text-base font-semibold text-muted-foreground">/ {totalKRs}</span>
+                                </div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+                                    <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${krCompletionRate}%` }} />
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="rounded-3xl border border-amber-500/20 bg-background/80 p-4 lg:col-span-12">
+                        <div className="grid gap-4 md:grid-cols-2">
+                            <div className="md:pr-3">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-amber-600 dark:text-amber-300">
+                                        <Timer className="h-4 w-4" />
+                                        Check-ins
+                                    </div>
+                                    <span className="text-2xl font-black leading-none tracking-tight">{totalCheckIns}</span>
+                                </div>
+
+                                <div className="mb-3 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+                                    <div
+                                        className={`h-full rounded-full transition-all duration-700 ${
+                                            missingCheckInRate > 25 ? "bg-rose-500" : missingCheckInRate > 10 ? "bg-amber-500" : "bg-emerald-500"
+                                        }`}
+                                        style={{ width: `${Math.min(100, Math.max(0, 100 - missingCheckInRate))}%` }}
+                                    />
+                                </div>
+
+                                <div className="mb-3 text-xs text-muted-foreground">
+                                    Coverage <span className="font-semibold text-foreground">{(100 - missingCheckInRate).toFixed(1)}%</span>
+                                </div>
+
                                 {missingCheckInEmployees.length === 0 ? (
                                     <div className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                                         <CheckCircle2 className="h-3.5 w-3.5" />
@@ -509,8 +481,44 @@ export default function OverviewCards({ summary, participantDetails = [], object
                                     </div>
                                 )}
                             </div>
+
+                            <div className="border-t border-border/40 pt-4 md:border-t-0 md:border-l md:border-border/40 md:pl-4 md:pt-0">
+                                <div className="mb-3 flex items-center justify-between">
+                                    <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.12em] text-purple-600 dark:text-purple-300">
+                                        <Users className="h-4 w-4" />
+                                        Team Pulse
+                                    </div>
+                                    <span className="text-2xl font-black tracking-tight text-foreground">{teamSize}</span>
+                                </div>
+                                <div className="mb-3 flex -space-x-1.5">
+                                    {participantDetails.slice(0, 8).map((member, i) => (
+                                        <AvatarInfoTooltip
+                                            key={member.employeeId || `${member.fullName || "member"}-${i}`}
+                                            fullName={member.fullName}
+                                            pictureURL={member.pictureMediumURL || member.pictureURL}
+                                            avatarClassName="h-8 w-8 border-2 border-background shadow-sm hover:z-10 transition-transform hover:scale-105"
+                                            fallbackClassName="bg-purple-100 text-[10px] font-semibold text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                                        />
+                                    ))}
+                                    {participantDetails.length > 8 && (
+                                        <AvatarOverflowTooltip
+                                            members={participantDetails.map(member => ({
+                                                fullName: member.fullName,
+                                                pictureURL: member.pictureMediumURL || member.pictureURL,
+                                            }))}
+                                            hiddenCount={participantDetails.length - 8}
+                                            label="Team members"
+                                            triggerClassName="z-10 flex h-8 w-8 cursor-help items-center justify-center rounded-full border-2 border-background bg-purple-100 text-[10px] font-bold text-purple-700 shadow-sm dark:bg-purple-900 dark:text-purple-300"
+                                        />
+                                    )}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                    Missing check-ins: <span className="font-semibold text-foreground">{missingCheckInEmployees.length}</span>
+                                </div>
+                            </div>
                         </div>
-                    </div>
+                    </section>
+
                 </div>
             </div>
         </TooltipProvider>
