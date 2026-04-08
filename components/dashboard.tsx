@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useMemo } from "react";
 import {
   AlertCircle,
   X,
@@ -22,23 +22,21 @@ import { CheckInEngagement } from "@/components/check-in-engagement";
 import ClickSpark from "@/components/react-bits/ClickSpark";
 import Image from "next/image";
 
-
-import apiService from "@/lib/services/api-service";
-import {
-  Objective,
-  ContributorSum,
-  TeamSummary,
+import type {
   ParticipantDetailRaw,
 } from "@/lib/types/okr";
 import ProgressUpdateSection from "./progress-update-section";
 import { FloatingAiChat } from "./floating-ai-chat";
 import { getCycleOptions, getGroupedOrgOptions } from "@/lib/utils/org-leaf";
 import DashboardSidebar from "./dashboard-sidebar";
+import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
+import { useParticipantQuery } from "@/hooks/queries/use-participant-query";
 
 export default function Dashboard() {
+  // ── Selectors ──────────────────────────────────────────────────────────────
   const cycleOptions = getCycleOptions();
   const currentCycle = cycleOptions.find(c => c.isCurrentCycle) || cycleOptions[0];
-  
+
   const groupedOrgOptions = getGroupedOrgOptions();
   let defaultOrgId = 18477;
   const hasDefaultOrg = groupedOrgOptions.some(g => g.options.some(o => o.organizationId === 18477));
@@ -49,27 +47,45 @@ export default function Dashboard() {
   const [assessmentSetId, setAssessmentSetId] = useState(currentCycle?.setId || 185467);
   const [organizationId, setOrganizationId] = useState(defaultOrgId);
 
-  const [teamSummary, setTeamSummary] = useState<TeamSummary | null>(null);
-  const [objectives, setObjectives] = useState<Objective[]>([]);
-  const [contributors, setContributors] = useState<ContributorSum[]>([]);
-  const [atRiskObjectives, setAtRiskObjectives] = useState<Objective[]>([]);
-
-  const [participantDetails, setParticipantDetails] = useState<
-    ParticipantDetailRaw[]
-  >([]);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2026, 1, 12), // Feb 12, 2026
-    to: new Date(2026, 2, 15), // Mar 15, 2026
+    to: new Date(2026, 2, 15),   // Mar 15, 2026
   });
   const [isOverall, setIsOverall] = useState(false);
-  const [aiScoreResult, setAiScoreResult] = useState<AIScoreResult | null>(null);
 
+  // ── UI State ───────────────────────────────────────────────────────────────
+  const [aiScoreResult, setAiScoreResult] = useState<AIScoreResult | null>(null);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // ── Derived query params ───────────────────────────────────────────────────
+  const queryParams = useMemo(() => ({
+    assessmentSetId,
+    organizationId,
+    dateStart: (!isOverall && dateRange?.from) ? format(dateRange.from, "yyyy-MM-dd") : undefined,
+    dateEnd: (!isOverall && dateRange?.to) ? format(dateRange.to, "yyyy-MM-dd") : undefined,
+  }), [assessmentSetId, organizationId, isOverall, dateRange]);
+
+  // ── TanStack Query ─────────────────────────────────────────────────────────
+  const {
+    data: dashboardResult,
+    isLoading: dashLoading,
+    error: dashError,
+  } = useDashboardQuery(queryParams);
+
+  const {
+    data: participantDetails = [],
+    isLoading: partLoading,
+  } = useParticipantQuery(queryParams);
+
+  // ── Derived data ───────────────────────────────────────────────────────────
+  const loading = dashLoading || partLoading;
+  const errorMessage = dashError?.message || "";
+
+  const teamSummary = dashboardResult?.teamSummary ?? null;
+  const objectives = dashboardResult?.objectives ?? [];
+  const contributors = dashboardResult?.contributors ?? [];
+  const atRiskObjectives = dashboardResult?.atRiskObjectives ?? [];
 
   const dashboardData = {
     summary: teamSummary,
@@ -78,55 +94,7 @@ export default function Dashboard() {
     atRisk: atRiskObjectives,
   };
 
-  const fetchDashboard = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    setAiScoreResult(null);
-
-    try {
-      const dateStart = (!isOverall && dateRange?.from) ? format(dateRange.from, "yyyy-MM-dd") : undefined;
-      const dateEnd = (!isOverall && dateRange?.to) ? format(dateRange.to, "yyyy-MM-dd") : undefined;
-
-      const [result, participantResult] = await Promise.all([
-        apiService.getOKRTeamDashboard({
-          assessmentSetId,
-          organizationId,
-          dateStart,
-          dateEnd,
-        }),
-        apiService.getParticipantDetails({
-          assessmentSetId,
-          organizationId,
-          dateStart,
-          dateEnd,
-        }),
-      ]);
-
-      setTeamSummary(result.teamSummary);
-      setObjectives(result.objectives);
-      setContributors(result.contributors);
-      setAtRiskObjectives(result.atRiskObjectives);
-      setParticipantDetails(participantResult || []);
-    } catch (err: unknown) {
-      console.error("Dashboard fetch error:", err);
-      const errorObj = err as {
-        response?: { data?: { message?: string } };
-        message?: string;
-      };
-      setError(
-        errorObj?.response?.data?.message ||
-          errorObj?.message ||
-          "Unable to load data. Please check your connection.",
-      );
-    } finally {
-      setLoading(false);
-    }
-  }, [dateRange, isOverall, assessmentSetId, organizationId]);
-
-  useEffect(() => {
-    fetchDashboard();
-  }, [fetchDashboard]);
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <ClickSpark
       sparkColor="#fff"
@@ -160,16 +128,15 @@ export default function Dashboard() {
         <main className="relative flex-1 min-w-0 overflow-y-auto">
           <div className={`bg-transparent relative z-10 flex-1 pb-12 pt-6 px-4 sm:px-8 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1920px] mx-auto w-full ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
 
-          {error && (
+          {errorMessage && (
             <div className="mb-8 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300 w-full">
               <div className="flex items-center gap-4 text-base text-destructive">
                 <AlertCircle className="w-6 h-6 shrink-0" />
-                <span className="font-medium">{error}</span>
+                <span className="font-medium">{errorMessage}</span>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
-                onClick={() => setError("")}
                 className="text-destructive hover:text-destructive hover:bg-destructive/20"
               >
                 <X className="w-5 h-5" />
@@ -303,7 +270,7 @@ export default function Dashboard() {
             <section className="relative grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
               {(() => {
                 const allSubObjectives = objectives.flatMap(o => o.subObjectives || []);
-                
+
                 // Filter and sort for Top 3 (Highest positive progress updates)
                 const topUpdates = [...allSubObjectives]
                   .filter(sub => sub.objectiveOwnerType === 1 && (sub.progressUpdate || 0) > 0)
@@ -319,19 +286,19 @@ export default function Dashboard() {
                 return (
                   <>
                     <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                      <ProgressUpdateSection 
-                        title="Trending" 
+                      <ProgressUpdateSection
+                        title="Trending"
                         description="Tasks with the highest acceleration"
-                        subObjectives={topUpdates} 
-                        type="top" 
+                        subObjectives={topUpdates}
+                        type="top"
                       />
                     </div>
                     <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                      <ProgressUpdateSection 
-                        title="Needs Attention" 
+                      <ProgressUpdateSection
+                        title="Needs Attention"
                         description="Tasks losing momentum"
-                        subObjectives={bottomUpdates} 
-                        type="bottom" 
+                        subObjectives={bottomUpdates}
+                        type="bottom"
                       />
                     </div>
                   </>

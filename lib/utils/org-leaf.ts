@@ -1,5 +1,5 @@
-import { orgNodeMock } from '@/app/share/ddl.org-node.mock';
-import { ddlMock } from '@/app/share/ddl.mock';
+import { orgNodeMock } from '@/data/ddl.org-node.mock';
+import { ddlMock } from '@/data/ddl.mock';
 
 export interface OrgOption {
   organizationId: number;

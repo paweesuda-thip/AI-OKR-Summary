@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
-import { TooltipProvider } from "@/components/ui/tooltip";
+import { Providers } from "@/components/providers";
 import Aurora from "@/components/react-bits/Aurora";
+
 export const metadata: Metadata = {
   title: "Statio OKR",
   description: "Enterprise OKR dashboard with AI insights",
@@ -16,12 +16,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className="min-h-screen bg-background text-foreground selection:bg-primary/30 antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange
-        >
+        <Providers>
           <div className="relative flex min-h-screen flex-col overflow-x-hidden">
             {/* Aurora background glow — covers entire content area */}
             <div className="pointer-events-none absolute inset-0 z-0 opacity-50 dark:opacity-70 transition-opacity duration-1000">
@@ -33,12 +28,10 @@ export default function RootLayout({
               />
             </div>
             <div className="relative flex-1">
-              <TooltipProvider delay={0}>
-                {children}
-              </TooltipProvider>
+              {children}
             </div>
           </div>
-        </ThemeProvider>
+        </Providers>
       </body>
     </html>
   );
