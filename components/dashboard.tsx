@@ -8,6 +8,7 @@ import {
   Trophy,
   Crown,
   Medal,
+  Swords,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -27,6 +28,7 @@ import type {
 } from "@/lib/types/okr";
 import ProgressUpdateSection from "./progress-update-section";
 import { FloatingAiChat } from "./floating-ai-chat";
+import VersusMode from "./versus-mode";
 import { getCycleOptions, getGroupedOrgOptions } from "@/lib/utils/org-leaf";
 import DashboardSidebar from "./dashboard-sidebar";
 import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
@@ -57,6 +59,7 @@ export default function Dashboard() {
   const [aiScoreResult, setAiScoreResult] = useState<AIScoreResult | null>(null);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] = useState<'overview' | 'versus'>('overview');
 
   // ── Derived query params ───────────────────────────────────────────────────
   const queryParams = useMemo(() => ({
@@ -125,24 +128,50 @@ export default function Dashboard() {
         />
 
         {/* ── Main Content ── */}
-        <main className="relative flex-1 min-w-0 overflow-y-auto">
-          <div className={`bg-transparent relative z-10 flex-1 pb-12 pt-6 px-4 sm:px-8 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1920px] mx-auto w-full ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
+        <main className="relative flex-1 min-w-0 flex flex-col h-full bg-black">
+          {/* Tab Switcher Header */}
+          <div className="w-full flex justify-center py-4 z-40 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 shrink-0">
+             <div className="bg-zinc-900 border border-zinc-700 p-1 flex items-center gap-1 shadow-lg">
+                <button 
+                  onClick={() => setActiveTab('overview')} 
+                  className={`px-6 py-2 text-sm font-bold tracking-widest uppercase transition-all ${activeTab === 'overview' ? 'bg-white text-black' : 'text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                >
+                  Overview
+                </button>
+                <button 
+                  onClick={() => setActiveTab('versus')} 
+                  className={`px-6 py-2 text-sm font-black italic tracking-widest uppercase transition-all flex items-center gap-2 ${activeTab === 'versus' ? 'bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)]' : 'text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                >
+                  <Swords className="w-4 h-4"/> Arcade Versus
+                </button>
+             </div>
+          </div>
 
-          {errorMessage && (
-            <div className="mb-8 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300 w-full">
-              <div className="flex items-center gap-4 text-base text-destructive">
-                <AlertCircle className="w-6 h-6 shrink-0" />
-                <span className="font-medium">{errorMessage}</span>
+          <div className="relative flex-1 min-w-0 overflow-y-auto scrollbar-hide">
+            <div className={`bg-transparent relative z-10 flex-1 pb-12 pt-6 px-4 sm:px-8 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1920px] mx-auto w-full ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
+
+            {errorMessage && (
+              <div className="mb-8 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300 w-full">
+                <div className="flex items-center gap-4 text-base text-destructive">
+                  <AlertCircle className="w-6 h-6 shrink-0" />
+                  <span className="font-medium">{errorMessage}</span>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="text-destructive hover:text-destructive hover:bg-destructive/20"
+                >
+                  <X className="w-5 h-5" />
+                </Button>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="text-destructive hover:text-destructive hover:bg-destructive/20"
-              >
-                <X className="w-5 h-5" />
-              </Button>
-            </div>
-          )}
+            )}
+
+            {activeTab === 'versus' ? (
+                <div className="w-full max-w-7xl mx-auto py-4">
+                   <VersusMode contributors={contributors} objectives={objectives} />
+                </div>
+            ) : (
+              <>
 
           {/* ── Overview Metrics Strip ── */}
           <section className="mb-10">
@@ -173,9 +202,9 @@ export default function Dashboard() {
               return (
                 <section className="relative">
                   {/* Section Header — Apple-style minimal */}
-                  <div className="mb-12 flex flex-col items-center text-center">
+                  <div className="mb-12 flex flex-col items-center text-center relative">
                     <span className="text-[11px] font-semibold tracking-[0.25em] uppercase text-muted-foreground/60 mb-2">Top Performers</span>
-                    <h3 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Hall of Fame</h3>
+                    <h3 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight mb-6">Hall of Fame</h3>
                   </div>
 
                   {/* Podium Grid — Editorial Portrait Cards */}
@@ -343,6 +372,9 @@ export default function Dashboard() {
 
           {/* ── Floating AI Chat ── */}
           <FloatingAiChat dashboardData={dashboardData} />
+              </>
+            )}
+            </div>
           </div>
         </main>
       </div>
