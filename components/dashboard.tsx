@@ -11,6 +11,7 @@ import {
   Swords,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
@@ -129,20 +130,22 @@ export default function Dashboard() {
 
         {/* ── Main Content ── */}
         <main className="relative flex-1 min-w-0 flex flex-col h-full bg-black">
-          {/* Tab Switcher Header */}
-          <div className="w-full flex justify-center py-4 z-40 bg-zinc-950/80 backdrop-blur-md border-b border-zinc-800 shrink-0">
-             <div className="bg-zinc-900 border border-zinc-700 p-1 flex items-center gap-1 shadow-lg">
+          {/* Sleek Glass Tab Switcher */}
+          <div className="w-full flex justify-center py-4 z-40 bg-[#050505]/95 backdrop-blur-xl border-b border-[#151515] shrink-0 sticky top-0 shadow-2xl">
+             <div className="bg-[#0a0a0c] border border-white/5 p-1 rounded-full flex items-center shadow-inner relative">
                 <button 
                   onClick={() => setActiveTab('overview')} 
-                  className={`px-6 py-2 text-sm font-bold tracking-widest uppercase transition-all ${activeTab === 'overview' ? 'bg-white text-black' : 'text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                  className={`relative px-8 py-2.5 text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none ${activeTab === 'overview' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
-                  Overview
+                  {activeTab === 'overview' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-zinc-800/80 rounded-full shadow-[inset_0_1px_rgba(255,255,255,0.1)]" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
+                  <span className="relative z-10 transition-colors">Command Center</span>
                 </button>
                 <button 
                   onClick={() => setActiveTab('versus')} 
-                  className={`px-6 py-2 text-sm font-black italic tracking-widest uppercase transition-all flex items-center gap-2 ${activeTab === 'versus' ? 'bg-gradient-to-r from-red-600 via-purple-600 to-blue-600 text-white shadow-[0_0_15px_rgba(147,51,234,0.5)]' : 'text-zinc-500 hover:text-white hover:bg-zinc-800'}`}
+                  className={`relative px-8 py-2.5 text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none flex items-center gap-2 ${activeTab === 'versus' ? 'text-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
                 >
-                  <Swords className="w-4 h-4"/> Arcade Versus
+                  {activeTab === 'versus' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-[#0a1a20] rounded-full shadow-[inset_0_1px_rgba(34,211,238,0.2)] border border-cyan-500/20" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
+                  <span className="relative z-10 flex items-center gap-2 transition-colors"><Swords className="w-3.5 h-3.5 text-cyan-500/70"/> Combat Showdown</span>
                 </button>
              </div>
           </div>
