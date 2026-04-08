@@ -86,7 +86,7 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
   const validContributors: PlayerEnhanced[] = contributors
     .filter(c => c.fullName && c.objectives && c.objectives.length > 0)
     .map(c => {
-        const topObjs = [...c.objectives].sort((a, b) => b.progress - a.progress).slice(0, 3).map(obj => {
+        const topObjs = [...c.objectives].sort((a, b) => b.progress - a.progress).map(obj => {
            const actualDetails = objectives.find(o => o.objectiveId === obj.objectiveId)
                ?.subObjectives.flatMap(so => so.details)
                .filter(kr => kr.fullName === c.fullName) || [];
@@ -431,12 +431,12 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
       // Phases: 0 = Intro, 1..N = Rounds, N+1 = Final Analysis
       
       if (!result || !p1 || !p2) return null;
-      const totalRounds = result.rounds?.length || 0;
+      const totalRounds = Math.max(p1.topObjectives.length, p2.topObjectives.length) || 1;
       const isIntro = phase === 0;
       const isRound = phase > 0 && phase <= totalRounds;
       const isFinalResult = phase > totalRounds;
 
-      const currentRoundData = isRound ? result.rounds[phase - 1] : null;
+      const currentRoundData = isRound ? (result.rounds?.[phase - 1] || { commentary: `ยกที่ ${phase}: AI อยู่ระหว่างประมวลผลข้อมูล...` }) : null;
       const P1Winner = result.winner === p1.fullName;
       const P2Winner = result.winner === p2.fullName;
 

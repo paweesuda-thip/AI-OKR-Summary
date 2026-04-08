@@ -88,44 +88,67 @@ export async function POST(req: Request) {
       });
     }
 
-    const anthropic = createAnthropic({
-        apiKey: apiKey,
-    });
+    const calcScore = (p: any): number => {
+        let score = p.avgProgress || 0;
+        score += (p.checkIns || 0) * 1.5; 
+        score += (p.topObjectives.length > 1 ? (p.topObjectives.length * 2) : 0);
+        return Math.min(100, Math.max(0, Math.round(score)));
+    };
+
+    let p1Score = calcScore(dataA);
+    let p2Score = calcScore(dataB);
+
+    if (p1Score === p2Score) {
+        if (dataA.checkIns > dataB.checkIns) p1Score++;
+        else if (dataB.checkIns > dataA.checkIns) p2Score++;
+        else p1Score++;
+    }
+    
+    p1Score = Math.min(100, p1Score);
+    p2Score = Math.min(100, p2Score);
+    const exactWinner = p1Score > p2Score ? dataA.name : dataB.name;
+
+    const matchedRounds = Array.from({ length: maxRounds }).map((_, i) => ({
+        roundNumber: i + 1,
+        p1Data: dataA.topObjectives[i] ? `${dataA.topObjectives[i].name} (Tasks: ${dataA.topObjectives[i].tasks})` : "NO OBJECTIVE (ว่างเปล่า)",
+        p2Data: dataB.topObjectives[i] ? `${dataB.topObjectives[i].name} (Tasks: ${dataB.topObjectives[i].tasks})` : "NO OBJECTIVE (ว่างเปล่า)",
+    }));
+
+    const schemaExampleRounds = Array.from({ length: maxRounds }).map((_, i) => ({
+       roundNumber: i + 1,
+       p1_badge: `Badge for P1's obj in Thai`,
+       p2_badge: `Badge for P2's obj in Thai`,
+       commentary: `Thai commentary for round ${i + 1}.`
+    }));
 
     const prompt = `You are an AI e-sports commentator assessing an epic 1v1 battle based on OKR data! 
-Analyze the performance stats, objectives, and specific tasks (KRs) of these two combatants.
-Give them a score out of 100 based on their 'avgProgress' and 'checkIn' volume.
+The math has already been calculated. You MUST use these EXACT scores and winner:
+Player 1 (${dataA.name}) Final Score: ${p1Score}
+Player 2 (${dataB.name}) Final Score: ${p2Score}
+Winner: ${exactWinner}
 
-This is a ROUND-BY-ROUND showdown. Create up to ${maxRounds} rounds. For each round, compare Player 1's Objective at that index to Player 2's Objective at the same index.
-Look specifically at their "tasks" (Key Results) to formulate your commentary. Provide a hyper-specific, fighting-game-style badge/shoutout in Thai for each player in that round based on their tasks (e.g. "เก็บ Bugs เรียบ! 🐛", "พรีเซนต์เทพ! ⚡"). If a player doesn't have an objective for a specific round, note that they left themselves open!
+This is a ROUND-BY-ROUND showdown. You MUST create EXACTLY ${maxRounds} rounds in your JSON array.
+Use the pre-matched round data below. If a player has "NO OBJECTIVE (ว่างเปล่า)", ruthlessly roast them for taking damage without fighting back.
+DO NOT MIX UP PLAYER 1 AND PLAYER 2.
 
-Player 1 Details:
-${JSON.stringify(dataA, null, 2)}
-
-Player 2 Details:
-${JSON.stringify(dataB, null, 2)}
+Pre-Matched Rounds Data:
+${JSON.stringify(matchedRounds, null, 2)}
 
 Respond with a JSON object EXACTLY in this format:
 {
-  "winner": "Name of the winning player, or 'Tie'",
-  "scoreA": 85,
-  "scoreB": 92,
+  "winner": "${exactWinner}",
+  "scoreA": ${p1Score},
+  "scoreB": ${p2Score},
   "intro_hype": "A hype e-sports intro to this matchup in Thai. Use emojis.",
-  "rounds": [
-    {
-       "roundNumber": 1,
-       "p1_badge": "Badge for P1's obj 1 in Thai",
-       "p2_badge": "Badge for P2's obj 1 in Thai",
-       "commentary": "Direct, exciting Thai commentary comparing how P1's specific tasks matched up against P2's specific tasks in this round."
-    }
-  ],
-  "playerA_strengths_weaknesses": "A short Thai paragraph detailing Player A's main strengths and weaknesses.",
-  "playerB_strengths_weaknesses": "A short Thai paragraph detailing Player B's main strengths and weaknesses.",
-  "conclusion": "A dramatic final verdict of their strengths/weaknesses and why the winner won in Thai."
+  "rounds": ${JSON.stringify(schemaExampleRounds, null, 4)},
+  "playerA_strengths_weaknesses": "A short Thai paragraph detailing Player A's strengths/weaknesses.",
+  "playerB_strengths_weaknesses": "A short Thai paragraph detailing Player B's strengths/weaknesses.",
+  "conclusion": "A dramatic final verdict of why the winner won in Thai."
 }
 
 Return ONLY raw JSON, no code fences, no extra text.`;
 
+    const anthropic = createAnthropic({ apiKey: apiKey });
     const { text } = await generateText({
         model: anthropic('claude-3-haiku-20240307'),
         prompt: prompt,
