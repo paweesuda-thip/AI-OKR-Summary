@@ -1,16 +1,18 @@
 "use client";
 
 import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
-import { Bar, Doughnut } from "react-chartjs-2";
 import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  ArcElement,
-  Tooltip,
-  type TooltipItem,
-} from "chart.js";
+  BarChart,
+  Bar as RechartsBar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Cell,
+  Tooltip as RechartsTooltip,
+  RadialBarChart,
+  RadialBar,
+  PolarAngleAxis,
+} from "recharts";
 import geminiService from "@/lib/services/gemini-service";
 import { Card, CardContent } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -19,8 +21,6 @@ import { Objective, ContributorSum } from "@/lib/types/okr";
 import { Button } from "@/components/ui/button";
 import { Sparkles, ChevronDown, ChevronUp, RefreshCw, BarChart3, Target, Lightbulb, ArrowUpRight, Loader2, Bot, CheckCircle2, AlertTriangle, Zap, TrendingUp } from "lucide-react";
 import { Input } from "@/components/ui/input";
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip);
 
 /* ═══════════════════════════════════════════════════════════
    TYPES
@@ -113,29 +113,31 @@ const HealthScoreRing = ({ score }: { score: number }) => {
           ? "Fair"
           : "At Risk";
 
-  const data = {
-    datasets: [
-      {
-        data: [score, 10 - score],
-        backgroundColor: [color, "rgba(51,65,85,0.35)"],
-        borderWidth: 0,
-        cutout: "78%",
-        borderRadius: 6,
-      },
-    ],
-  };
-  const opts = {
-    responsive: true,
-    maintainAspectRatio: true,
-    plugins: { tooltip: { enabled: false } },
-    rotation: -90,
-    circumference: 360,
-  };
+  const chartData = [{ name: "score", value: score * 10, fill: color }];
 
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="relative w-36 h-36 drop-shadow-lg">
-        <Doughnut data={data} options={opts} />
+        <ResponsiveContainer width="100%" height="100%">
+          <RadialBarChart
+            cx="50%"
+            cy="50%"
+            innerRadius="78%"
+            outerRadius="100%"
+            barSize={10}
+            data={chartData}
+            startAngle={90}
+            endAngle={-270}
+          >
+            <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
+            <RadialBar
+              background={{ fill: "rgba(51,65,85,0.35)" }}
+              dataKey="value"
+              cornerRadius={6}
+              angleAxisId={0}
+            />
+          </RadialBarChart>
+        </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span
             className="text-4xl font-extrabold tabular-nums leading-none"
@@ -160,69 +162,32 @@ const HealthScoreRing = ({ score }: { score: number }) => {
 const ObjectivesBarChart = ({ objectives }: { objectives: Objective[] }) => {
   if (!objectives?.length) return null;
 
-  const chartData = {
-    labels: objectives.map((o) =>
+  const barData = objectives.map((o) => ({
+    name:
       o.objectiveName.length > 38
         ? o.objectiveName.slice(0, 38) + "..."
         : o.objectiveName,
-    ),
-    datasets: [
-      {
-        label: "Progress",
-        data: objectives.map((o) => o.progress),
-        backgroundColor: objectives.map((o) =>
-          o.impactLevel === "high"
-            ? "rgba(52,211,153,0.8)"
-            : "rgba(56,189,248,0.65)",
-        ),
-        borderRadius: 6,
-        borderSkipped: false,
-        barThickness: 22,
-      },
-    ],
-  };
-
-  const chartOptions = {
-    indexAxis: "y" as const,
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: "rgba(15,23,42,0.95)",
-        borderColor: "rgba(148,163,184,0.35)",
-        borderWidth: 1,
-        padding: 12,
-        titleFont: { size: 13 },
-        bodyFont: { size: 13 },
-        callbacks: {
-          label: (ctx: TooltipItem<"bar">) => `  Progress: ${ctx.raw}%`,
-        },
-      },
-    },
-    scales: {
-      x: {
-        min: 0,
-        max: 100,
-        grid: { color: "rgba(148,163,184,0.24)" },
-        ticks: {
-          color: "#64748b",
-          font: { size: 12 },
-          callback: (value: string | number) => `${value}%`,
-        },
-        border: { color: "rgba(148,163,184,0.35)" },
-      },
-      y: {
-        grid: { display: false },
-        ticks: { color: "#475569", font: { size: 12 }, padding: 8 },
-        border: { display: false },
-      },
-    },
-  };
+    progress: o.progress,
+    fill:
+      o.impactLevel === "high"
+        ? "rgba(52,211,153,0.8)"
+        : "rgba(56,189,248,0.65)",
+  }));
 
   return (
     <div style={{ height: `${objectives.length * 52 + 32}px` }}>
-      <Bar data={chartData} options={chartOptions} />
+      <ResponsiveContainer width="100%" height="100%">
+        <BarChart data={barData} layout="vertical" margin={{ left: 20, right: 20, top: 8, bottom: 8 }}>
+          <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: "#64748b", fontSize: 12 }} />
+          <YAxis type="category" dataKey="name" width={200} tick={{ fill: "#475569", fontSize: 12 }} />
+          <RechartsTooltip formatter={(value: number) => [`${value}%`, "Progress"]} />
+          <RechartsBar dataKey="progress" radius={[0, 6, 6, 0]} barSize={22}>
+            {barData.map((entry, index) => (
+              <Cell key={index} fill={entry.fill} />
+            ))}
+          </RechartsBar>
+        </BarChart>
+      </ResponsiveContainer>
     </div>
   );
 };
@@ -369,67 +334,7 @@ const renderMarkdown = (text: string) => {
    ═══════════════════════════════════════════════════════════ */
 const STORAGE_KEY = "okr-dashboard-ai-cache";
 
-interface AIExecutiveSummary {
-  healthScore: number;
-  healthReason: string;
-  alignmentStatus: "on-track" | "needs-focus" | string;
-  keyAchievement?: string;
-}
 
-interface AIWinningObjective {
-  objectiveName: string;
-  progress: number;
-  contributors?: string[];
-  insight: string;
-  impactLevel?: "high" | "medium" | "low";
-}
-
-interface AIGrowthOpportunity {
-  objectiveName: string;
-  currentStatus: string;
-  opportunity: string;
-  unlock: string;
-  priority?: "high" | "medium" | "low";
-}
-
-interface AIActionPlanItem {
-  priority: number;
-  action: string;
-  relatedObjective: string;
-  expectedImpact: string;
-  actionType: "accelerate" | "refocus" | "expand" | string;
-}
-
-interface AIKeyInsights {
-  topPerformancePattern?: string;
-  systemicOpportunity?: string;
-  teamStrength?: string;
-}
-
-interface AISummary {
-  executiveSummary?: AIExecutiveSummary;
-  winningObjectives?: AIWinningObjective[];
-  growthOpportunities?: AIGrowthOpportunity[];
-  actionPlan?: AIActionPlanItem[];
-  keyInsights?: AIKeyInsights;
-}
-
-interface TopPerformersAISummary {
-  rankings?: Array<{ rank: number; name: string; summary: string }>;
-  teamSummary?: string;
-}
-
-interface QAHistoryItem {
-  q: string;
-  a: string;
-}
-
-interface CachedAIData {
-  summary?: AISummary | null;
-  topPerformers?: TopPerformersAISummary | null;
-  qaHistory?: QAHistoryItem[];
-  updatedAt?: number;
-}
 
 function loadCachedAI(): CachedAIData {
   if (typeof window === 'undefined') return {};

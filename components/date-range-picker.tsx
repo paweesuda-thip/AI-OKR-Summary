@@ -47,18 +47,18 @@ export function DatePickerWithRange({
   };
 
   return (
-    <div className={cn("grid gap-2", className)}>
+    <div className={cn("grid gap-2 w-full overflow-hidden", className)}>
       <Popover open={isOpen} onOpenChange={setIsOpen}>
         <PopoverTrigger
           id="date"
           className={cn(
             buttonVariants({ variant: "ghost" }),
-            "hover:bg-muted/50 text-foreground h-10 px-4 w-full sm:w-auto justify-between transition-all rounded-full border border-border/30 gap-2",
+            "hover:bg-muted/50 text-foreground h-10 px-4 w-full justify-between transition-all rounded-full border border-border/30 gap-2 min-w-0",
             !date && "text-muted-foreground",
           )}
           disabled={disabled}
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0 overflow-hidden">
             <CalendarIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-500" />
             <span className="truncate font-medium">
               {date?.from ? (
@@ -75,7 +75,7 @@ export function DatePickerWithRange({
               )}
             </span>
           </div>
-          <ChevronDown className="w-4 h-4 text-muted-foreground ml-2" />
+          <ChevronDown className="w-4 h-4 shrink-0 text-muted-foreground ml-auto" />
         </PopoverTrigger>
         <PopoverContent
           className="w-auto p-0 bg-background/90 backdrop-blur-xl border-border/50 text-foreground shadow-md rounded-xl"

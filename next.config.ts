@@ -14,7 +14,7 @@ const nextConfig: NextConfig = {
     ],
   },
   async rewrites() {
-    const apiTarget = process.env.VITE_PROXY_TARGET || 'https://localhost:44377';
+    const apiTarget = process.env.API_PROXY_TARGET || 'https://localhost:44377';
     return [
       {
         source: '/api/:path*',
