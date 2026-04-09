@@ -22,22 +22,21 @@ export default function FilterBar({
   className,
 }: FilterBarProps) {
   return (
-    <div className={cn("flex flex-col gap-4", className)}>
-      <div className="flex items-center justify-between space-x-2 bg-background/50 border border-border/40 backdrop-blur-md px-4 py-3 rounded-xl w-full">
-        <Label htmlFor="overall-mode" className="font-medium text-sm cursor-pointer whitespace-nowrap">
-          Overall Quarter
+    <div className={cn("flex flex-row items-center gap-2 sm:gap-3", className)}>
+      <div className="flex items-center space-x-2 bg-black/40 border border-white/10 hover:bg-white/5 transition-all backdrop-blur-md px-3 h-9 rounded-full relative group">
+        <Label htmlFor="overall-mode" className="font-semibold text-xs cursor-pointer whitespace-nowrap text-zinc-300 group-hover:text-zinc-100 transition-colors">
+          Overall QTR
         </Label>
         <Switch
           id="overall-mode"
           checked={isOverall}
           onCheckedChange={setIsOverall}
+          className="scale-75 data-[state=checked]:bg-cyan-500"
         />
       </div>
 
-      <div className={`transition-all duration-300 w-full ${isOverall ? 'opacity-50 pointer-events-none grayscale-[0.5]' : 'opacity-100'}`}>
-        <div className="flex flex-wrap items-center gap-2 cursor-pointer w-full">
-          <DatePickerWithRange date={dateRange} setDate={setDateRange} disabled={isOverall} />
-        </div>
+      <div className={`transition-all duration-300 ${isOverall ? 'opacity-40 pointer-events-none grayscale-[0.5]' : 'opacity-100'}`}>
+        <DatePickerWithRange date={dateRange} setDate={setDateRange} disabled={isOverall} />
       </div>
     </div>
   );

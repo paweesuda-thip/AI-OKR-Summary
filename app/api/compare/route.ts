@@ -54,7 +54,7 @@ export async function POST(req: Request) {
             topObjectives: p.topObjectives.map((obj: any) => ({
                 name: obj.objectiveName,
                 progress: obj.progress,
-                tasks: obj.actualDetails?.map((kr: any) => kr.krTitle).join(', ') || 'No specific breakdown'
+                tasks: obj.actualDetails?.map((kr: any) => `${kr.krTitle} (${Math.round(kr.krProgress || 0)}%)`).join(', ') || 'No specific breakdown'
             }))
         };
     };
@@ -78,8 +78,8 @@ export async function POST(req: Request) {
 
       return NextResponse.json({
         winner: dataA.avgProgress > dataB.avgProgress ? dataA.name : (dataA.avgProgress < dataB.avgProgress ? dataB.name : 'Tie'),
-        scoreA: Math.min(100, Math.max(0, dataA.avgProgress || 50)),
-        scoreB: Math.min(100, Math.max(0, dataB.avgProgress || 50)),
+        scoreA: Math.max(0, Math.round(dataA.avgProgress || 50)),
+        scoreB: Math.max(0, Math.round(dataB.avgProgress || 50)),
         intro_hype: `ศึกบอสไฟต์สาย OKR ระหว่าง ${dataA.name} และ ${dataB.name}! คู่เดือดตัวทำดาเมจของทีม! 💥🥊`,
         rounds: mockRounds,
         playerA_strengths_weaknesses: "จุดเด่น: ความสม่ำเสมอ. จุดด้อย: บางงานอาจจะยังไม่เสร็จดี.",
@@ -92,7 +92,7 @@ export async function POST(req: Request) {
         let score = p.avgProgress || 0;
         score += (p.checkIns || 0) * 1.5; 
         score += (p.topObjectives.length > 1 ? (p.topObjectives.length * 2) : 0);
-        return Math.min(100, Math.max(0, Math.round(score)));
+        return Math.max(0, Math.round(score));
     };
 
     let p1Score = calcScore(dataA);
@@ -104,8 +104,6 @@ export async function POST(req: Request) {
         else p1Score++;
     }
     
-    p1Score = Math.min(100, p1Score);
-    p2Score = Math.min(100, p2Score);
     const exactWinner = p1Score > p2Score ? dataA.name : dataB.name;
 
     const matchedRounds = Array.from({ length: maxRounds }).map((_, i) => ({

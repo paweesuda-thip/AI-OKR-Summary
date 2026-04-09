@@ -31,7 +31,9 @@ import ProgressUpdateSection from "./progress-update-section";
 import { FloatingAiChat } from "./floating-ai-chat";
 import VersusMode from "./versus-mode";
 import { getCycleOptions, getGroupedOrgOptions } from "@/lib/utils/org-leaf";
-import DashboardSidebar from "./dashboard-sidebar";
+import DashboardTopbar from "./dashboard-topbar";
+import DashboardSelectors from "./dashboard-selectors";
+import FilterBar from "./filter-bar";
 import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
 import { useParticipantQuery } from "@/hooks/queries/use-participant-query";
 
@@ -54,12 +56,11 @@ export default function Dashboard() {
     from: new Date(2026, 1, 12), // Feb 12, 2026
     to: new Date(2026, 2, 15),   // Mar 15, 2026
   });
-  const [isOverall, setIsOverall] = useState(false);
+  const [isOverall, setIsOverall] = useState(true);
 
   // ── UI State ───────────────────────────────────────────────────────────────
   const [aiScoreResult, setAiScoreResult] = useState<AIScoreResult | null>(null);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState<'overview' | 'versus'>('overview');
 
   // ── Derived query params ───────────────────────────────────────────────────
@@ -98,6 +99,26 @@ export default function Dashboard() {
     atRisk: atRiskObjectives,
   };
 
+  const selectedCycle = useMemo(() => cycleOptions.find(c => c.setId === assessmentSetId), [cycleOptions, assessmentSetId]);
+
+  const showStatus = useMemo(() => {
+    if (!selectedCycle?.dateEnd) return true;
+
+    const cycleEnd = new Date(selectedCycle.dateEnd);
+    
+    // Determine the date to evaluate against
+    // If Overall QTR is ON, use the real current date.
+    // If Overall QTR is OFF (filtering by date), use the end date of the filter range.
+    const evaluatedDate = isOverall 
+      ? new Date() 
+      : (dateRange?.to ? dateRange.to : new Date());
+
+    if (evaluatedDate.getFullYear() > cycleEnd.getFullYear()) return true;
+    if (evaluatedDate.getFullYear() === cycleEnd.getFullYear() && evaluatedDate.getMonth() >= cycleEnd.getMonth()) return true;
+    
+    return false;
+  }, [isOverall, selectedCycle, dateRange]);
+
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <ClickSpark
@@ -107,51 +128,59 @@ export default function Dashboard() {
       sparkCount={8}
       duration={400}
     >
-      <div className="flex h-svh w-full overflow-hidden">
-        <DashboardSidebar
-          assessmentSetId={assessmentSetId}
-          setAssessmentSetId={setAssessmentSetId}
-          organizationId={organizationId}
-          setOrganizationId={setOrganizationId}
-          loading={loading}
+      <div className="flex flex-col h-svh w-full overflow-hidden bg-black text-white">
+        <DashboardTopbar
           aiDrawerOpen={aiDrawerOpen}
           setAiDrawerOpen={setAiDrawerOpen}
           teamSummary={teamSummary}
           dashboardData={dashboardData}
           aiScoreResult={aiScoreResult}
           setAiScoreResult={setAiScoreResult}
-          dateRange={dateRange}
-          setDateRange={setDateRange}
-          isOverall={isOverall}
-          setIsOverall={setIsOverall}
-          isOpen={sidebarOpen}
-          setIsOpen={setSidebarOpen}
         />
 
-        {/* ── Main Content ── */}
-        <main className="relative flex-1 min-w-0 flex flex-col h-full bg-black">
-          {/* Sleek Glass Tab Switcher */}
-          <div className="w-full flex justify-center py-4 z-40 bg-[#050505]/95 backdrop-blur-xl border-b border-[#151515] shrink-0 sticky top-0 shadow-2xl">
-             <div className="bg-[#0a0a0c] border border-white/5 p-1 rounded-full flex items-center shadow-inner relative">
-                <button 
-                  onClick={() => setActiveTab('overview')} 
-                  className={`relative px-8 py-2.5 text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none ${activeTab === 'overview' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-                >
-                  {activeTab === 'overview' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-zinc-800/80 rounded-full shadow-[inset_0_1px_rgba(255,255,255,0.1)]" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
-                  <span className="relative z-10 transition-colors">Command Center</span>
-                </button>
-                <button 
-                  onClick={() => setActiveTab('versus')} 
-                  className={`relative px-8 py-2.5 text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none flex items-center gap-2 ${activeTab === 'versus' ? 'text-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
-                >
-                  {activeTab === 'versus' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-[#0a1a20] rounded-full shadow-[inset_0_1px_rgba(34,211,238,0.2)] border border-cyan-500/20" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
-                  <span className="relative z-10 flex items-center gap-2 transition-colors"><Swords className="w-3.5 h-3.5 text-cyan-500/70"/> Combat Showdown</span>
-                </button>
-             </div>
+        {/* ── Control Strip & Tab Switcher ── */}
+        <div className="w-full z-40 bg-[#050505]/95 backdrop-blur-xl border-b border-white/5 shrink-0 sticky top-0 shadow-2xl px-4 sm:px-8 py-3 flex flex-col xl:flex-row items-center justify-between gap-4">
+          
+          {/* Settings / Controls */}
+          <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto scrollbar-hide shrink-0 pb-2 xl:pb-0">
+            <DashboardSelectors
+              selectedCycleId={assessmentSetId}
+              onCycleChange={setAssessmentSetId}
+              selectedOrgId={organizationId}
+              onOrgChange={setOrganizationId}
+              disabled={loading}
+            />
+            <div className="hidden lg:block w-px h-6 bg-white/10 mx-1" />
+            <FilterBar
+              dateRange={dateRange}
+              setDateRange={setDateRange}
+              isOverall={isOverall}
+              setIsOverall={setIsOverall}
+            />
           </div>
 
-          <div className="relative flex-1 min-w-0 overflow-y-auto scrollbar-hide">
-            <div className={`bg-transparent relative z-10 flex-1 pb-12 pt-6 px-4 sm:px-8 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1920px] mx-auto w-full ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
+          {/* Sleek Glass Tab Switcher */}
+          <div className="bg-[#0a0a0c] border border-white/5 p-1 rounded-full flex items-center shadow-inner relative shrink-0">
+            <button 
+              onClick={() => setActiveTab('overview')} 
+              className={`relative px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none ${activeTab === 'overview' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              {activeTab === 'overview' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-zinc-800/80 rounded-full shadow-[inset_0_1px_rgba(255,255,255,0.1)]" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
+              <span className="relative z-10 transition-colors">Command Center</span>
+            </button>
+            <button 
+              onClick={() => setActiveTab('versus')} 
+              className={`relative px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none flex items-center gap-2 ${activeTab === 'versus' ? 'text-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
+            >
+              {activeTab === 'versus' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-[#0a1a20] rounded-full shadow-[inset_0_1px_rgba(34,211,238,0.2)] border border-cyan-500/20" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
+              <span className="relative z-10 flex items-center gap-2 transition-colors"><Swords className="w-3.5 h-3.5 text-cyan-500/70"/> Combat Showdown</span>
+            </button>
+          </div>
+        </div>
+
+        {/* ── Main Content ── */}
+        <main className="relative flex-1 min-w-0 flex flex-col h-full bg-black overflow-y-auto scrollbar-hide">
+          <div className={`bg-transparent relative z-10 flex-1 pb-12 pt-6 px-4 sm:px-8 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1920px] mx-auto w-full ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
 
             {errorMessage && (
               <div className="mb-8 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300 w-full">
@@ -182,6 +211,7 @@ export default function Dashboard() {
               summary={teamSummary}
               participantDetails={participantDetails}
               objectives={objectives}
+              showStatus={showStatus}
             />
           </section>
 
@@ -369,7 +399,7 @@ export default function Dashboard() {
 
             {/* ── Objectives ── */}
             <section className="relative bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg max-w-7xl mx-auto w-full pb-12">
-              <ObjectivesSection objectives={objectives} />
+              <ObjectivesSection objectives={objectives} showStatus={showStatus} />
             </section>
           </div>
 
@@ -378,7 +408,6 @@ export default function Dashboard() {
               </>
             )}
             </div>
-          </div>
         </main>
       </div>
     </ClickSpark>

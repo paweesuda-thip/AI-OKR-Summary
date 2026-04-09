@@ -14,6 +14,7 @@ interface OverviewCardsProps {
     summary: TeamSummary | null;
     participantDetails?: ParticipantDetailRaw[];
     objectives?: Objective[];
+    showStatus?: boolean;
 }
 
 interface TopMember {
@@ -39,7 +40,7 @@ interface TopObjective extends Objective {
     topMembers: TopMember[];
 }
 
-const TopObjectiveCard = ({ obj, rank }: { obj: TopObjective, rank: number }) => {
+const TopObjectiveCard = ({ obj, rank, showStatus = true }: { obj: TopObjective, rank: number, showStatus?: boolean }) => {
     const [isOpen, setIsOpen] = useState(false);
     
     return (
@@ -203,10 +204,12 @@ const TopObjectiveCard = ({ obj, rank }: { obj: TopObjective, rank: number }) =>
                                         <div className="flex items-start justify-between gap-4">
                                             <div className="flex-1 min-w-0">
                                                 <div className="text-sm font-medium text-foreground leading-snug">{sub.title}</div>
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'On Track' ? 'bg-emerald-500' : sub.status === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500'}`} />
-                                                    <span className="text-xs text-muted-foreground font-medium">{sub.status}</span>
-                                                </div>
+                                                {showStatus && (
+                                                    <div className="flex items-center gap-2 mt-2">
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'On Track' ? 'bg-emerald-500' : sub.status === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                                        <span className="text-xs text-muted-foreground font-medium">{sub.status}</span>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="text-right shrink-0">
                                                 <div className="text-base font-bold text-foreground">{sub.progress?.toFixed(0)}%</div>
@@ -268,7 +271,7 @@ const TopObjectiveCard = ({ obj, rank }: { obj: TopObjective, rank: number }) =>
     );
 };
 
-export default function OverviewCards({ summary, participantDetails = [], objectives = [] }: OverviewCardsProps) {
+export default function OverviewCards({ summary, participantDetails = [], objectives = [], showStatus = true }: OverviewCardsProps) {
     const topObjectives = useMemo(() => {
         if (!objectives || objectives.length === 0) return [];
         
@@ -361,28 +364,32 @@ export default function OverviewCards({ summary, participantDetails = [], object
                                 <span className="text-[11px] font-medium text-muted-foreground">avg objective progress</span>
                             </div>
 
-                            <div className="mb-2 flex flex-wrap gap-1 text-[10px]">
-                                <div className="inline-flex items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5">
-                                    <span className="font-semibold text-emerald-600 dark:text-emerald-400">On Track</span>
-                                    <span className="font-bold text-foreground">{onTrackCount}</span>
-                                </div>
-                                <div className="inline-flex items-center gap-1 rounded-md border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5">
-                                    <span className="font-semibold text-amber-600 dark:text-amber-400">At Risk</span>
-                                    <span className="font-bold text-foreground">{atRiskCount}</span>
-                                </div>
-                                <div className="inline-flex items-center gap-1 rounded-md border border-rose-500/25 bg-rose-500/10 px-1.5 py-0.5">
-                                    <span className="font-semibold text-rose-600 dark:text-rose-400">Behind</span>
-                                    <span className="font-bold text-foreground">{behindCount}</span>
-                                </div>
-                            </div>
+                            {showStatus && (
+                                <>
+                                    <div className="mb-2 flex flex-wrap gap-1 text-[10px]">
+                                        <div className="inline-flex items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5">
+                                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">On Track</span>
+                                            <span className="font-bold text-foreground">{onTrackCount}</span>
+                                        </div>
+                                        <div className="inline-flex items-center gap-1 rounded-md border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5">
+                                            <span className="font-semibold text-amber-600 dark:text-amber-400">At Risk</span>
+                                            <span className="font-bold text-foreground">{atRiskCount}</span>
+                                        </div>
+                                        <div className="inline-flex items-center gap-1 rounded-md border border-rose-500/25 bg-rose-500/10 px-1.5 py-0.5">
+                                            <span className="font-semibold text-rose-600 dark:text-rose-400">Behind</span>
+                                            <span className="font-bold text-foreground">{behindCount}</span>
+                                        </div>
+                                    </div>
 
-                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
-                                <div className="flex h-full w-full">
-                                    <div className="bg-emerald-500 transition-all duration-700" style={{ width: `${onTrackPercent}%` }} />
-                                    <div className="bg-amber-500 transition-all duration-700" style={{ width: `${atRiskPercent}%` }} />
-                                    <div className="bg-rose-500 transition-all duration-700" style={{ width: `${behindPercent}%` }} />
-                                </div>
-                            </div>
+                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+                                        <div className="flex h-full w-full">
+                                            <div className="bg-emerald-500 transition-all duration-700" style={{ width: `${onTrackPercent}%` }} />
+                                            <div className="bg-amber-500 transition-all duration-700" style={{ width: `${atRiskPercent}%` }} />
+                                            <div className="bg-rose-500 transition-all duration-700" style={{ width: `${behindPercent}%` }} />
+                                        </div>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </section>
 
