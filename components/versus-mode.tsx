@@ -86,13 +86,28 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
   const validContributors: PlayerEnhanced[] = contributors
     .filter(c => c.fullName && c.objectives && c.objectives.length > 0)
     .map(c => {
-        const topObjs = [...c.objectives].sort((a, b) => b.progress - a.progress).map(obj => {
+        let totalPersonalProgress = 0;
+        let validObjCount = 0;
+
+        const topObjs = [...c.objectives].map(obj => {
            const actualDetails = objectives.find(o => o.objectiveId === obj.objectiveId)
                ?.subObjectives.flatMap(so => so.details)
                .filter(kr => kr.fullName === c.fullName) || [];
-           return { ...obj, actualDetails };
-        });
-        return { ...c, topObjectives: topObjs };
+           
+           const validKrs = actualDetails.filter(kr => kr.krProgress !== undefined);
+           const personalObjProgress = validKrs.length > 0 
+               ? validKrs.reduce((acc, kr) => acc + kr.krProgress, 0) / validKrs.length 
+               : obj.progress;
+
+           totalPersonalProgress += personalObjProgress;
+           validObjCount++;
+
+           return { ...obj, progress: personalObjProgress, actualDetails };
+        }).sort((a, b) => b.progress - a.progress);
+
+        const newAvg = validObjCount > 0 ? (totalPersonalProgress / validObjCount) : c.avgObjectiveProgress;
+
+        return { ...c, avgObjectiveProgress: newAvg, topObjectives: topObjs };
     });
 
   const resetState = () => {
@@ -168,22 +183,22 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
                     <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{validContributors.length} AVAILABLE</span>
                 </div>
                 
-                <div className="flex-1 max-h-[500px] overflow-y-auto px-2 pb-10 scrollbar-hide">
+                <div className="flex-1 max-h-[500px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
                     <div className="flex flex-col gap-3">
                         {validContributors.map((c, i) => {
                             const isSelected = p1?.fullName === c.fullName;
                             const isPickedByOther = p2?.fullName === c.fullName;
                             return (
                                 <motion.button 
-                                    whileHover={!isPickedByOther ? { scale: 1.02, x: 10 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
+                                    whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
                                     key={i} onClick={() => !isPickedByOther && setP1(c)} disabled={isPickedByOther}
-                                    className={`relative flex items-center gap-5 p-3 overflow-hidden group transition-all duration-300 rounded-[20px]
-                                        ${isSelected ? 'bg-gradient-to-r from-rose-950/80 to-zinc-950 border-[2px] border-rose-500 shadow-[0_0_40px_rgba(244,63,94,0.3)]' : 
+                                    className={`relative flex items-center gap-5 p-3 group transition-all duration-300 rounded-[20px]
+                                        ${isSelected ? 'bg-gradient-to-r from-[#1a050a] to-[#0a0a0c] border border-rose-500/50 shadow-[0_4px_30px_rgba(244,63,94,0.15)] ring-1 ring-rose-500/20' : 
                                           isPickedByOther ? 'opacity-15 grayscale pointer-events-none' : 
-                                          'bg-black/40 hover:bg-zinc-900/80 border border-zinc-800/50 hover:border-zinc-700 backdrop-blur-md'}
+                                          'bg-[#0a0a0c] hover:bg-[#111115] border border-[#1a1a1a] hover:border-[#333] shadow-lg'}
                                     `}
                                 >
-                                    <div className={`relative w-16 h-16 rounded-[14px] overflow-hidden shrink-0 bg-zinc-950 ${isSelected ? 'shadow-[0_0_20px_rgba(244,63,94,0.6)] ring-2 ring-rose-500' : ''}`}>
+                                    <div className={`relative w-16 h-16 rounded-[14px] overflow-hidden shrink-0 bg-zinc-950 ${isSelected ? 'shadow-[0_0_20px_rgba(244,63,94,0.4)] ring-1 ring-rose-500/50' : ''}`}>
                                         {c.pictureURL ? (
                                             <Image src={c.pictureURL} alt={c.fullName} fill className={`object-cover object-center ${isSelected ? 'scale-110 transition-transform duration-500' : 'grayscale group-hover:grayscale-0 transition-all'}`} unoptimized sizes="64px" />
                                         ) : (
@@ -193,7 +208,7 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
                                     <div className="flex-1 text-left flex flex-col justify-center">
                                         <div className={`text-base truncate max-w-[200px] font-sans ${isSelected ? 'text-white font-bold tracking-wide drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-zinc-300 font-medium tracking-wider group-hover:text-white transition-colors'}`}>{c.fullName}</div>
                                         <div className="text-[10px] font-sans font-bold text-rose-500/80 tracking-widest uppercase mt-1 flex items-center gap-2">
-                                            POWER LEVEL <span className="text-white text-xs px-1.5 py-0.5 bg-rose-500/20 rounded">{c.avgObjectiveProgress.toFixed(0)}</span>
+                                            POWER LEVEL <span className="text-white text-xs px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded">{c.avgObjectiveProgress.toFixed(0)}</span>
                                         </div>
                                     </div>
                                     {isSelected && <Zap className="w-6 h-6 text-rose-400 absolute right-4 drop-shadow-[0_0_10px_rgba(244,63,94,0.9)] animate-pulse" />}
@@ -205,23 +220,36 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
             </div>
 
             {/* Execute Button */}
-            <div className="flex flex-col justify-center items-center lg:w-40 shrink-0 z-20 py-8 lg:py-0">
+            <div className="flex flex-col justify-center items-center lg:w-48 shrink-0 z-20 py-12 lg:py-0">
                 <AnimatePresence mode="popLayout">
                     {p1 && p2 ? (
                         <motion.button 
-                            initial={{ scale: 0, rotate: 180 }} animate={{ scale: 1, rotate: 0 }}
-                            whileHover={{ scale: 1.15, textShadow: "0px 0px 15px rgba(255,255,255,1)" }} whileTap={{ scale: 0.9 }}
-                            transition={{ type: "spring", stiffness: 200, damping: 10 }}
+                            initial={{ scale: 0.9, opacity: 0 }} 
+                            animate={{ scale: 1, opacity: 1 }}
+                            whileHover={{ scale: 1.05 }} 
+                            whileTap={{ scale: 0.95 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 20 }}
                             onClick={startBattle}
-                            className="w-32 h-32 rounded-full border-2 border-white flex flex-col items-center justify-center bg-gradient-to-tr from-rose-600 via-purple-600 to-cyan-500 text-white shadow-[0_0_60px_rgba(168,85,247,0.6)] hover:shadow-[0_0_100px_rgba(168,85,247,1)] transition-all duration-300 group overflow-hidden relative"
+                            className="group relative flex items-center justify-center w-40 h-12 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
+                            style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
                         >
-                            <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-30 mix-blend-overlay pointer-events-none" />
-                            <Terminal className="w-8 h-8 mb-1 group-hover:-translate-y-1 transition-transform relative z-10" />
-                            <span className="text-xs tracking-widest font-bold relative z-10">BATTLE</span>
+                            {/* Inner Dark Background */}
+                            <div 
+                                className="w-full h-full bg-[#050505] flex items-center justify-center transition-colors duration-300 group-hover:bg-gradient-to-r group-hover:from-rose-500/20 group-hover:to-cyan-500/20 relative z-10"
+                                style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
+                            >
+                                <span className="text-xs font-black uppercase tracking-[0.3em] font-sans text-white flex items-center gap-2 drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
+                                    <Swords className="w-4 h-4" /> BATTLE
+                                </span>
+                            </div>
+
+                            {/* Background Ambient Glow */}
+                            <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 opacity-30 group-hover:opacity-100 blur-lg transition-opacity duration-300 pointer-events-none" />
                         </motion.button>
                     ) : (
-                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center">
-                           <Hexagon className="w-20 h-20 text-zinc-800 stroke-[0.5] animate-spin-slow drop-shadow-[0_0_15px_rgba(255,255,255,0.05)]" />
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-12 relative w-full">
+                           <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-zinc-800 to-transparent absolute top-1/2 -translate-y-1/2" />
+                           <Hexagon className="w-6 h-6 text-zinc-700 bg-[#0a0a0b] relative z-10 animate-spin-slow" />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -236,22 +264,22 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
                     </span>
                 </div>
                 
-                <div className="flex-1 max-h-[500px] overflow-y-auto px-2 pb-10 scrollbar-hide">
+                <div className="flex-1 max-h-[500px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
                     <div className="flex flex-col gap-3">
                         {validContributors.map((c, i) => {
                             const isSelected = p2?.fullName === c.fullName;
                             const isPickedByOther = p1?.fullName === c.fullName;
                             return (
                                 <motion.button 
-                                    whileHover={!isPickedByOther ? { scale: 1.02, x: -10 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
+                                    whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
                                     key={i} onClick={() => !isPickedByOther && setP2(c)} disabled={isPickedByOther}
-                                    className={`relative flex items-center gap-5 p-3 overflow-hidden group transition-all duration-300 flex-row-reverse rounded-[20px]
-                                        ${isSelected ? 'bg-gradient-to-l from-cyan-950/80 to-zinc-950 border-[2px] border-cyan-400 shadow-[0_0_40px_rgba(34,211,238,0.3)]' : 
+                                    className={`relative flex items-center gap-5 p-3 flex-row-reverse group transition-all duration-300 rounded-[20px]
+                                        ${isSelected ? 'bg-gradient-to-l from-[#050910] to-[#0a0a0c] border border-cyan-400/50 shadow-[0_4px_30px_rgba(34,211,238,0.15)] ring-1 ring-cyan-400/20' : 
                                           isPickedByOther ? 'opacity-15 grayscale pointer-events-none' : 
-                                          'bg-black/40 hover:bg-zinc-900/80 border border-zinc-800/50 hover:border-zinc-700 backdrop-blur-md'}
+                                          'bg-[#0a0a0c] hover:bg-[#111115] border border-[#1a1a1a] hover:border-[#333] shadow-lg'}
                                     `}
                                 >
-                                    <div className={`relative w-16 h-16 rounded-[14px] overflow-hidden shrink-0 bg-zinc-950 ${isSelected ? 'shadow-[0_0_20px_rgba(34,211,238,0.6)] ring-2 ring-cyan-400' : ''}`}>
+                                    <div className={`relative w-16 h-16 rounded-[14px] overflow-hidden shrink-0 bg-zinc-950 ${isSelected ? 'shadow-[0_0_20px_rgba(34,211,238,0.4)] ring-1 ring-cyan-400/50' : ''}`}>
                                         {c.pictureURL ? (
                                             <Image src={c.pictureURL} alt={c.fullName} fill className={`object-cover object-center ${isSelected ? 'scale-110 transition-transform duration-500' : 'grayscale group-hover:grayscale-0 transition-all'}`} unoptimized sizes="64px" />
                                         ) : (
@@ -261,7 +289,7 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
                                     <div className="flex-1 text-right flex flex-col justify-center">
                                         <div className={`text-base truncate max-w-[200px] inline-block font-sans ${isSelected ? 'text-white font-bold tracking-wide drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-zinc-300 font-medium tracking-wider group-hover:text-white transition-colors'}`}>{c.fullName}</div>
                                         <div className="text-[10px] font-sans font-bold text-cyan-500/80 tracking-widest uppercase mt-1 flex items-center justify-end gap-2">
-                                            <span className="text-white text-xs px-1.5 py-0.5 bg-cyan-500/20 rounded">{c.avgObjectiveProgress.toFixed(0)}</span> POWER LEVEL
+                                            <span className="text-white text-xs px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded">{c.avgObjectiveProgress.toFixed(0)}</span> POWER LEVEL
                                         </div>
                                     </div>
                                     {isSelected && <Zap className="w-6 h-6 text-cyan-400 absolute left-4 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse" />}
@@ -279,7 +307,7 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
   // LOADING SCREEN
   // -------------------------------------------------------------
   const LoadingBattleScreen = () => (
-      <motion.div initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, filter: "brightness(3) blur(20px)" }} transition={{ duration: 0.6 }} className="w-full h-[70vh] flex flex-col items-center justify-center relative overflow-hidden bg-black font-mono">
+      <motion.div initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, filter: "brightness(3) blur(20px)" }} transition={{ duration: 0.6 }} className="w-full h-[70vh] flex flex-col items-center justify-center relative overflow-hidden bg-transparent font-mono">
          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,0,128,0.2)_0%,transparent_50%),radial-gradient(ellipse_at_center,rgba(0,255,255,0.2)_0%,transparent_50%)] animate-pulse" />
          <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
              <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 180, 360] }} transition={{ repeat: Infinity, duration: 1.5, ease: "anticipate" }} className="relative w-56 h-56 border-2 border-dashed border-white rounded-full flex items-center justify-center mb-10 shadow-[0_0_50px_rgba(255,255,255,0.3)]">
@@ -388,7 +416,8 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
                                   {obj.actualDetails!.map((kr, idx) => (
                                      <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-[#0e0e11] border border-[#161616]">
                                          <Crosshair className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${kr.krProgress >= 100 ? (isLeft ? 'text-rose-500' : 'text-cyan-400') : 'text-zinc-700'}`} />
-                                         <div className={`text-xs font-sans leading-relaxed ${kr.krProgress >= 100 ? 'text-zinc-300' : 'text-zinc-500'}`}>{kr.krTitle}</div>
+                                         <div className={`text-xs font-sans leading-relaxed flex-1 ${kr.krProgress >= 100 ? 'text-zinc-300' : 'text-zinc-500'}`}>{kr.krTitle}</div>
+                                         <span className={`text-[10px] font-bold ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2 py-1 rounded-sm border border-[#222]`}>{kr.krProgress}%</span>
                                      </div>
                                   ))}
                               </div>
@@ -619,8 +648,8 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
   // RENDER MAIN TAB SHELL
   // -------------------------------------------------------------
   return (
-      <div className="w-full bg-[#0a0a0b] min-h-[85vh] rounded-[40px] relative overflow-hidden scrollbar-hide border border-zinc-900 shadow-2xl">
-          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.12] mix-blend-overlay pointer-events-none fixed" />
+      <div className="w-full bg-transparent min-h-[85vh] relative overflow-hidden scrollbar-hide">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] mix-blend-overlay pointer-events-none fixed" />
           
           <div className="w-full h-full pt-8 pb-10 flex flex-col">
              <AnimatePresence mode="wait">

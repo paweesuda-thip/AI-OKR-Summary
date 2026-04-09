@@ -16,7 +16,7 @@ const statusConfig: Record<string, { color: string; bg: string; dot: string; bar
     'Behind':   { color: 'text-rose-500',    bg: 'bg-rose-500/5',       dot: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]',    barColor: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]',    hoverBorder: 'hover:border-rose-500/50', badgeBg: 'bg-rose-500/10 text-rose-500 border-rose-500/20'    },
 };
 
-const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
+const ObjectiveCard = ({ obj, rank, showStatus = true }: { obj: Objective, rank: number, showStatus?: boolean }) => {
     const [isOpen, setIsOpen] = useState(false);
     const st = statusConfig[obj.status] || statusConfig['On Track'];
 
@@ -41,10 +41,14 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                 <div className="flex items-center gap-3">
                                     <span className="text-sm font-bold text-muted-foreground/50 tracking-widest">#{rank}</span>
                                     <div className="flex items-center gap-2">
-                                        <span className={`w-2.5 h-2.5 rounded-full ${st.dot}`} />
-                                        <Badge variant="outline" className={`px-3 py-1 font-bold tracking-wider uppercase text-[10px] ${st.badgeBg}`}>
-                                            {obj.status}
-                                        </Badge>
+                                        {showStatus && (
+                                            <span className={`w-2.5 h-2.5 rounded-full ${st.dot}`} />
+                                        )}
+                                        {showStatus && (
+                                            <Badge variant="outline" className={`px-3 py-1 font-bold tracking-wider uppercase text-[10px] ${st.badgeBg}`}>
+                                                {obj.status}
+                                            </Badge>
+                                        )}
                                     </div>
                                 </div>
                                 {obj.ownerTeam && (
@@ -138,9 +142,11 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                     <TargetIcon className="w-6 h-6" />
                                 </div>
                                 <div>
-                                    <Badge variant="outline" className={`px-3 py-1 font-bold tracking-wider uppercase text-[10px] mb-1 ${st.badgeBg}`}>
-                                        {obj.status}
-                                    </Badge>
+                                    {showStatus && (
+                                        <Badge variant="outline" className={`px-3 py-1 font-bold tracking-wider uppercase text-[10px] mb-1 ${st.badgeBg}`}>
+                                            {obj.status}
+                                        </Badge>
+                                    )}
                                 </div>
                             </div>
                             <DialogTitle className="text-2xl font-bold text-foreground leading-tight tracking-tight text-left">
@@ -192,8 +198,12 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
                                             <div className="flex items-start justify-between gap-4">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-2 mb-2">
-                                                        <span className={`w-2 h-2 rounded-full ${subSt.dot}`} />
-                                                        <span className={`text-[10px] font-bold uppercase tracking-widest ${subSt.color}`}>{sub.status}</span>
+                                                        {showStatus && (
+                                                            <>
+                                                                <span className={`w-2 h-2 rounded-full ${subSt.dot}`} />
+                                                                <span className={`text-[10px] font-bold uppercase tracking-widest ${subSt.color}`}>{sub.status}</span>
+                                                            </>
+                                                        )}
                                                         {sub.objectiveOwnerType === 2 && (
                                                             <Badge variant="outline" className="text-[10px] ml-2 py-0 h-4">Personal</Badge>
                                                         )}
@@ -286,12 +296,12 @@ const ObjectiveCard = ({ obj, rank }: { obj: Objective, rank: number }) => {
 
 const INITIAL_SHOW = 4;
 
-export default function ObjectivesSection({ objectives = [] }: { objectives?: Objective[] }) {
+export default function ObjectivesSection({ objectives = [], showStatus = true }: { objectives?: Objective[], showStatus?: boolean }) {
     const displayObjectives = objectives || [];
 
     const [filter, setFilter] = useState('All');
     const [showAll, setShowAll] = useState(false);
-    const filters = ['All', 'On Track', 'At Risk', 'Behind'];
+    const filters = showStatus ? ['All', 'On Track', 'At Risk', 'Behind'] : ['All'];
 
     const handleFilter = (f: string) => { setFilter(f); setShowAll(false); };
 
@@ -342,20 +352,22 @@ export default function ObjectivesSection({ objectives = [] }: { objectives?: Ob
                 </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-6 px-4 py-2 bg-muted/20 rounded-2xl border border-border/30 backdrop-blur-md">
-                <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
-                    <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">On Track: <span className="text-emerald-500">{counts['On Track']}</span></span>
+            {showStatus && (
+                <div className="flex flex-wrap items-center gap-6 px-4 py-2 bg-muted/20 rounded-2xl border border-border/30 backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
+                        <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">On Track: <span className="text-emerald-500">{counts['On Track']}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.8)]" />
+                        <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">At Risk: <span className="text-amber-500">{counts['At Risk']}</span></span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]" />
+                        <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Behind: <span className="text-rose-500">{counts['Behind']}</span></span>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.8)]" />
-                    <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">At Risk: <span className="text-amber-500">{counts['At Risk']}</span></span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="w-3 h-3 rounded-full bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]" />
-                    <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Behind: <span className="text-rose-500">{counts['Behind']}</span></span>
-                </div>
-            </div>
+            )}
 
             <div className="w-full">
                 {filtered.length === 0 ? (
@@ -370,7 +382,7 @@ export default function ObjectivesSection({ objectives = [] }: { objectives?: Ob
                     <div className="flex flex-col gap-6">
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-stretch">
                             {visible.map((obj, idx) => (
-                                <ObjectiveCard key={obj.objectiveId} obj={obj} rank={idx + 1} />
+                                <ObjectiveCard key={obj.objectiveId} obj={obj} rank={idx + 1} showStatus={showStatus} />
                             ))}
                         </div>
 
