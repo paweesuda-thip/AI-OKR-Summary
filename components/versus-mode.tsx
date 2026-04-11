@@ -1,13 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { ContributorSum, ContributorSumObj, Objective, KrDetail } from "@/lib/types/okr";
-import { Swords, Check, Crosshair, Hexagon, Fingerprint, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown } from "lucide-react";
+import { Swords, Check, Crosshair, Hexagon, Fingerprint, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-
-interface VersusModeProps {
-  contributors: ContributorSum[];
-  objectives: Objective[];
-}
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectSeparator,
+} from "@/components/ui/select";
+import { getGroupedOrgOptions, getCycleOptions } from "@/lib/utils/org-leaf";
+import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
 
 type Step = "select" | "animating" | "result";
 
@@ -77,38 +83,105 @@ const TypewriterText = ({ text, delay = 0, speed = 20 }: { text: string, delay?:
     return <span>{displayed}</span>;
 }
 
-export default function VersusMode({ contributors, objectives }: VersusModeProps) {
+const buildPlayerPool = (contributors: ContributorSum[], objectives: Objective[]): PlayerEnhanced[] =>
+  contributors
+    .filter((c) => c.fullName && c.objectives && c.objectives.length > 0)
+    .map((c) => {
+      let totalPersonalProgress = 0;
+      let validObjCount = 0;
+
+      const topObjs = [...c.objectives]
+        .map((obj) => {
+          const actualDetails =
+            objectives
+              .find((o) => o.objectiveId === obj.objectiveId)
+              ?.subObjectives.flatMap((so) => so.details)
+              .filter((kr) => kr.fullName === c.fullName) || [];
+
+          const validKrs = actualDetails.filter((kr) => kr.krProgress !== undefined);
+          const personalObjProgress =
+            validKrs.length > 0
+              ? validKrs.reduce((acc, kr) => acc + kr.krProgress, 0) / validKrs.length
+              : obj.progress;
+
+          totalPersonalProgress += personalObjProgress;
+          validObjCount++;
+
+          return { ...obj, progress: personalObjProgress, actualDetails };
+        })
+        .sort((a, b) => b.progress - a.progress);
+
+      const newAvg = validObjCount > 0 ? totalPersonalProgress / validObjCount : c.avgObjectiveProgress;
+
+      return { ...c, avgObjectiveProgress: newAvg, topObjectives: topObjs };
+    });
+
+export default function VersusMode() {
   const [step, setStep] = useState<Step>("select");
   const [p1, setP1] = useState<PlayerEnhanced | null>(null);
   const [p2, setP2] = useState<PlayerEnhanced | null>(null);
   const [result, setResult] = useState<ComparisonResult | null>(null);
   
-  const validContributors: PlayerEnhanced[] = contributors
-    .filter(c => c.fullName && c.objectives && c.objectives.length > 0)
-    .map(c => {
-        let totalPersonalProgress = 0;
-        let validObjCount = 0;
+  // MOCK STATES FOR SELECTORS
+  const cycleOptions = useMemo(() => getCycleOptions(), []);
+  const orgGroupedOptions = useMemo(() => getGroupedOrgOptions({ rootOrganizationId: 18473 }), []);
 
-        const topObjs = [...c.objectives].map(obj => {
-           const actualDetails = objectives.find(o => o.objectiveId === obj.objectiveId)
-               ?.subObjectives.flatMap(so => so.details)
-               .filter(kr => kr.fullName === c.fullName) || [];
-           
-           const validKrs = actualDetails.filter(kr => kr.krProgress !== undefined);
-           const personalObjProgress = validKrs.length > 0 
-               ? validKrs.reduce((acc, kr) => acc + kr.krProgress, 0) / validKrs.length 
-               : obj.progress;
-
-           totalPersonalProgress += personalObjProgress;
-           validObjCount++;
-
-           return { ...obj, progress: personalObjProgress, actualDetails };
-        }).sort((a, b) => b.progress - a.progress);
-
-        const newAvg = validObjCount > 0 ? (totalPersonalProgress / validObjCount) : c.avgObjectiveProgress;
-
-        return { ...c, avgObjectiveProgress: newAvg, topObjectives: topObjs };
+  const sortedCycles = useMemo(() => {
+    return [...cycleOptions].sort((a, b) => {
+      if (a.isCurrentCycle && !b.isCurrentCycle) return -1;
+      if (!a.isCurrentCycle && b.isCurrentCycle) return 1;
+      if (a.year !== b.year) return b.year - a.year;
+      return new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime();
     });
+  }, [cycleOptions]);
+
+  const defaultCycleId = sortedCycles[0]?.setId || 0;
+  const hasSpartanDefault = orgGroupedOptions.some((group) =>
+    group.options.some((opt) => opt.organizationId === 18477)
+  );
+  const defaultOrgId = hasSpartanDefault
+    ? 18477
+    : (orgGroupedOptions[0]?.options[0]?.organizationId || 0);
+
+  const [p1CycleId, setP1CycleId] = useState<number>(defaultCycleId);
+  const [p1OrgId, setP1OrgId] = useState<number>(defaultOrgId);
+
+  const [p2CycleId, setP2CycleId] = useState<number>(defaultCycleId);
+  const [p2OrgId, setP2OrgId] = useState<number>(defaultOrgId);
+
+  const p1SelectedCycleLabel = sortedCycles.find(c => c.setId === p1CycleId)?.label || "Select Cycle";
+  const p1SelectedOrgLabel = orgGroupedOptions.flatMap(g => g.options).find(o => o.organizationId === p1OrgId)?.label || "Select Team";
+
+  const p2SelectedCycleLabel = sortedCycles.find(c => c.setId === p2CycleId)?.label || "Select Cycle";
+  const p2SelectedOrgLabel = orgGroupedOptions.flatMap(g => g.options).find(o => o.organizationId === p2OrgId)?.label || "Select Team";
+
+  const p1Params = useMemo(() => ({ assessmentSetId: p1CycleId, organizationId: p1OrgId }), [p1CycleId, p1OrgId]);
+  const p2Params = useMemo(() => ({ assessmentSetId: p2CycleId, organizationId: p2OrgId }), [p2CycleId, p2OrgId]);
+
+  const { data: p1DashboardData, isLoading: p1Loading } = useDashboardQuery(p1Params);
+  const { data: p2DashboardData, isLoading: p2Loading } = useDashboardQuery(p2Params);
+
+  const p1Candidates = useMemo(
+    () => buildPlayerPool(p1DashboardData?.contributors ?? [], p1DashboardData?.objectives ?? []),
+    [p1DashboardData]
+  );
+
+  const p2Candidates = useMemo(
+    () => buildPlayerPool(p2DashboardData?.contributors ?? [], p2DashboardData?.objectives ?? []),
+    [p2DashboardData]
+  );
+
+  useEffect(() => {
+    if (p1 && !p1Candidates.some((c) => c.fullName === p1.fullName)) {
+      setP1(null);
+    }
+  }, [p1, p1Candidates]);
+
+  useEffect(() => {
+    if (p2 && !p2Candidates.some((c) => c.fullName === p2.fullName)) {
+      setP2(null);
+    }
+  }, [p2, p2Candidates]);
 
   const resetState = () => {
     setStep("select");
@@ -176,16 +249,72 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
         <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-8 items-stretch justify-center relative z-10">
             {/* P1 Roster */}
             <div className="flex-1 flex flex-col bg-transparent relative">
-                <div className="flex items-center justify-between mb-4 px-2">
-                    <span className="text-sm tracking-widest text-rose-500 font-bold uppercase flex items-center gap-2 drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]">
-                        <Crosshair className="w-4 h-4" /> ALPHA_SQUAD
-                    </span>
-                    <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{validContributors.length} AVAILABLE</span>
+                <div className="flex flex-col gap-3 mb-4 px-2">
+                    <div className="flex items-center justify-between">
+                        <span className="text-sm tracking-widest text-rose-500 font-bold uppercase flex items-center gap-2 drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]">
+                            <Crosshair className="w-4 h-4" /> ALPHA_SQUAD
+                        </span>
+                        <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{p1Candidates.length} AVAILABLE</span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {/* P1 Cycle Selector */}
+                        <div className="relative min-w-0">
+                            <Select value={p1CycleId.toString()} onValueChange={(val) => setP1CycleId(Number(val))}>
+                                <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                                    <div className="flex items-center gap-2 truncate">
+                                        <CalendarDays className="w-3 h-3 shrink-0 text-rose-500/70" />
+                                        <span className="truncate">{p1SelectedCycleLabel}</span>
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl min-w-[var(--radix-select-trigger-width)]">
+                                    {sortedCycles.map((cycle) => (
+                                        <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-rose-500/20 focus:text-rose-400 cursor-pointer rounded-lg text-xs">
+                                            <div className="flex flex-col items-start gap-0.5 mt-[2px] mb-[2px]">
+                                                <span className="font-medium text-[11px]">{cycle.label}</span>
+                                                {cycle.isCurrentCycle && (
+                                                    <span className="text-[8px] text-rose-400 font-bold uppercase tracking-wider">Current</span>
+                                                )}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* P1 Organization Selector */}
+                        <div className="relative min-w-0">
+                            <Select value={p1OrgId.toString()} onValueChange={(val) => setP1OrgId(Number(val))}>
+                                <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                                    <div className="flex items-center gap-2 truncate whitespace-nowrap">
+                                        <Users className="w-3 h-3 shrink-0 text-rose-500/70" />
+                                        <span className="truncate">{p1SelectedOrgLabel}</span>
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px] min-w-[var(--radix-select-trigger-width)]">
+                                    {orgGroupedOptions.map((group, idx) => (
+                                        <SelectGroup key={group.groupLabel}>
+                                            <SelectLabel className="text-[9px] uppercase tracking-wider text-zinc-500 px-2 py-1">{group.groupLabel}</SelectLabel>
+                                            {group.options.map((opt) => (
+                                                <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-rose-500/20 focus:text-rose-400 cursor-pointer rounded-lg px-2 my-[1px]">
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                            {idx < orgGroupedOptions.length - 1 && <SelectSeparator className="bg-white/5 my-1" />}
+                                        </SelectGroup>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </div>
                 
                 <div className="flex-1 max-h-[500px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
                     <div className="flex flex-col gap-3">
-                        {validContributors.map((c, i) => {
+                        {p1Loading && (
+                          <div className="text-xs text-zinc-500 px-2 py-6 text-center">Loading roster...</div>
+                        )}
+                        {!p1Loading && p1Candidates.map((c, i) => {
                             const isSelected = p1?.fullName === c.fullName;
                             const isPickedByOther = p2?.fullName === c.fullName;
                             return (
@@ -257,16 +386,72 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
 
             {/* P2 Roster */}
              <div className="flex-1 flex flex-col bg-transparent relative">
-                <div className="flex items-center justify-between mb-4 px-2">
-                    <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{validContributors.length} AVAILABLE</span>
-                    <span className="text-sm tracking-widest text-cyan-400 font-bold uppercase flex items-center gap-2 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
-                        OMEGA_SQUAD <Crosshair className="w-4 h-4" />
-                    </span>
+                <div className="flex flex-col gap-3 mb-4 px-2">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{p2Candidates.length} AVAILABLE</span>
+                        <span className="text-sm tracking-widest text-cyan-400 font-bold uppercase flex items-center gap-2 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
+                            OMEGA_SQUAD <Crosshair className="w-4 h-4" />
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 w-full">
+                        {/* P2 Cycle Selector */}
+                        <div className="relative min-w-0">
+                            <Select value={p2CycleId.toString()} onValueChange={(val) => setP2CycleId(Number(val))}>
+                                <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                                    <div className="flex items-center gap-2 truncate">
+                                        <CalendarDays className="w-3 h-3 shrink-0 text-cyan-400/70" />
+                                        <span className="truncate">{p2SelectedCycleLabel}</span>
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl min-w-[var(--radix-select-trigger-width)]">
+                                    {sortedCycles.map((cycle) => (
+                                        <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-cyan-400/20 focus:text-cyan-400 cursor-pointer rounded-lg text-xs">
+                                            <div className="flex flex-col items-start gap-0.5 mt-[2px] mb-[2px]">
+                                                <span className="font-medium text-[11px]">{cycle.label}</span>
+                                                {cycle.isCurrentCycle && (
+                                                    <span className="text-[8px] text-cyan-400 font-bold uppercase tracking-wider">Current</span>
+                                                )}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* P2 Organization Selector */}
+                        <div className="relative min-w-0">
+                            <Select value={p2OrgId.toString()} onValueChange={(val) => setP2OrgId(Number(val))}>
+                                <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                                    <div className="flex items-center gap-2 truncate whitespace-nowrap">
+                                        <Users className="w-3 h-3 shrink-0 text-cyan-400/70" />
+                                        <span className="truncate">{p2SelectedOrgLabel}</span>
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px] min-w-[var(--radix-select-trigger-width)]">
+                                    {orgGroupedOptions.map((group, idx) => (
+                                        <SelectGroup key={group.groupLabel}>
+                                            <SelectLabel className="text-[9px] uppercase tracking-wider text-zinc-500 px-2 py-1">{group.groupLabel}</SelectLabel>
+                                            {group.options.map((opt) => (
+                                                <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-cyan-400/20 focus:text-cyan-400 cursor-pointer rounded-lg px-2 my-[1px]">
+                                                    {opt.label}
+                                                </SelectItem>
+                                            ))}
+                                            {idx < orgGroupedOptions.length - 1 && <SelectSeparator className="bg-white/5 my-1" />}
+                                        </SelectGroup>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
                 </div>
                 
                 <div className="flex-1 max-h-[500px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
                     <div className="flex flex-col gap-3">
-                        {validContributors.map((c, i) => {
+                        {p2Loading && (
+                          <div className="text-xs text-zinc-500 px-2 py-6 text-center">Loading roster...</div>
+                        )}
+                        {!p2Loading && p2Candidates.map((c, i) => {
                             const isSelected = p2?.fullName === c.fullName;
                             const isPickedByOther = p1?.fullName === c.fullName;
                             return (

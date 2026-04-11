@@ -42,7 +42,7 @@ export default function Dashboard() {
   const cycleOptions = getCycleOptions();
   const currentCycle = cycleOptions.find(c => c.isCurrentCycle) || cycleOptions[0];
 
-  const groupedOrgOptions = getGroupedOrgOptions();
+  const groupedOrgOptions = getGroupedOrgOptions({ rootOrganizationId: 18473 });
   let defaultOrgId = 18477;
   const hasDefaultOrg = groupedOrgOptions.some(g => g.options.some(o => o.organizationId === 18477));
   if (!hasDefaultOrg && groupedOrgOptions.length > 0 && groupedOrgOptions[0].options.length > 0) {
@@ -200,7 +200,7 @@ export default function Dashboard() {
 
             {activeTab === 'versus' ? (
                 <div className="w-full max-w-7xl mx-auto py-4">
-                   <VersusMode contributors={contributors} objectives={objectives} />
+                   <VersusMode />
                 </div>
             ) : (
               <>

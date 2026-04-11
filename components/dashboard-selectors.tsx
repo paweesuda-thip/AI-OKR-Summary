@@ -30,7 +30,7 @@ export default function DashboardSelectors({
   disabled = false,
 }: DashboardSelectorsProps) {
   const cycleOptions = useMemo(() => getCycleOptions(), []);
-  const orgGroupedOptions = useMemo(() => getGroupedOrgOptions(), []);
+  const orgGroupedOptions = useMemo(() => getGroupedOrgOptions({ rootOrganizationId: 18473 }), []);
 
   const sortedCycles = useMemo(() => {
     return [...cycleOptions].sort((a, b) => {
