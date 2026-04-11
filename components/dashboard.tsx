@@ -166,14 +166,14 @@ export default function Dashboard() {
               className={`relative px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none ${activeTab === 'overview' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
               {activeTab === 'overview' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-zinc-800/80 rounded-full shadow-[inset_0_1px_rgba(255,255,255,0.1)]" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
-              <span className="relative z-10 transition-colors">Command Center</span>
+              <span className="relative z-10 transition-colors">Overall</span>
             </button>
             <button 
               onClick={() => setActiveTab('versus')} 
               className={`relative px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none flex items-center gap-2 ${activeTab === 'versus' ? 'text-cyan-400' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
               {activeTab === 'versus' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-[#0a1a20] rounded-full shadow-[inset_0_1px_rgba(34,211,238,0.2)] border border-cyan-500/20" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
-              <span className="relative z-10 flex items-center gap-2 transition-colors"><Swords className="w-3.5 h-3.5 text-cyan-500/70"/> Combat Showdown</span>
+              <span className="relative z-10 flex items-center gap-2 transition-colors"><Swords className="w-3.5 h-3.5 text-cyan-500/70"/> Statio Battles</span>
             </button>
           </div>
         </div>
@@ -325,7 +325,7 @@ export default function Dashboard() {
 
             {/* ── Check-In Engagement (Top/Bottom Check-ins) ── */}
             <section className="relative max-w-7xl mx-auto w-full">
-              <CheckInEngagement participantDetails={participantDetails} />
+              <CheckInEngagement participantDetails={participantDetails} showStatus={showStatus} />
             </section>
 
             {/* ── Focus Areas (Unboxed) ── */}

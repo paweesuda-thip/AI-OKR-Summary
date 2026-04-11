@@ -9,7 +9,6 @@ export interface AIScoreResult {
   score: number;
   review: string;
 }
-
 interface AIScoreSectionProps {
   teamSummary: TeamSummary | null;
   dashboardData: {

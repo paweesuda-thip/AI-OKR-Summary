@@ -168,7 +168,7 @@ export default function VersusMode({ contributors, objectives }: VersusModeProps
                 <Fingerprint className="w-12 h-12 text-cyan-400 mb-6 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]" />
             </motion.div>
             <h2 className="text-4xl md:text-5xl font-bold tracking-widest uppercase text-white drop-shadow-[0_4px_20px_rgba(255,255,255,0.4)]">
-                ENGAGE TARGETS
+                STATIO BATTLES
             </h2>
             <div className="w-[2px] h-16 bg-gradient-to-b from-cyan-400 via-fuchsia-500 to-transparent mt-6 mb-2" />
         </div>
