@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { ContributorSum, ContributorSumObj, Objective, KrDetail } from "@/lib/types/okr";
-import { Swords, Check, Crosshair, Hexagon, Fingerprint, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays } from "lucide-react";
+import { Crosshair, Hexagon, Fingerprint, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
@@ -15,7 +15,7 @@ import {
 import { getGroupedOrgOptions, getCycleOptions } from "@/lib/utils/org-leaf";
 import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
 
-type Step = "select" | "animating" | "result";
+type Step = "select" | "preview" | "result";
 
 interface RoundAction {
   roundNumber: number;
@@ -116,11 +116,24 @@ const buildPlayerPool = (contributors: ContributorSum[], objectives: Objective[]
       return { ...c, avgObjectiveProgress: newAvg, topObjectives: topObjs };
     });
 
+/** Client-side load heuristic from KR count + point gap (maps OKR weight vs progress). */
+function objectiveLoadHint(obj: TopObjectiveEnhanced): { chip: string; sub: string } {
+  const krs = obj.actualDetails ?? [];
+  const n = krs.length;
+  const gapSum = krs.reduce((acc, kr) => acc + Math.max(0, (kr.pointOKR || 0) - (kr.pointCurrent || 0)), 0);
+  const avgGap = n > 0 ? gapSum / n : 0;
+  const score = n * 8 + avgGap;
+  if (score >= 72) return { chip: "LOAD · HIGH", sub: `${n} KR · ~${Math.round(avgGap)}pt gap avg` };
+  if (score >= 32) return { chip: "LOAD · MED", sub: `${n} KR` };
+  return { chip: "LOAD · LOW", sub: n ? `${n} KR` : "no KR rows" };
+}
+
 export default function VersusMode() {
   const [step, setStep] = useState<Step>("select");
   const [p1, setP1] = useState<PlayerEnhanced | null>(null);
   const [p2, setP2] = useState<PlayerEnhanced | null>(null);
   const [result, setResult] = useState<ComparisonResult | null>(null);
+  const [isComparing, setIsComparing] = useState(false);
   
   // MOCK STATES FOR SELECTORS
   const cycleOptions = useMemo(() => getCycleOptions(), []);
@@ -188,11 +201,12 @@ export default function VersusMode() {
     setP1(null);
     setP2(null);
     setResult(null);
+    setIsComparing(false);
   };
 
-  const startBattle = async () => {
+  const runAiComparison = async () => {
     if (!p1 || !p2) return;
-    setStep("animating");
+    setIsComparing(true);
 
     try {
       const response = await fetch('/api/compare', {
@@ -205,8 +219,7 @@ export default function VersusMode() {
 
       const data = await response.json();
       setResult(data);
-      setTimeout(() => setStep("result"), 2500); 
-
+      setStep("result");
     } catch (error) {
       console.error(error);
       setResult({
@@ -220,7 +233,9 @@ export default function VersusMode() {
         playerB_strengths_weaknesses: "DATA_CORRUPTED",
         conclusion: "Simultaneous system failure detected."
       });
-      setTimeout(() => setStep("result"), 1500);
+      setStep("result");
+    } finally {
+      setIsComparing(false);
     }
   };
 
@@ -241,8 +256,9 @@ export default function VersusMode() {
                 <Fingerprint className="w-12 h-12 text-cyan-400 mb-6 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]" />
             </motion.div>
             <h2 className="text-4xl md:text-5xl font-bold tracking-widest uppercase text-white drop-shadow-[0_4px_20px_rgba(255,255,255,0.4)]">
-                STATIO BATTLES
+                OKR EVAL LAB
             </h2>
+            <p className="text-[10px] text-zinc-500 tracking-[0.35em] uppercase mt-2">pick roster · preview objectives · run AI diff</p>
             <div className="w-[2px] h-16 bg-gradient-to-b from-cyan-400 via-fuchsia-500 to-transparent mt-6 mb-2" />
         </div>
 
@@ -358,21 +374,18 @@ export default function VersusMode() {
                             whileHover={{ scale: 1.05 }} 
                             whileTap={{ scale: 0.95 }}
                             transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                            onClick={startBattle}
-                            className="group relative flex items-center justify-center w-40 h-12 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
+                            onClick={() => setStep("preview")}
+                            className="group relative flex items-center justify-center w-44 h-12 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
                             style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
                         >
-                            {/* Inner Dark Background */}
                             <div 
                                 className="w-full h-full bg-[#050505] flex items-center justify-center transition-colors duration-300 group-hover:bg-gradient-to-r group-hover:from-rose-500/20 group-hover:to-cyan-500/20 relative z-10"
                                 style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
                             >
-                                <span className="text-xs font-black uppercase tracking-[0.3em] font-sans text-white flex items-center gap-2 drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
-                                    <Swords className="w-4 h-4" /> BATTLE
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] font-sans text-white flex items-center gap-2 drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
+                                    <Terminal className="w-4 h-4 shrink-0" /> PREVIEW
                                 </span>
                             </div>
-
-                            {/* Background Ambient Glow */}
                             <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 opacity-30 group-hover:opacity-100 blur-lg transition-opacity duration-300 pointer-events-none" />
                         </motion.button>
                     ) : (
@@ -489,30 +502,194 @@ export default function VersusMode() {
   );
 
   // -------------------------------------------------------------
-  // LOADING SCREEN
+  // PREVIEW: objectives + KR (grounded) before running AI
   // -------------------------------------------------------------
-  const LoadingBattleScreen = () => (
-      <motion.div initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, filter: "brightness(3) blur(20px)" }} transition={{ duration: 0.6 }} className="w-full h-[70vh] flex flex-col items-center justify-center relative overflow-hidden bg-transparent font-mono">
-         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(255,0,128,0.2)_0%,transparent_50%),radial-gradient(ellipse_at_center,rgba(0,255,255,0.2)_0%,transparent_50%)] animate-pulse" />
-         <div className="relative z-10 flex flex-col items-center w-full max-w-4xl">
-             <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 180, 360] }} transition={{ repeat: Infinity, duration: 1.5, ease: "anticipate" }} className="relative w-56 h-56 border-2 border-dashed border-white rounded-full flex items-center justify-center mb-10 shadow-[0_0_50px_rgba(255,255,255,0.3)]">
-                 <div className="absolute inset-4 border-[4px] border-t-rose-500 border-b-cyan-500 border-l-transparent border-r-transparent rounded-full animate-spin" style={{ animationDuration: '0.8s' }} />
-                 <Swords className="w-16 h-16 text-white drop-shadow-[0_0_15px_rgba(255,255,255,1)]" />
-             </motion.div>
-             <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center space-y-4">
-                 <div className="text-2xl font-bold font-sans tracking-widest text-white drop-shadow-md flex items-center gap-6">
-                     <span className="text-rose-500">{p1?.fullName}</span>
-                     <span className="text-white font-mono text-sm">V.S.</span>
-                     <span className="text-cyan-400">{p2?.fullName}</span>
-                 </div>
-                 <div className="text-xs text-white/50 tracking-[1em] uppercase animate-pulse">Running Combat Simulation</div>
-             </motion.div>
-         </div>
+  const PreviewArena = () => {
+    if (!p1 || !p2) return null;
+
+    const PreviewObjectiveCard = ({
+      obj,
+      isLeft,
+      index,
+    }: {
+      obj?: TopObjectiveEnhanced;
+      isLeft: boolean;
+      index: number;
+    }) => {
+      if (!obj) {
+        return (
+          <div
+            className={`w-full min-h-[88px] border border-dashed border-zinc-800 rounded-xl flex items-center justify-center bg-[#050505]/80 ${isLeft ? "" : "text-right"}`}
+          >
+            <span className="text-[9px] text-zinc-600 font-mono tracking-widest">OKR::{index + 1} · empty slot</span>
+          </div>
+        );
+      }
+      const load = objectiveLoadHint(obj);
+      const krs = obj.actualDetails ?? [];
+
+      return (
+        <div
+          className={`w-full rounded-xl border border-[#1f1f1f] bg-[#0a0a0c] overflow-hidden ${isLeft ? "shadow-[inset_0_1px_0_rgba(244,63,94,0.08)]" : "shadow-[inset_0_1px_0_rgba(34,211,238,0.08)]"}`}
+        >
+          <div className="flex items-start gap-3 p-4">
+            <div className="relative shrink-0 w-11 h-11 flex items-center justify-center bg-[#070707] rounded-full ring-1 ring-[#1b1b1b]">
+              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+                <circle cx="18" cy="18" r="14" fill="none" className="stroke-[#111]" strokeWidth="2.5" />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="14"
+                  fill="none"
+                  className={isLeft ? "stroke-rose-500" : "stroke-cyan-400"}
+                  strokeWidth="2.5"
+                  strokeDasharray="88"
+                  strokeDashoffset={88 - (88 * Math.min(100, Math.max(0, obj.progress))) / 100}
+                  strokeLinecap="round"
+                />
+              </svg>
+              <span className={`absolute text-[9px] font-bold font-mono ${isLeft ? "text-rose-400" : "text-cyan-400"}`}>
+                {obj.progress.toFixed(0)}
+              </span>
+            </div>
+            <div className={`flex-1 min-w-0 ${isLeft ? "text-left" : "text-right"}`}>
+              <div className={`flex flex-wrap items-center gap-2 mb-1 ${isLeft ? "" : "justify-end"}`}>
+                <span className="text-[8px] font-mono text-zinc-500 tracking-wider">obj#{obj.objectiveId}</span>
+                <span
+                  className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${isLeft ? "border-rose-500/30 text-rose-400/90" : "border-cyan-400/30 text-cyan-400/90"}`}
+                >
+                  {load.chip}
+                </span>
+              </div>
+              <h4 className={`text-[13px] font-medium font-sans leading-snug text-zinc-200 line-clamp-3 ${isLeft ? "" : "text-right"}`}>{obj.objectiveName}</h4>
+              <p className={`text-[9px] font-mono text-zinc-500 mt-1 ${isLeft ? "" : "text-right"}`}>{load.sub}</p>
+            </div>
+          </div>
+          {krs.length > 0 && (
+            <div className="border-t border-[#161616] bg-[#070709] px-3 py-2 space-y-2">
+              {krs.map((kr, ki) => (
+                <div
+                  key={ki}
+                  className={`flex flex-wrap items-start gap-2 text-[11px] font-sans rounded-lg bg-[#0e0e11] border border-[#161616] p-2.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}
+                >
+                  <Crosshair className={`w-3 h-3 shrink-0 mt-0.5 ${isLeft ? "text-rose-500/80" : "text-cyan-400/80"}`} />
+                  <div className={`flex-1 min-w-0 leading-relaxed ${isLeft ? "text-left" : "text-right"} text-zinc-400`}>{kr.krTitle}</div>
+                  <div className={`flex flex-col items-end shrink-0 gap-0.5 font-mono text-[9px] ${isLeft ? "" : "items-start"}`}>
+                    <span className={isLeft ? "text-rose-400" : "text-cyan-400"}>{Math.round(kr.krProgress)}%</span>
+                    <span className="text-zinc-600">
+                      {kr.pointCurrent ?? 0}/{kr.pointOKR ?? 0} pt
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    const maxObj = Math.max(p1.topObjectives.length, p2.topObjectives.length, 1);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -8 }}
+        transition={{ duration: 0.35 }}
+        className="w-full flex flex-col font-mono min-h-[70vh] px-4 sm:px-6"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 max-w-7xl mx-auto w-full">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setStep("select")}
+              className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors"
+            >
+              <ArrowLeft className="w-4 h-4" /> roster
+            </button>
+            <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
+            <div>
+              <h2 className="text-lg sm:text-xl font-sans font-bold text-white tracking-tight">Objective manifest</h2>
+              <p className="text-[9px] text-zinc-500 tracking-[0.2em] uppercase mt-0.5">verify OKR payload · then run eval</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            disabled={isComparing}
+            onClick={runAiComparison}
+            className="group relative inline-flex items-center justify-center gap-2 self-start sm:self-auto px-6 py-3 rounded-xl bg-[#0c0c0f] border border-zinc-700 hover:border-emerald-500/50 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors"
+          >
+            {isComparing ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <Cpu className="w-4 h-4 text-emerald-400/90" />}
+            {isComparing ? "tuning model…" : "run AI eval"}
+          </button>
+        </div>
+
+        {isComparing && (
+          <div className="max-w-7xl mx-auto w-full mb-4 text-[9px] font-mono text-emerald-500/90 tracking-widest uppercase flex items-center gap-2">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            POST /api/compare · streaming verdict…
+          </div>
+        )}
+
+        <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 pb-28">
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-4 pb-4 border-b border-zinc-800/80">
+              <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-black border border-rose-500/30 shrink-0">
+                {p1.pictureURL ? <Image src={p1.pictureURL} alt="" fill className="object-cover" unoptimized sizes="56px" /> : (
+                  <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p1.fullName[0]}</div>
+                )}
+              </div>
+              <div>
+                <div className="text-[9px] text-rose-500/80 tracking-[0.3em] uppercase">alpha</div>
+                <div className="text-white font-sans font-bold text-lg truncate max-w-[240px]">{p1.fullName}</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {p1.avgObjectiveProgress.toFixed(0)} · in {p1.checkInCount} check-ins</div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: maxObj }).map((_, i) => (
+                <PreviewObjectiveCard key={`pv1-${i}`} obj={p1.topObjectives[i]} isLeft={true} index={i} />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-4 pb-4 border-b border-zinc-800/80 flex-row-reverse text-right">
+              <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-black border border-cyan-400/30 shrink-0">
+                {p2.pictureURL ? <Image src={p2.pictureURL} alt="" fill className="object-cover" unoptimized sizes="56px" /> : (
+                  <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p2.fullName[0]}</div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[9px] text-cyan-400/80 tracking-[0.3em] uppercase">omega</div>
+                <div className="text-white font-sans font-bold text-lg truncate max-w-[240px] ml-auto">{p2.fullName}</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {p2.avgObjectiveProgress.toFixed(0)} · in {p2.checkInCount} check-ins</div>
+              </div>
+            </div>
+            <div className="space-y-3">
+              {Array.from({ length: maxObj }).map((_, i) => (
+                <PreviewObjectiveCard key={`pv2-${i}`} obj={p2.topObjectives[i]} isLeft={false} index={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/95 to-transparent z-40 border-t border-zinc-900/80">
+          <button
+            type="button"
+            disabled={isComparing}
+            onClick={runAiComparison}
+            className="w-full py-3 rounded-xl bg-[#0c0c0f] border border-zinc-700 text-[10px] font-bold uppercase tracking-[0.25em] text-white flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4" />}
+            {isComparing ? "tuning…" : "run AI eval"}
+          </button>
+        </div>
       </motion.div>
-  );
+    );
+  };
 
   // -------------------------------------------------------------
-  // 3D SHOWDOWN ARENA
+  // EVAL PLAYBACK (post-AI)
   // -------------------------------------------------------------
   const HologramObjective = ({ obj, isActive, isLeft, badge }: { obj?: TopObjectiveEnhanced, isActive: boolean, isLeft: boolean, badge?: string }) => {
       const [expanded, setExpanded] = useState(false);
@@ -525,9 +702,11 @@ export default function VersusMode() {
 
       if (!obj) return (
           <div className={`w-full h-24 border border-zinc-800 border-dashed rounded-xl flex items-center justify-center transition-all duration-500 ${isActive ? 'scale-105 opacity-80' : 'scale-95 opacity-20'}`}>
-             <span className="text-[10px] text-zinc-700 uppercase tracking-widest font-bold">Unarmed Guard</span>
+             <span className="text-[9px] text-zinc-600 font-mono tracking-widest">— no objective bound —</span>
           </div>
       );
+
+      const loadHint = objectiveLoadHint(obj);
 
       return (
           <motion.div 
@@ -565,15 +744,23 @@ export default function VersusMode() {
                   
                   <div className="flex-1 min-w-0 pr-6">
                       {badge && isActive && (
-                          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="inline-flex items-center gap-1.5 mb-2">
-                             <div className={`w-1.5 h-1.5 rounded-sm flex items-center justify-center ${isLeft ? 'bg-rose-500 shadow-[0_0_6px_rgba(244,63,94,0.8)]' : 'bg-cyan-400 shadow-[0_0_6px_rgba(34,211,238,0.8)]'}`}>
-                                <div className="w-0.5 h-0.5 bg-black rounded-full animate-ping" />
-                             </div>
-                             <span className={`text-[9px] font-bold uppercase tracking-widest font-sans ${isLeft ? 'text-rose-400' : 'text-cyan-400'}`}>{badge}</span>
+                          <motion.div
+                            initial={{ opacity: 0, x: isLeft ? -12 : 12, rotate: isLeft ? -4 : 4 }}
+                            animate={{ opacity: 1, x: 0, rotate: 0 }}
+                            transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                            className={`inline-flex items-center gap-1.5 mb-2 px-2 py-0.5 rounded-md border border-dashed ${isLeft ? 'border-rose-500/40 bg-rose-500/5' : 'border-cyan-400/40 bg-cyan-400/5'}`}
+                          >
+                             <Terminal className={`w-2.5 h-2.5 shrink-0 ${isLeft ? 'text-rose-400' : 'text-cyan-400'}`} />
+                             <span className={`text-[9px] font-bold font-mono tracking-tight ${isLeft ? 'text-rose-300' : 'text-cyan-300'}`}>{badge}</span>
                           </motion.div>
                       )}
                       {/* Enforce font-sans for Thai Readability */}
                       <h4 className={`text-[13px] font-medium font-sans leading-relaxed ${isActive ? 'text-zinc-200 group-hover:text-white transition-colors' : 'text-zinc-600'} line-clamp-3`}>{obj.objectiveName}</h4>
+                      {isActive && (
+                        <p className="text-[8px] font-mono text-zinc-600 mt-1.5 tracking-wide">
+                          {loadHint.chip} · {loadHint.sub}
+                        </p>
+                      )}
                   </div>
                   
                   {/* Accordion Arrow Indicator */}
@@ -601,8 +788,13 @@ export default function VersusMode() {
                                   {obj.actualDetails!.map((kr, idx) => (
                                      <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-[#0e0e11] border border-[#161616]">
                                          <Crosshair className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${kr.krProgress >= 100 ? (isLeft ? 'text-rose-500' : 'text-cyan-400') : 'text-zinc-700'}`} />
-                                         <div className={`text-xs font-sans leading-relaxed flex-1 ${kr.krProgress >= 100 ? 'text-zinc-300' : 'text-zinc-500'}`}>{kr.krTitle}</div>
-                                         <span className={`text-[10px] font-bold ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2 py-1 rounded-sm border border-[#222]`}>{kr.krProgress}%</span>
+                                         <div className="flex-1 min-w-0">
+                                           <div className={`text-xs font-sans leading-relaxed ${kr.krProgress >= 100 ? 'text-zinc-300' : 'text-zinc-500'}`}>{kr.krTitle}</div>
+                                           <div className="text-[9px] font-mono text-zinc-600 mt-1 tabular-nums">
+                                             pts {kr.pointCurrent ?? 0}/{kr.pointOKR ?? 0}
+                                           </div>
+                                         </div>
+                                         <span className={`text-[10px] font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2 py-1 rounded-sm border border-[#222]`}>{Math.round(kr.krProgress)}%</span>
                                      </div>
                                   ))}
                               </div>
@@ -650,7 +842,7 @@ export default function VersusMode() {
       const isRound = phase > 0 && phase <= totalRounds;
       const isFinalResult = phase > totalRounds;
 
-      const currentRoundData = isRound ? (result.rounds?.[phase - 1] || { commentary: `ยกที่ ${phase}: AI อยู่ระหว่างประมวลผลข้อมูล...` }) : null;
+      const currentRoundData = isRound ? (result.rounds?.[phase - 1] || { commentary: `objective ${phase}/${totalRounds}: รอข้อมูลจากโมเดล…` }) : null;
       const P1Winner = result.winner === p1.fullName;
       const P2Winner = result.winner === p2.fullName;
 
@@ -663,9 +855,9 @@ export default function VersusMode() {
               {/* Top Banner Context */}
               <motion.div layout className="w-full relative z-30 pt-6 px-4 shrink-0 flex flex-col items-center">
                    <div className="bg-[#050505] border border-zinc-800/80 px-6 py-2 rounded-full mb-4 shadow-xl">
-                       {isIntro && <span className="text-xs uppercase tracking-[0.3em] font-bold text-white"><span className="animate-pulse mr-2 text-rose-500">🔴</span> COMBAT SEQUENCE INITIATED</span>}
-                       {isRound && <span className="text-xs uppercase tracking-[0.3em] font-bold text-yellow-500"><span className="animate-ping mr-2 text-yellow-500">⚡</span> ROUND {phase} OF {totalRounds}</span>}
-                       {isFinalResult && <span className="text-xs uppercase tracking-[0.3em] font-bold text-white"><span className="mr-2 text-cyan-400"><Activity className="w-4 h-4 inline" /></span> SEQUENCE CONCLUDED</span>}
+                       {isIntro && <span className="text-xs uppercase tracking-[0.3em] font-bold text-white"><span className="animate-pulse mr-2 text-emerald-500"><Terminal className="w-3.5 h-3.5 inline" /></span> EVAL PASS · STARTED</span>}
+                       {isRound && <span className="text-xs uppercase tracking-[0.3em] font-bold text-amber-500/90"><span className="animate-ping mr-2 text-amber-400"><Cpu className="w-3.5 h-3.5 inline" /></span> OBJECTIVE {phase} / {totalRounds}</span>}
+                       {isFinalResult && <span className="text-xs uppercase tracking-[0.3em] font-bold text-white"><span className="mr-2 text-cyan-400"><Activity className="w-4 h-4 inline" /></span> EVAL COMPLETE</span>}
                    </div>
                    
                    <AnimatePresence mode="wait">
@@ -696,7 +888,7 @@ export default function VersusMode() {
                           </div>
                           <div className="flex flex-col flex-1 min-w-0">
                               <h3 className="text-xl md:text-3xl font-bold font-sans text-white tracking-tight truncate">{p1.fullName}</h3>
-                              {P1Winner && isFinalResult && <div className="text-rose-500 font-bold uppercase tracking-widest text-[10px] mt-2 animate-pulse flex items-center gap-2"><Trophy className="w-3.5 h-3.5" /> Grand Victor</div>}
+                              {P1Winner && isFinalResult && <div className="text-rose-500 font-bold uppercase tracking-widest text-[10px] mt-2 animate-pulse flex items-center gap-2"><Trophy className="w-3.5 h-3.5" /> Eval lead</div>}
                               
                               <AnimatePresence>
                                   {isFinalResult && (
@@ -717,7 +909,7 @@ export default function VersusMode() {
                         {isFinalResult && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-6 overflow-hidden">
                                 <div className="p-5 bg-gradient-to-tr from-[#0a0505] to-[#120505] border border-rose-900/30 rounded-xl text-sm font-sans text-zinc-300 leading-relaxed">
-                                    <div className="text-[10px] tracking-widest text-rose-500 font-bold mb-3 uppercase flex items-center gap-2"><Crosshair className="w-3 h-3" /> Alpha Analysis</div>
+                                    <div className="text-[10px] tracking-widest text-rose-500 font-bold mb-3 uppercase flex items-center gap-2 font-mono"><Terminal className="w-3 h-3" /> eval_notes::alpha</div>
                                     <TypewriterText text={result.playerA_strengths_weaknesses} speed={10} delay={500} />
                                 </div>
                             </motion.div>
@@ -744,7 +936,7 @@ export default function VersusMode() {
                                   onClick={() => setPhase(p => p + 1)}
                                   className="relative z-30 w-16 h-16 bg-[#0a0a0c] border border-zinc-700 hover:border-white rounded-full flex items-center justify-center shadow-2xl transition-colors group overflow-hidden"
                               >
-                                  {isIntro ? <Swords className="w-6 h-6 text-zinc-400 group-hover:text-white transition-colors" /> : <ChevronRight className="w-8 h-8 text-zinc-400 group-hover:text-white group-hover:translate-x-1 transition-all" /> }
+                                  {isIntro ? <Terminal className="w-6 h-6 text-emerald-500/90 group-hover:text-emerald-300 transition-colors" /> : <ChevronRight className="w-8 h-8 text-zinc-400 group-hover:text-white group-hover:translate-x-1 transition-all" /> }
                               </motion.button>
                           ) : (
                               <motion.button 
@@ -752,7 +944,7 @@ export default function VersusMode() {
                                   onClick={resetState}
                                   className="relative z-30 w-16 h-16 bg-[#0a0a0c] border border-zinc-800 hover:border-zinc-500 rounded-full flex items-center justify-center shadow-xl group"
                               >
-                                  <span className="text-[9px] font-bold text-zinc-500 group-hover:text-zinc-200 transition-colors tracking-[0.2em] uppercase text-center block leading-tight">New<br/>Match</span>
+                                  <span className="text-[9px] font-bold text-zinc-500 group-hover:text-zinc-200 transition-colors tracking-[0.2em] uppercase text-center block leading-tight">New<br/>Run</span>
                               </motion.button>
                           )}
                       </AnimatePresence>
@@ -765,7 +957,7 @@ export default function VersusMode() {
                                onClick={!isFinalResult ? () => setPhase(p => p + 1) : resetState}
                                className="px-8 py-3 bg-[#111] border border-zinc-700 rounded-full text-xs font-bold tracking-widest text-white uppercase shadow-xl"
                            >
-                               {!isFinalResult ? (isIntro ? 'COMMENCE BATTLE' : 'NEXT ROUND') : 'NEW MATCH'}
+                               {!isFinalResult ? (isIntro ? 'START EVAL' : 'NEXT OBJECTIVE') : 'NEW RUN'}
                            </motion.button>
                       </AnimatePresence>
                   </div>
@@ -785,7 +977,7 @@ export default function VersusMode() {
                           </div>
                           <div className="flex flex-col flex-1 min-w-0 items-end text-right">
                               <h3 className="text-xl md:text-3xl font-bold font-sans text-white tracking-tight truncate">{p2.fullName}</h3>
-                              {P2Winner && isFinalResult && <div className="text-cyan-400 font-bold uppercase tracking-widest text-[10px] mt-2 animate-pulse flex items-center justify-end gap-2 text-right">Grand Victor <Trophy className="w-3.5 h-3.5" /></div>}
+                              {P2Winner && isFinalResult && <div className="text-cyan-400 font-bold uppercase tracking-widest text-[10px] mt-2 animate-pulse flex items-center justify-end gap-2 text-right">Eval lead <Trophy className="w-3.5 h-3.5" /></div>}
                               
                               <AnimatePresence>
                                   {isFinalResult && (
@@ -806,7 +998,7 @@ export default function VersusMode() {
                         {isFinalResult && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-6 overflow-hidden">
                                 <div className="p-5 bg-gradient-to-tl from-[#050a0a] to-[#050d12] border border-cyan-900/30 rounded-xl text-sm font-sans text-zinc-300 leading-relaxed text-right">
-                                    <div className="text-[10px] tracking-widest text-cyan-500 font-bold mb-3 uppercase flex items-center justify-end gap-2">Omega Analysis <Crosshair className="w-3 h-3" /></div>
+                                    <div className="text-[10px] tracking-widest text-cyan-500 font-bold mb-3 uppercase flex items-center justify-end gap-2 font-mono">eval_notes::omega <Terminal className="w-3 h-3" /></div>
                                     <TypewriterText text={result.playerB_strengths_weaknesses} speed={10} delay={500} />
                                 </div>
                             </motion.div>
@@ -839,7 +1031,7 @@ export default function VersusMode() {
           <div className="w-full h-full pt-8 pb-10 flex flex-col">
              <AnimatePresence mode="wait">
                  {step === "select" && <SelectScreen key="select" />}
-                 {step === "animating" && <LoadingBattleScreen key="loading" />}
+                 {step === "preview" && <PreviewArena key="preview" />}
                  {step === "result" && <ShowdownArena key="showdown" />}
              </AnimatePresence>
           </div>

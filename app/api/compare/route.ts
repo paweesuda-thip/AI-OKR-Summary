@@ -65,26 +65,26 @@ export async function POST(req: Request) {
     const apiKey = process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY;
     const maxRounds = Math.max(dataA.topObjectives.length, dataB.topObjectives.length);
 
-    // Fallback Mock Response
+    // Fallback Mock Response (no API key — short delay for UX only)
     if (!apiKey) {
-      await new Promise(resolve => setTimeout(resolve, 2500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 200));
+
       const mockRounds = Array.from({ length: maxRounds }).map((_, i) => ({
           roundNumber: i + 1,
-          p1_badge: i === 0 ? "แบกจนหลังหัก! 🔥" : "งานหยาบก็ปราบได้ ⚔️",
-          p2_badge: i === 0 ? "ความไวแสง! 🌪️" : "ดาเมจสุดคม! 💉",
-          commentary: `ยกที่ ${i + 1}: สเต็ปงานของ ${dataA.name} แน่นหนากว่าในเชิงโครงสร้าง แต่ ${dataB.name} ปิดจ๊อบไวแบบสายฟ้าแลบ!`
+          p1_badge: i === 0 ? "latency < 0s (in dreams)" : "cache hit streak",
+          p2_badge: i === 0 ? "p99 ยังเขียว" : "deploy วนลูปจนนิ่ง",
+          commentary: `objective ${i + 1}: เทียบงานหลักของ ${dataA.name} กับ ${dataB.name} — ฝั่งหนึ่งโหลดหนัก อีกฝั่งปิดงานไว (mock eval)`
       }));
 
       return NextResponse.json({
         winner: dataA.avgProgress > dataB.avgProgress ? dataA.name : (dataA.avgProgress < dataB.avgProgress ? dataB.name : 'Tie'),
         scoreA: Math.max(0, Math.round(dataA.avgProgress || 50)),
         scoreB: Math.max(0, Math.round(dataB.avgProgress || 50)),
-        intro_hype: `ศึกบอสไฟต์สาย OKR ระหว่าง ${dataA.name} และ ${dataB.name}! คู่เดือดตัวทำดาเมจของทีม! 💥🥊`,
+        intro_hype: `เปิดโปรไฟล์ OKR: ${dataA.name} vs ${dataB.name} — เทียบ objective ทีละบรรทัดเหมือน tune API ก่อน ship`,
         rounds: mockRounds,
         playerA_strengths_weaknesses: "จุดเด่น: ความสม่ำเสมอ. จุดด้อย: บางงานอาจจะยังไม่เสร็จดี.",
         playerB_strengths_weaknesses: "จุดเด่น: โฟกัสงานหลักได้คมมาก. จุดด้อย: ควรเพิ่มยอด check-in.",
-        conclusion: dataA.avgProgress > dataB.avgProgress ? `${dataA.name} ชนะใสๆ ด้วยผลงานรวมสุดโหด!` : "คะแนนสูสีหั่นเดือดสุดๆ ตัดสินยากมาก!"
+        conclusion: dataA.avgProgress > dataB.avgProgress ? `${dataA.name} นำด้วย progress + ภาระงานที่สมดุลกว่าในรอบนี้` : "คะแนนสูสี — ตัดสินเฉียดมากในรอบ mock"
       });
     }
 
@@ -119,14 +119,16 @@ export async function POST(req: Request) {
        commentary: `Thai commentary for round ${i + 1}.`
     }));
 
-    const prompt = `You are an AI e-sports commentator assessing an epic 1v1 battle based on OKR data! 
-The math has already been calculated. You MUST use these EXACT scores and winner:
+    const prompt = `You are a witty staff+ engineer doing a dry OKR "eval pass" — like reviewing two PRs of someone's quarter. Tone: playful dev humor (latency, APIs, deploys, p99, caching) but grounded in the OKR tasks below. NOT e-sports or fighting game commentary.
+
+The math is FIXED. You MUST use these EXACT scores and winner:
 Player 1 (${dataA.name}) Final Score: ${p1Score}
 Player 2 (${dataB.name}) Final Score: ${p2Score}
 Winner: ${exactWinner}
 
-This is a ROUND-BY-ROUND showdown. You MUST create EXACTLY ${maxRounds} rounds in your JSON array.
-Use the pre-matched round data below. If a player has "NO OBJECTIVE (ว่างเปล่า)", ruthlessly roast them for taking damage without fighting back.
+This is OBJECTIVE-BY-OBJECTIVE. You MUST create EXACTLY ${maxRounds} rounds in your JSON array.
+Use the pre-matched round data. If a player has "NO OBJECTIVE (ว่างเปล่า)", tease them lightly in engineer voice (empty queue / no tickets).
+For each round, p1_badge and p2_badge MUST be short (max ~8 words), Thai or Thai+English, funny "tuning" vibes — e.g. self-deprecating ship culture, NOT violent metaphors.
 DO NOT MIX UP PLAYER 1 AND PLAYER 2.
 
 Pre-Matched Rounds Data:
@@ -137,11 +139,11 @@ Respond with a JSON object EXACTLY in this format:
   "winner": "${exactWinner}",
   "scoreA": ${p1Score},
   "scoreB": ${p2Score},
-  "intro_hype": "A hype e-sports intro to this matchup in Thai. Use emojis.",
+  "intro_hype": "Short Thai intro to this OKR comparison; optional one emoji max.",
   "rounds": ${JSON.stringify(schemaExampleRounds, null, 4)},
-  "playerA_strengths_weaknesses": "A short Thai paragraph detailing Player A's strengths/weaknesses.",
-  "playerB_strengths_weaknesses": "A short Thai paragraph detailing Player B's strengths/weaknesses.",
-  "conclusion": "A dramatic final verdict of why the winner won in Thai."
+  "playerA_strengths_weaknesses": "Short Thai paragraph: strengths/risks for Player A from OKR angle.",
+  "playerB_strengths_weaknesses": "Short Thai paragraph: strengths/risks for Player B from OKR angle.",
+  "conclusion": "Thai: why the winner scored higher in plain OKR terms (progress, breadth, consistency)."
 }
 
 Return ONLY raw JSON, no code fences, no extra text.`;
