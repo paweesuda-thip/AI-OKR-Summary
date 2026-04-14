@@ -1,6 +1,12 @@
 import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
-import { ContributorSum, ContributorSumObj, Objective, KrDetail } from "@/lib/types/okr";
+import {
+  ContributorSum,
+  ContributorSumObj,
+  Objective,
+  KrDetail,
+  type ParticipantDetailRaw,
+} from "@/lib/types/okr";
 import { Crosshair, Hexagon, Fingerprint, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -14,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { getGroupedOrgOptions, getCycleOptions } from "@/lib/utils/org-leaf";
 import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
+import { useParticipantQuery } from "@/hooks/queries/use-participant-query";
 
 type Step = "select" | "preview" | "result";
 
@@ -41,7 +48,34 @@ type TopObjectiveEnhanced = ContributorSumObj & {
 
 type PlayerEnhanced = ContributorSum & {
   topObjectives: TopObjectiveEnhanced[];
+  /** From participant-details API (`ParticipantDetailRaw.avgPercent`), keyed by contributor name. */
+  avgParticipantPercent?: number;
 };
+
+function avgPercentByContributorName(
+  participants: ParticipantDetailRaw[] | undefined,
+): Map<string, number> {
+  const map = new Map<string, number>();
+  for (const p of participants ?? []) {
+    const pct = p.avgPercent ?? 0;
+    for (const key of [p.fullName, p.fullName_EN]) {
+      const t = key?.trim();
+      if (t) map.set(t, pct);
+    }
+  }
+  return map;
+}
+
+function mergeParticipantAvgPercent(
+  pool: PlayerEnhanced[],
+  participants: ParticipantDetailRaw[] | undefined,
+): PlayerEnhanced[] {
+  const map = avgPercentByContributorName(participants);
+  return pool.map((c) => {
+    const v = map.get(c.fullName.trim());
+    return v !== undefined ? { ...c, avgParticipantPercent: v } : c;
+  });
+}
 
 // -------------------------------------------------------------
 // HELPER COMPONENT: Typewriter Text Effect (FIXED FOR THAI GLYPHS / STRICT MODE)
@@ -134,8 +168,9 @@ export default function VersusMode() {
   const [p2, setP2] = useState<PlayerEnhanced | null>(null);
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [isComparing, setIsComparing] = useState(false);
-  
-  // MOCK STATES FOR SELECTORS
+  const [compareError, setCompareError] = useState<string | null>(null);
+
+  // Org/cycle picker options (static config from utils — not AI eval payload)
   const cycleOptions = useMemo(() => getCycleOptions(), []);
   const orgGroupedOptions = useMemo(() => getGroupedOrgOptions({ rootOrganizationId: 18473 }), []);
 
@@ -173,15 +208,25 @@ export default function VersusMode() {
 
   const { data: p1DashboardData, isLoading: p1Loading } = useDashboardQuery(p1Params);
   const { data: p2DashboardData, isLoading: p2Loading } = useDashboardQuery(p2Params);
+  const { data: p1Participants } = useParticipantQuery(p1Params);
+  const { data: p2Participants } = useParticipantQuery(p2Params);
 
   const p1Candidates = useMemo(
-    () => buildPlayerPool(p1DashboardData?.contributors ?? [], p1DashboardData?.objectives ?? []),
-    [p1DashboardData]
+    () =>
+      mergeParticipantAvgPercent(
+        buildPlayerPool(p1DashboardData?.contributors ?? [], p1DashboardData?.objectives ?? []),
+        p1Participants,
+      ),
+    [p1DashboardData, p1Participants],
   );
 
   const p2Candidates = useMemo(
-    () => buildPlayerPool(p2DashboardData?.contributors ?? [], p2DashboardData?.objectives ?? []),
-    [p2DashboardData]
+    () =>
+      mergeParticipantAvgPercent(
+        buildPlayerPool(p2DashboardData?.contributors ?? [], p2DashboardData?.objectives ?? []),
+        p2Participants,
+      ),
+    [p2DashboardData, p2Participants],
   );
 
   useEffect(() => {
@@ -202,38 +247,50 @@ export default function VersusMode() {
     setP2(null);
     setResult(null);
     setIsComparing(false);
+    setCompareError(null);
   };
 
   const runAiComparison = async () => {
     if (!p1 || !p2) return;
     setIsComparing(true);
+    setCompareError(null);
 
     try {
       const response = await fetch('/api/compare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerA: p1, playerB: p2 })
+        body: JSON.stringify({ playerA: p1, playerB: p2 }),
       });
-
-      if (!response.ok) throw new Error('API Error');
 
       const data = await response.json();
+
+      if (!response.ok) {
+        const msg =
+          typeof data?.message === 'string'
+            ? data.message
+            : typeof data?.error === 'string'
+              ? data.error
+              : `Request failed (${response.status})`;
+        throw new Error(msg);
+      }
+
+      if (
+        !data ||
+        typeof data.winner !== 'string' ||
+        !Array.isArray(data.rounds) ||
+        typeof data.intro_hype !== 'string' ||
+        typeof data.conclusion !== 'string'
+      ) {
+        throw new Error('Invalid response from eval API (missing AI-generated fields).');
+      }
+
       setResult(data);
-      setStep("result");
+      setStep('result');
     } catch (error) {
       console.error(error);
-      setResult({
-        winner: "Tie",
-        scoreA: 50, scoreB: 50,
-        intro_hype: "CRITICAL FAILURE // PROTOCOL OVERRIDE",
-        rounds: [
-            { roundNumber: 1, p1_badge: "ERR", p2_badge: "ERR", commentary: "System corrupted." }
-        ],
-        playerA_strengths_weaknesses: "DATA_CORRUPTED",
-        playerB_strengths_weaknesses: "DATA_CORRUPTED",
-        conclusion: "Simultaneous system failure detected."
-      });
-      setStep("result");
+      setCompareError(
+        error instanceof Error ? error.message : 'Could not load AI eval. Try again.',
+      );
     } finally {
       setIsComparing(false);
     }
@@ -256,7 +313,7 @@ export default function VersusMode() {
                 <Fingerprint className="w-12 h-12 text-cyan-400 mb-6 drop-shadow-[0_0_15px_rgba(34,211,238,0.8)]" />
             </motion.div>
             <h2 className="text-4xl md:text-5xl font-bold tracking-widest uppercase text-white drop-shadow-[0_4px_20px_rgba(255,255,255,0.4)]">
-                OKR EVAL LAB
+               STATIO BATTLES 
             </h2>
             <p className="text-[10px] text-zinc-500 tracking-[0.35em] uppercase mt-2">pick roster · preview objectives · run AI diff</p>
             <div className="w-[2px] h-16 bg-gradient-to-b from-cyan-400 via-fuchsia-500 to-transparent mt-6 mb-2" />
@@ -353,7 +410,7 @@ export default function VersusMode() {
                                     <div className="flex-1 text-left flex flex-col justify-center">
                                         <div className={`text-base truncate max-w-[200px] font-sans ${isSelected ? 'text-white font-bold tracking-wide drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-zinc-300 font-medium tracking-wider group-hover:text-white transition-colors'}`}>{c.fullName}</div>
                                         <div className="text-[10px] font-sans font-bold text-rose-500/80 tracking-widest uppercase mt-1 flex items-center gap-2">
-                                            POWER LEVEL <span className="text-white text-xs px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded">{c.avgObjectiveProgress.toFixed(0)}</span>
+                                            AVG Progress <span className="text-white text-xs px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded">{(c.avgParticipantPercent ?? c.avgObjectiveProgress).toFixed(0)}</span>
                                         </div>
                                     </div>
                                     {isSelected && <Zap className="w-6 h-6 text-rose-400 absolute right-4 drop-shadow-[0_0_10px_rgba(244,63,94,0.9)] animate-pulse" />}
@@ -487,7 +544,7 @@ export default function VersusMode() {
                                     <div className="flex-1 text-right flex flex-col justify-center">
                                         <div className={`text-base truncate max-w-[200px] inline-block font-sans ${isSelected ? 'text-white font-bold tracking-wide drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-zinc-300 font-medium tracking-wider group-hover:text-white transition-colors'}`}>{c.fullName}</div>
                                         <div className="text-[10px] font-sans font-bold text-cyan-500/80 tracking-widest uppercase mt-1 flex items-center justify-end gap-2">
-                                            <span className="text-white text-xs px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded">{c.avgObjectiveProgress.toFixed(0)}</span> POWER LEVEL
+                                            <span className="text-white text-xs px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded">{(c.avgParticipantPercent ?? c.avgObjectiveProgress).toFixed(0)}</span> AVG Progress
                                         </div>
                                     </div>
                                     {isSelected && <Zap className="w-6 h-6 text-cyan-400 absolute left-4 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse" />}
@@ -631,6 +688,15 @@ export default function VersusMode() {
           </div>
         )}
 
+        {compareError && (
+          <div
+            role="alert"
+            className="max-w-7xl mx-auto w-full mb-4 rounded-xl border border-red-500/35 bg-red-950/25 px-4 py-3 text-sm text-red-100/95 font-sans leading-relaxed"
+          >
+            {compareError}
+          </div>
+        )}
+
         <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 pb-28">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4 pb-4 border-b border-zinc-800/80">
@@ -642,7 +708,7 @@ export default function VersusMode() {
               <div>
                 <div className="text-[9px] text-rose-500/80 tracking-[0.3em] uppercase">alpha</div>
                 <div className="text-white font-sans font-bold text-lg truncate max-w-[240px]">{p1.fullName}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {p1.avgObjectiveProgress.toFixed(0)} · in {p1.checkInCount} check-ins</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {(p1.avgParticipantPercent ?? p1.avgObjectiveProgress).toFixed(0)} · in {p1.checkInCount} check-ins</div>
               </div>
             </div>
             <div className="space-y-3">
@@ -662,7 +728,7 @@ export default function VersusMode() {
               <div className="flex-1 min-w-0">
                 <div className="text-[9px] text-cyan-400/80 tracking-[0.3em] uppercase">omega</div>
                 <div className="text-white font-sans font-bold text-lg truncate max-w-[240px] ml-auto">{p2.fullName}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {p2.avgObjectiveProgress.toFixed(0)} · in {p2.checkInCount} check-ins</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {(p2.avgParticipantPercent ?? p2.avgObjectiveProgress).toFixed(0)} · in {p2.checkInCount} check-ins</div>
               </div>
             </div>
             <div className="space-y-3">
@@ -702,7 +768,7 @@ export default function VersusMode() {
 
       if (!obj) return (
           <div className={`w-full h-24 border border-zinc-800 border-dashed rounded-xl flex items-center justify-center transition-all duration-500 ${isActive ? 'scale-105 opacity-80' : 'scale-95 opacity-20'}`}>
-             <span className="text-[9px] text-zinc-600 font-mono tracking-widest">— no objective bound —</span>
+             <span className="text-[11px] sm:text-xs text-zinc-500 font-sans tracking-wide text-center px-3">— no objective bound —</span>
           </div>
       );
 
@@ -744,20 +810,26 @@ export default function VersusMode() {
                   
                   <div className="flex-1 min-w-0 pr-6">
                       {badge && isActive && (
-                          <motion.div
-                            initial={{ opacity: 0, x: isLeft ? -12 : 12, rotate: isLeft ? -4 : 4 }}
-                            animate={{ opacity: 1, x: 0, rotate: 0 }}
-                            transition={{ type: "spring", stiffness: 420, damping: 28 }}
-                            className={`inline-flex items-center gap-1.5 mb-2 px-2 py-0.5 rounded-md border border-dashed ${isLeft ? 'border-rose-500/40 bg-rose-500/5' : 'border-cyan-400/40 bg-cyan-400/5'}`}
-                          >
-                             <Terminal className={`w-2.5 h-2.5 shrink-0 ${isLeft ? 'text-rose-400' : 'text-cyan-400'}`} />
-                             <span className={`text-[9px] font-bold font-mono tracking-tight ${isLeft ? 'text-rose-300' : 'text-cyan-300'}`}>{badge}</span>
-                          </motion.div>
+                          <div className={`mb-2.5 space-y-1 ${isLeft ? '' : 'text-right'}`}>
+                            <div className="text-[11px] font-sans font-semibold text-zinc-500 leading-tight">
+                              โน้ตสั้นจาก AI สำหรับรอบนี้
+                            </div>
+                            <motion.div
+                              initial={{ opacity: 0, x: isLeft ? -12 : 12, rotate: isLeft ? -4 : 4 }}
+                              animate={{ opacity: 1, x: 0, rotate: 0 }}
+                              transition={{ type: "spring", stiffness: 420, damping: 28 }}
+                              className={`inline-flex items-start gap-2 max-w-full px-3 py-2 rounded-lg border border-dashed ${isLeft ? 'border-rose-500/45 bg-rose-500/[0.07]' : 'border-cyan-400/45 bg-cyan-400/[0.07]'} ${isLeft ? '' : 'flex-row-reverse text-right'}`}
+                            >
+                              <Terminal className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${isLeft ? 'text-rose-400' : 'text-cyan-400'}`} />
+                              <span className={`text-[12px] sm:text-[13px] font-medium font-sans leading-snug ${isLeft ? 'text-rose-100' : 'text-cyan-100'}`}>
+                                {badge}
+                              </span>
+                            </motion.div>
+                          </div>
                       )}
-                      {/* Enforce font-sans for Thai Readability */}
-                      <h4 className={`text-[13px] font-medium font-sans leading-relaxed ${isActive ? 'text-zinc-200 group-hover:text-white transition-colors' : 'text-zinc-600'} line-clamp-3`}>{obj.objectiveName}</h4>
+                      <h4 className={`text-[15px] sm:text-base font-medium font-sans leading-relaxed ${isActive ? 'text-zinc-200 group-hover:text-white transition-colors' : 'text-zinc-600'} line-clamp-3`}>{obj.objectiveName}</h4>
                       {isActive && (
-                        <p className="text-[8px] font-mono text-zinc-600 mt-1.5 tracking-wide">
+                        <p className="text-[11px] sm:text-xs font-sans text-zinc-500 mt-2 tracking-wide leading-relaxed">
                           {loadHint.chip} · {loadHint.sub}
                         </p>
                       )}
@@ -786,15 +858,15 @@ export default function VersusMode() {
                           <div className="p-4 md:p-6 pt-0 border-t border-[#1a1a1a] bg-[#070709]">
                               <div className="flex flex-col gap-3 mt-4">
                                   {obj.actualDetails!.map((kr, idx) => (
-                                     <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-[#0e0e11] border border-[#161616]">
-                                         <Crosshair className={`w-3.5 h-3.5 shrink-0 mt-0.5 ${kr.krProgress >= 100 ? (isLeft ? 'text-rose-500' : 'text-cyan-400') : 'text-zinc-700'}`} />
+                                     <div key={idx} className="flex items-start gap-3 p-3.5 rounded-lg bg-[#0e0e11] border border-[#161616]">
+                                         <Crosshair className={`w-4 h-4 shrink-0 mt-0.5 ${kr.krProgress >= 100 ? (isLeft ? 'text-rose-500' : 'text-cyan-400') : 'text-zinc-700'}`} />
                                          <div className="flex-1 min-w-0">
-                                           <div className={`text-xs font-sans leading-relaxed ${kr.krProgress >= 100 ? 'text-zinc-300' : 'text-zinc-500'}`}>{kr.krTitle}</div>
-                                           <div className="text-[9px] font-mono text-zinc-600 mt-1 tabular-nums">
+                                           <div className={`text-sm font-sans leading-relaxed ${kr.krProgress >= 100 ? 'text-zinc-200' : 'text-zinc-400'}`}>{kr.krTitle}</div>
+                                           <div className="text-[11px] font-mono text-zinc-500 mt-1.5 tabular-nums">
                                              pts {kr.pointCurrent ?? 0}/{kr.pointOKR ?? 0}
                                            </div>
                                          </div>
-                                         <span className={`text-[10px] font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2 py-1 rounded-sm border border-[#222]`}>{Math.round(kr.krProgress)}%</span>
+                                         <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>{Math.round(kr.krProgress)}%</span>
                                      </div>
                                   ))}
                               </div>
@@ -827,7 +899,7 @@ export default function VersusMode() {
               <motion.div initial={{ scale: 0.5, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`text-4xl lg:text-6xl font-bold font-sans drop-shadow-[0_0_15px_rgba(255,255,255,0.1)] ${isLeft ? 'text-rose-500' : 'text-cyan-400'}`}>
                   {count}
               </motion.div>
-              <span className="text-[10px] tracking-widest uppercase text-zinc-500 font-bold mb-2 hidden md:block">{label}</span>
+              <span className="text-xs tracking-wide uppercase text-zinc-400 font-bold mb-2 hidden md:block font-sans">{label}</span>
           </div>
       );
   }
@@ -842,7 +914,15 @@ export default function VersusMode() {
       const isRound = phase > 0 && phase <= totalRounds;
       const isFinalResult = phase > totalRounds;
 
-      const currentRoundData = isRound ? (result.rounds?.[phase - 1] || { commentary: `objective ${phase}/${totalRounds}: รอข้อมูลจากโมเดล…` }) : null;
+      const roundFromAi = isRound ? result.rounds?.[phase - 1] : undefined;
+      const currentRoundData = isRound
+        ? {
+            commentary:
+              typeof roundFromAi?.commentary === 'string' && roundFromAi.commentary.trim()
+                ? roundFromAi.commentary
+                : 'ไม่มีคำอธิบายรอบนี้ในผลลัพธ์จาก AI',
+          }
+        : null;
       const P1Winner = result.winner === p1.fullName;
       const P2Winner = result.winner === p2.fullName;
 
@@ -854,17 +934,17 @@ export default function VersusMode() {
 
               {/* Top Banner Context */}
               <motion.div layout className="w-full relative z-30 pt-6 px-4 shrink-0 flex flex-col items-center">
-                   <div className="bg-[#050505] border border-zinc-800/80 px-6 py-2 rounded-full mb-4 shadow-xl">
-                       {isIntro && <span className="text-xs uppercase tracking-[0.3em] font-bold text-white"><span className="animate-pulse mr-2 text-emerald-500"><Terminal className="w-3.5 h-3.5 inline" /></span> EVAL PASS · STARTED</span>}
-                       {isRound && <span className="text-xs uppercase tracking-[0.3em] font-bold text-amber-500/90"><span className="animate-ping mr-2 text-amber-400"><Cpu className="w-3.5 h-3.5 inline" /></span> OBJECTIVE {phase} / {totalRounds}</span>}
-                       {isFinalResult && <span className="text-xs uppercase tracking-[0.3em] font-bold text-white"><span className="mr-2 text-cyan-400"><Activity className="w-4 h-4 inline" /></span> EVAL COMPLETE</span>}
+                   <div className="bg-[#050505] border border-zinc-800/80 px-6 py-2.5 rounded-full mb-4 shadow-xl">
+                       {isIntro && <span className="text-sm uppercase tracking-[0.25em] font-bold text-white"><span className="animate-pulse mr-2 text-emerald-500"><Terminal className="w-4 h-4 inline" /></span> EVAL PASS · STARTED</span>}
+                       {isRound && <span className="text-sm uppercase tracking-[0.25em] font-bold text-amber-500/90"><span className="animate-ping mr-2 text-amber-400"><Cpu className="w-4 h-4 inline" /></span> OBJECTIVE {phase} / {totalRounds}</span>}
+                       {isFinalResult && <span className="text-sm uppercase tracking-[0.25em] font-bold text-white"><span className="mr-2 text-cyan-400"><Activity className="w-4 h-4 inline" /></span> EVAL COMPLETE</span>}
                    </div>
                    
                    <AnimatePresence mode="wait">
-                       <motion.div key={phase} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="text-center max-w-4xl mx-auto min-h-[5rem] flex items-center justify-center">
-                           {isIntro && <h2 className="text-xl md:text-3xl font-sans text-white font-medium drop-shadow-xl"><TypewriterText text={result.intro_hype} speed={15} /></h2>}
-                           {isRound && <p className="text-sm md:text-lg font-sans text-zinc-300 leading-relaxed font-bold pl-4 text-center"><TypewriterText text={currentRoundData!.commentary} speed={15} delay={100} /></p>}
-                           {isFinalResult && <h2 className="text-xl md:text-2xl font-sans text-white font-medium drop-shadow-xl px-4"><TypewriterText text={result.conclusion} speed={15} delay={100} /></h2>}
+                       <motion.div key={phase} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="text-center max-w-4xl mx-auto min-h-[5.5rem] flex items-center justify-center px-2">
+                           {isIntro && <h2 className="text-xl md:text-3xl lg:text-4xl font-sans text-white font-medium drop-shadow-xl leading-snug"><TypewriterText text={result.intro_hype} speed={15} /></h2>}
+                           {isRound && <p className="text-base md:text-xl lg:text-2xl font-sans text-zinc-200 leading-relaxed font-semibold text-center max-w-3xl"><TypewriterText text={currentRoundData!.commentary} speed={15} delay={100} /></p>}
+                           {isFinalResult && <h2 className="text-lg md:text-2xl lg:text-3xl font-sans text-white font-medium drop-shadow-xl leading-snug px-2"><TypewriterText text={result.conclusion} speed={15} delay={100} /></h2>}
                        </motion.div>
                    </AnimatePresence>
               </motion.div>
@@ -888,15 +968,15 @@ export default function VersusMode() {
                           </div>
                           <div className="flex flex-col flex-1 min-w-0">
                               <h3 className="text-xl md:text-3xl font-bold font-sans text-white tracking-tight truncate">{p1.fullName}</h3>
-                              {P1Winner && isFinalResult && <div className="text-rose-500 font-bold uppercase tracking-widest text-[10px] mt-2 animate-pulse flex items-center gap-2"><Trophy className="w-3.5 h-3.5" /> Eval lead</div>}
+                              {P1Winner && isFinalResult && <div className="text-rose-500 font-bold uppercase tracking-widest text-xs mt-2 animate-pulse flex items-center gap-2"><Trophy className="w-4 h-4 shrink-0" /> Eval lead</div>}
                               
                               <AnimatePresence>
                                   {isFinalResult && (
                                       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex items-center gap-4">
                                           <ResultCounter value={result.scoreA} label="SCORE" isLeft={true} />
-                                          <div className="hidden md:flex flex-col border-l border-zinc-800 pl-4 space-y-1">
-                                              <span className="text-[9px] text-zinc-500 tracking-widest uppercase font-bold">Total Check-ins</span>
-                                              <span className="text-white font-bold font-sans text-lg leading-none">{p1.checkInCount}</span>
+                                          <div className="hidden md:flex flex-col border-l border-zinc-800 pl-4 space-y-1.5">
+                                              <span className="text-[11px] text-zinc-400 tracking-wide uppercase font-bold font-sans">Total Check-ins</span>
+                                              <span className="text-white font-bold font-sans text-xl leading-none">{p1.checkInCount}</span>
                                           </div>
                                       </motion.div>
                                   )}
@@ -908,9 +988,13 @@ export default function VersusMode() {
                       <AnimatePresence>
                         {isFinalResult && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-6 overflow-hidden">
-                                <div className="p-5 bg-gradient-to-tr from-[#0a0505] to-[#120505] border border-rose-900/30 rounded-xl text-sm font-sans text-zinc-300 leading-relaxed">
-                                    <div className="text-[10px] tracking-widest text-rose-500 font-bold mb-3 uppercase flex items-center gap-2 font-mono"><Terminal className="w-3 h-3" /> eval_notes::alpha</div>
-                                    <TypewriterText text={result.playerA_strengths_weaknesses} speed={10} delay={500} />
+                                <div className="p-5 md:p-6 bg-gradient-to-tr from-[#0a0505] to-[#120505] border border-rose-900/30 rounded-xl text-base md:text-lg font-sans text-zinc-200 leading-relaxed">
+                                    <div className="text-xs tracking-wide text-rose-400 font-bold mb-3 uppercase flex items-center gap-2 font-sans"><Terminal className="w-3.5 h-3.5 shrink-0" /> สรุปจาก AI · alpha</div>
+                                    {result.playerA_strengths_weaknesses?.trim() ? (
+                                      <TypewriterText text={result.playerA_strengths_weaknesses} speed={10} delay={500} />
+                                    ) : (
+                                      <p className="text-zinc-500 text-sm leading-relaxed">โมเดลไม่ได้ส่งข้อความสรุปสำหรับผู้เล่นฝั่งนี้</p>
+                                    )}
                                 </div>
                             </motion.div>
                         )}
@@ -919,9 +1003,13 @@ export default function VersusMode() {
                       {/* Objectives */}
                       <div className="flex-1 space-y-4">
                             <motion.div layout className="space-y-4">
-                                {Array.from({ length: totalRounds }).map((_, i) => (
-                                    <HologramObjective key={`p1-obj-${i}`} obj={p1.topObjectives[i]} isActive={isFinalResult ? true : phase === i + 1} isLeft={true} badge={result.rounds?.[i]?.p1_badge} />
-                                ))}
+                                {Array.from({ length: totalRounds }).map((_, i) => {
+                                    const rb = result.rounds?.[i];
+                                    const p1Badge = typeof rb?.p1_badge === 'string' ? rb.p1_badge : undefined;
+                                    return (
+                                    <HologramObjective key={`p1-obj-${i}`} obj={p1.topObjectives[i]} isActive={isFinalResult ? true : phase === i + 1} isLeft={true} badge={p1Badge} />
+                                    );
+                                })}
                             </motion.div>
                       </div>
                   </motion.div>
@@ -944,7 +1032,7 @@ export default function VersusMode() {
                                   onClick={resetState}
                                   className="relative z-30 w-16 h-16 bg-[#0a0a0c] border border-zinc-800 hover:border-zinc-500 rounded-full flex items-center justify-center shadow-xl group"
                               >
-                                  <span className="text-[9px] font-bold text-zinc-500 group-hover:text-zinc-200 transition-colors tracking-[0.2em] uppercase text-center block leading-tight">New<br/>Run</span>
+                                  <span className="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-200 transition-colors tracking-[0.15em] uppercase text-center block leading-tight font-sans">New<br/>Run</span>
                               </motion.button>
                           )}
                       </AnimatePresence>
@@ -977,15 +1065,15 @@ export default function VersusMode() {
                           </div>
                           <div className="flex flex-col flex-1 min-w-0 items-end text-right">
                               <h3 className="text-xl md:text-3xl font-bold font-sans text-white tracking-tight truncate">{p2.fullName}</h3>
-                              {P2Winner && isFinalResult && <div className="text-cyan-400 font-bold uppercase tracking-widest text-[10px] mt-2 animate-pulse flex items-center justify-end gap-2 text-right">Eval lead <Trophy className="w-3.5 h-3.5" /></div>}
+                              {P2Winner && isFinalResult && <div className="text-cyan-400 font-bold uppercase tracking-widest text-xs mt-2 animate-pulse flex items-center justify-end gap-2 text-right">Eval lead <Trophy className="w-4 h-4 shrink-0" /></div>}
                               
                               <AnimatePresence>
                                   {isFinalResult && (
                                       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex items-center flex-row-reverse gap-4">
                                           <ResultCounter value={result.scoreB} label="SCORE" isLeft={false} />
-                                          <div className="hidden md:flex flex-col border-r border-zinc-800 pr-4 space-y-1 items-end text-right">
-                                              <span className="text-[9px] text-zinc-500 tracking-widest uppercase font-bold">Total Check-ins</span>
-                                              <span className="text-white font-bold font-sans text-lg leading-none">{p2.checkInCount}</span>
+                                          <div className="hidden md:flex flex-col border-r border-zinc-800 pr-4 space-y-1.5 items-end text-right">
+                                              <span className="text-[11px] text-zinc-400 tracking-wide uppercase font-bold font-sans">Total Check-ins</span>
+                                              <span className="text-white font-bold font-sans text-xl leading-none">{p2.checkInCount}</span>
                                           </div>
                                       </motion.div>
                                   )}
@@ -997,9 +1085,13 @@ export default function VersusMode() {
                       <AnimatePresence>
                         {isFinalResult && (
                             <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-6 overflow-hidden">
-                                <div className="p-5 bg-gradient-to-tl from-[#050a0a] to-[#050d12] border border-cyan-900/30 rounded-xl text-sm font-sans text-zinc-300 leading-relaxed text-right">
-                                    <div className="text-[10px] tracking-widest text-cyan-500 font-bold mb-3 uppercase flex items-center justify-end gap-2 font-mono">eval_notes::omega <Terminal className="w-3 h-3" /></div>
-                                    <TypewriterText text={result.playerB_strengths_weaknesses} speed={10} delay={500} />
+                                <div className="p-5 md:p-6 bg-gradient-to-tl from-[#050a0a] to-[#050d12] border border-cyan-900/30 rounded-xl text-base md:text-lg font-sans text-zinc-200 leading-relaxed text-right">
+                                    <div className="text-xs tracking-wide text-cyan-400 font-bold mb-3 uppercase flex items-center justify-end gap-2 font-sans">สรุปจาก AI · omega <Terminal className="w-3.5 h-3.5 shrink-0" /></div>
+                                    {result.playerB_strengths_weaknesses?.trim() ? (
+                                      <TypewriterText text={result.playerB_strengths_weaknesses} speed={10} delay={500} />
+                                    ) : (
+                                      <p className="text-zinc-500 text-sm leading-relaxed">โมเดลไม่ได้ส่งข้อความสรุปสำหรับผู้เล่นฝั่งนี้</p>
+                                    )}
                                 </div>
                             </motion.div>
                         )}
@@ -1008,9 +1100,13 @@ export default function VersusMode() {
                       {/* Objectives */}
                       <div className="flex-1 space-y-4">
                             <motion.div layout className="space-y-4">
-                                {Array.from({ length: totalRounds }).map((_, i) => (
-                                    <HologramObjective key={`p2-obj-${i}`} obj={p2.topObjectives[i]} isActive={isFinalResult ? true : phase === i + 1} isLeft={false} badge={result.rounds?.[i]?.p2_badge} />
-                                ))}
+                                {Array.from({ length: totalRounds }).map((_, i) => {
+                                    const rb = result.rounds?.[i];
+                                    const p2Badge = typeof rb?.p2_badge === 'string' ? rb.p2_badge : undefined;
+                                    return (
+                                    <HologramObjective key={`p2-obj-${i}`} obj={p2.topObjectives[i]} isActive={isFinalResult ? true : phase === i + 1} isLeft={false} badge={p2Badge} />
+                                    );
+                                })}
                             </motion.div>
                       </div>
                   </motion.div>
