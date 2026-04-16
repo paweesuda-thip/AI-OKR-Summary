@@ -54,7 +54,17 @@ export async function POST(req: Request) {
             topObjectives: p.topObjectives.map((obj: any) => ({
                 name: obj.objectiveName,
                 progress: obj.progress,
-                tasks: obj.actualDetails?.map((kr: any) => `${kr.krTitle} (${Math.round(kr.krProgress || 0)}%)`).join(', ') || 'No specific breakdown'
+                tasks:
+                  obj.actualDetails
+                    ?.map((detail: any) => {
+                      const detailProgress = Math.round(detail?.progress || 0);
+                      const krList =
+                        detail?.details
+                          ?.map((kr: any) => `${kr.krTitle} (${Math.round(kr.krProgress || 0)}%)`)
+                          .join(', ') || 'no KR';
+                      return `${detail?.title || 'Objective detail'} [${detailProgress}%]: ${krList}`;
+                    })
+                    .join(' | ') || 'No specific breakdown',
             }))
         };
     };

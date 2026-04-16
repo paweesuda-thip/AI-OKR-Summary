@@ -4,7 +4,7 @@ import {
   ContributorSum,
   ContributorSumObj,
   Objective,
-  KrDetail,
+  SubObjective,
   type ParticipantDetailRaw,
 } from "@/lib/types/okr";
 import { Crosshair, Hexagon, Fingerprint, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft } from "lucide-react";
@@ -43,7 +43,7 @@ interface ComparisonResult {
 }
 
 type TopObjectiveEnhanced = ContributorSumObj & {
-  actualDetails?: KrDetail[];
+  actualDetails?: SubObjective[];
 };
 
 type PlayerEnhanced = ContributorSum & {
@@ -126,16 +126,30 @@ const buildPlayerPool = (contributors: ContributorSum[], objectives: Objective[]
 
       const topObjs = [...c.objectives]
         .map((obj) => {
+          const calcDetailProgressFromKrs = (krs: SubObjective["details"]): number => {
+            if (!krs.length) return 0;
+            const totalKrProgress = krs.reduce((acc, kr) => acc + (kr.pointOKR ?? 0), 0);
+            return totalKrProgress / krs.length;
+          };
+
           const actualDetails =
             objectives
               .find((o) => o.objectiveId === obj.objectiveId)
-              ?.subObjectives.flatMap((so) => so.details)
-              .filter((kr) => kr.fullName === c.fullName) || [];
+              ?.subObjectives.map((so) => ({
+                ...so,
+                details: so.details.filter((kr) => kr.fullName === c.fullName),
+              }))
+              .map((so) => ({
+                ...so,
+                // Use contributor KR progress to derive detail progress (not global detail progress).
+                progress: calcDetailProgressFromKrs(so.details),
+              }))
+              .filter((so) => so.details.length > 0) || [];
 
-          const validKrs = actualDetails.filter((kr) => kr.krProgress !== undefined);
+          const validObjectiveDetails = actualDetails.filter((detail) => detail.progress !== undefined);
           const personalObjProgress =
-            validKrs.length > 0
-              ? validKrs.reduce((acc, kr) => acc + kr.krProgress, 0) / validKrs.length
+            validObjectiveDetails.length > 0
+              ? validObjectiveDetails.reduce((acc, detail) => acc + detail.progress, 0) / validObjectiveDetails.length
               : obj.progress;
 
           totalPersonalProgress += personalObjProgress;
@@ -152,14 +166,15 @@ const buildPlayerPool = (contributors: ContributorSum[], objectives: Objective[]
 
 /** Client-side load heuristic from KR count + point gap (maps OKR weight vs progress). */
 function objectiveLoadHint(obj: TopObjectiveEnhanced): { chip: string; sub: string } {
-  const krs = obj.actualDetails ?? [];
+  const objectiveDetails = obj.actualDetails ?? [];
+  const krs = objectiveDetails.flatMap((detail) => detail.details ?? []);
   const n = krs.length;
   const gapSum = krs.reduce((acc, kr) => acc + Math.max(0, (kr.pointOKR || 0) - (kr.pointCurrent || 0)), 0);
   const avgGap = n > 0 ? gapSum / n : 0;
-  const score = n * 8 + avgGap;
-  if (score >= 72) return { chip: "LOAD · HIGH", sub: `${n} KR · ~${Math.round(avgGap)}pt gap avg` };
-  if (score >= 32) return { chip: "LOAD · MED", sub: `${n} KR` };
-  return { chip: "LOAD · LOW", sub: n ? `${n} KR` : "no KR rows" };
+  const score = objectiveDetails.length * 10 + n * 8 + avgGap;
+  if (score >= 72) return { chip: "LOAD · HIGH", sub: `${objectiveDetails.length} detail · ${n} KR · ~${Math.round(avgGap)}% gap avg` };
+  if (score >= 32) return { chip: "LOAD · MED", sub: `${objectiveDetails.length} detail · ${n} KR` };
+  return { chip: "LOAD · LOW", sub: n ? `${objectiveDetails.length} detail · ${n} KR` : "no KR rows" };
 }
 
 export default function VersusMode() {
@@ -583,7 +598,7 @@ export default function VersusMode() {
         );
       }
       const load = objectiveLoadHint(obj);
-      const krs = obj.actualDetails ?? [];
+      const objectiveDetails = obj.actualDetails ?? [];
 
       return (
         <div
@@ -622,21 +637,46 @@ export default function VersusMode() {
               <p className={`text-[9px] font-mono text-zinc-500 mt-1 ${isLeft ? "" : "text-right"}`}>{load.sub}</p>
             </div>
           </div>
-          {krs.length > 0 && (
+          {objectiveDetails.length > 0 && (
             <div className="border-t border-[#161616] bg-[#070709] px-3 py-2 space-y-2">
-              {krs.map((kr, ki) => (
-                <div
-                  key={ki}
-                  className={`flex flex-wrap items-start gap-2 text-[11px] font-sans rounded-lg bg-[#0e0e11] border border-[#161616] p-2.5 ${isLeft ? "" : "flex-row-reverse text-right"}`}
-                >
-                  <Crosshair className={`w-3 h-3 shrink-0 mt-0.5 ${isLeft ? "text-rose-500/80" : "text-cyan-400/80"}`} />
-                  <div className={`flex-1 min-w-0 leading-relaxed ${isLeft ? "text-left" : "text-right"} text-zinc-400`}>{kr.krTitle}</div>
-                  <div className={`flex flex-col items-end shrink-0 gap-0.5 font-mono text-[9px] ${isLeft ? "" : "items-start"}`}>
-                    <span className={isLeft ? "text-rose-400" : "text-cyan-400"}>{Math.round(kr.krProgress)}%</span>
-                    <span className="text-zinc-600">
-                      {kr.pointCurrent ?? 0}/{kr.pointOKR ?? 0} pt
+              {objectiveDetails.map((detail, di) => (
+                <div key={detail.objectiveId ?? di} className="rounded-lg bg-[#0e0e11] border border-[#161616] p-2.5">
+                  <div className={`flex items-start gap-2 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[9px] font-mono text-zinc-500 tracking-wide uppercase">Objective detail</div>
+                      <div className={`text-[11px] font-sans leading-relaxed text-zinc-300 mt-0.5 ${isLeft ? "text-left" : "text-right"}`}>
+                        {detail.title}
+                      </div>
+                    </div>
+                    <span className={`shrink-0 text-[10px] font-mono px-2 py-1 rounded border ${isLeft ? "border-rose-500/30 text-rose-400" : "border-cyan-400/30 text-cyan-400"}`}>
+                      {Math.round(detail.progress ?? 0)}%
                     </span>
                   </div>
+
+                  {detail.details.length > 0 && (
+                    <div className="mt-2 space-y-2">
+                      {detail.details.map((kr, ki) => (
+                        <div
+                          key={`${detail.objectiveId}-${ki}`}
+                          className={`flex flex-wrap items-start gap-2 text-[11px] font-sans rounded-lg bg-[#111116] border border-[#1b1b1b] p-2 ${isLeft ? "" : "flex-row-reverse text-right"}`}
+                        >
+                          <Crosshair className={`w-3 h-3 shrink-0 mt-0.5 ${isLeft ? "text-rose-500/80" : "text-cyan-400/80"}`} />
+                          <div className={`flex-1 min-w-0 leading-relaxed ${isLeft ? "text-left" : "text-right"} text-zinc-400`}>{kr.krTitle}</div>
+                          <div className={`flex flex-col items-end shrink-0 gap-0.5 font-mono text-[9px] ${isLeft ? "" : "items-start"}`}>
+                            <span className={isLeft ? "text-rose-400" : "text-cyan-400"}>{kr.pointOKR}%</span>
+                            <span className="text-zinc-600">
+                              {kr.pointCurrent ?? 0} pt.
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {detail.details.length === 0 && (
+                    <div className={`mt-2 text-[10px] font-mono text-zinc-600 ${isLeft ? "" : "text-right"}`}>
+                      no KR assigned
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -857,16 +897,34 @@ export default function VersusMode() {
                       >
                           <div className="p-4 md:p-6 pt-0 border-t border-[#1a1a1a] bg-[#070709]">
                               <div className="flex flex-col gap-3 mt-4">
-                                  {obj.actualDetails!.map((kr, idx) => (
-                                     <div key={idx} className="flex items-start gap-3 p-3.5 rounded-lg bg-[#0e0e11] border border-[#161616]">
-                                         <Crosshair className={`w-4 h-4 shrink-0 mt-0.5 ${kr.krProgress >= 100 ? (isLeft ? 'text-rose-500' : 'text-cyan-400') : 'text-zinc-700'}`} />
-                                         <div className="flex-1 min-w-0">
-                                           <div className={`text-sm font-sans leading-relaxed ${kr.krProgress >= 100 ? 'text-zinc-200' : 'text-zinc-400'}`}>{kr.krTitle}</div>
-                                           <div className="text-[11px] font-mono text-zinc-500 mt-1.5 tabular-nums">
-                                             pts {kr.pointCurrent ?? 0}/{kr.pointOKR ?? 0}
-                                           </div>
-                                         </div>
-                                         <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>{Math.round(kr.krProgress)}%</span>
+                                  {obj.actualDetails!.map((detail, idx) => (
+                                     <div key={detail.objectiveId ?? idx} className="rounded-lg bg-[#0e0e11] border border-[#161616] p-3.5 space-y-3">
+                                        <div className={`flex items-start gap-3 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
+                                          <div className="flex-1 min-w-0">
+                                            <div className="text-[10px] font-mono tracking-wide uppercase text-zinc-500">Objective detail</div>
+                                            <div className="text-sm font-sans leading-relaxed text-zinc-300 mt-1">{detail.title}</div>
+                                          </div>
+                                          <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>
+                                            {Math.round(detail.progress ?? 0)}%
+                                          </span>
+                                        </div>
+
+                                        {detail.details.length > 0 && (
+                                          <div className="space-y-2">
+                                            {detail.details.map((kr, krIdx) => (
+                                              <div key={`${detail.objectiveId}-${krIdx}`} className="flex items-start gap-3 p-3 rounded-lg bg-[#111116] border border-[#1b1b1b]">
+                                                <Crosshair className={`w-4 h-4 shrink-0 mt-0.5 ${kr.krProgress >= 100 ? (isLeft ? 'text-rose-500' : 'text-cyan-400') : 'text-zinc-700'}`} />
+                                                <div className="flex-1 min-w-0">
+                                                  <div className={`text-sm font-sans leading-relaxed ${kr.krProgress >= 100 ? 'text-zinc-200' : 'text-zinc-400'}`}>{kr.krTitle}</div>
+                                                  <div className="text-[11px] font-mono text-zinc-500 mt-1.5 tabular-nums">
+                                                    progress {kr.pointCurrent ?? 0}/{kr.pointOKR ?? 0}%
+                                                  </div>
+                                                </div>
+                                                <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>{Math.round(kr.krProgress)}%</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        )}
                                      </div>
                                   ))}
                               </div>
