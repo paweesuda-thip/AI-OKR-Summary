@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ParticipantDetailRaw } from "@/lib/types/okr";
 import { AvatarInfoTooltip } from "@/components/ui/avatar-tooltip";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,8 +51,6 @@ export function CheckInEngagement({ participantDetails, showStatus = true }: Che
   const [sortColumn, setSortColumn] = useState<SortColumn>('rank');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
-  if (!participantDetails || participantDetails.length === 0) return null;
-
   const handleSort = (column: SortColumn) => {
     if (sortColumn === column) {
       setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -70,29 +68,35 @@ export function CheckInEngagement({ participantDetails, showStatus = true }: Che
   };
 
   // Sort by selected column
-  const sortedParticipants = [...participantDetails].sort((a, b) => {
-    let valA: string | number = 0;
-    let valB: string | number = 0;
+  const sortedParticipants = useMemo(
+    () =>
+      [...participantDetails].sort((a, b) => {
+        let valA: string | number = 0;
+        let valB: string | number = 0;
 
-    switch (sortColumn) {
-      case 'rank':
-        valA = a.seq; valB = b.seq; break;
-      case 'name':
-        valA = (a.fullName || '').toLowerCase(); valB = (b.fullName || '').toLowerCase(); break;
-      case 'checkins':
-        valA = a.totalCheckInAll > 0 ? a.totalCheckIn / a.totalCheckInAll : 0;
-        valB = b.totalCheckInAll > 0 ? b.totalCheckIn / b.totalCheckInAll : 0;
-        break;
-      case 'missed':
-        valA = a.totalMissCheckIn; valB = b.totalMissCheckIn; break;
-      case 'progress':
-        valA = a.avgPercent; valB = b.avgPercent; break;
-    }
+        switch (sortColumn) {
+          case 'rank':
+            valA = a.seq; valB = b.seq; break;
+          case 'name':
+            valA = (a.fullName || '').toLowerCase(); valB = (b.fullName || '').toLowerCase(); break;
+          case 'checkins':
+            valA = a.totalCheckInAll > 0 ? a.totalCheckIn / a.totalCheckInAll : 0;
+            valB = b.totalCheckInAll > 0 ? b.totalCheckIn / b.totalCheckInAll : 0;
+            break;
+          case 'missed':
+            valA = a.totalMissCheckIn; valB = b.totalMissCheckIn; break;
+          case 'progress':
+            valA = a.avgPercent; valB = b.avgPercent; break;
+        }
 
-    if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-    if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-    return 0; // fallback to sequence
-  });
+        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+        return 0; // fallback to sequence
+      }),
+    [participantDetails, sortColumn, sortDirection],
+  );
+
+  if (!participantDetails || participantDetails.length === 0) return null;
 
   const openDetails = (person: ParticipantDetailRaw) => {
     setSelectedPerson(person);
