@@ -30,27 +30,41 @@ import type {
 import ProgressUpdateSection from "./progress-update-section";
 import { FloatingAiChat } from "./floating-ai-chat";
 import VersusMode from "./versus-mode";
-import { getCycleOptions, getGroupedOrgOptions } from "@/lib/utils/org-leaf";
 import DashboardTopbar from "./dashboard-topbar";
 import DashboardSelectors from "./dashboard-selectors";
 import FilterBar from "./filter-bar";
 import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
 import { useParticipantQuery } from "@/hooks/queries/use-participant-query";
+import { useDdlOptions } from "@/hooks/queries/use-ddl-query";
 
 export default function Dashboard() {
-  // ── Selectors ──────────────────────────────────────────────────────────────
-  const cycleOptions = getCycleOptions();
-  const currentCycle = cycleOptions.find(c => c.isCurrentCycle) || cycleOptions[0];
+  const FALLBACK_CYCLE_ID = 185467;
+  const FALLBACK_ORG_ID = 18477;
 
-  const groupedOrgOptions = getGroupedOrgOptions({ rootOrganizationId: 18473 });
-  let defaultOrgId = 18477;
-  const hasDefaultOrg = groupedOrgOptions.some(g => g.options.some(o => o.organizationId === 18477));
-  if (!hasDefaultOrg && groupedOrgOptions.length > 0 && groupedOrgOptions[0].options.length > 0) {
-    defaultOrgId = groupedOrgOptions[0].options[0].organizationId;
-  }
+  // ── Selectors (live DDL APIs) ──────────────────────────────────────────────
+  const {
+    cycleOptions,
+    groupedOrgOptions,
+    isLoading: ddlLoading,
+    error: ddlError,
+  } = useDdlOptions({ rootOrganizationId: 18473 });
 
-  const [assessmentSetId, setAssessmentSetId] = useState(currentCycle?.setId || 185467);
-  const [organizationId, setOrganizationId] = useState(defaultOrgId);
+  const currentCycle = useMemo(
+    () => cycleOptions.find((cycle) => cycle.isCurrentCycle) || cycleOptions[0],
+    [cycleOptions],
+  );
+
+  const defaultOrgId = useMemo(() => {
+    const hasPreferred = groupedOrgOptions.some((group) =>
+      group.options.some((option) => option.organizationId === FALLBACK_ORG_ID),
+    );
+
+    if (hasPreferred) return FALLBACK_ORG_ID;
+    return groupedOrgOptions[0]?.options[0]?.organizationId ?? FALLBACK_ORG_ID;
+  }, [groupedOrgOptions]);
+
+  const [assessmentSetId, setAssessmentSetId] = useState(FALLBACK_CYCLE_ID);
+  const [organizationId, setOrganizationId] = useState(FALLBACK_ORG_ID);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: new Date(2026, 1, 12), // Feb 12, 2026
@@ -63,43 +77,108 @@ export default function Dashboard() {
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'versus'>('overview');
 
+  const resolvedAssessmentSetId = useMemo(() => {
+    const exists = cycleOptions.some((cycle) => cycle.setId === assessmentSetId);
+    if (exists) return assessmentSetId;
+    return currentCycle?.setId ?? FALLBACK_CYCLE_ID;
+  }, [assessmentSetId, currentCycle?.setId, cycleOptions]);
+
+  const resolvedOrganizationId = useMemo(() => {
+    const exists = groupedOrgOptions.some((group) =>
+      group.options.some((option) => option.organizationId === organizationId),
+    );
+    if (exists) return organizationId;
+    return defaultOrgId;
+  }, [defaultOrgId, groupedOrgOptions, organizationId]);
+
   // ── Derived query params ───────────────────────────────────────────────────
   const queryParams = useMemo(() => ({
-    assessmentSetId,
-    organizationId,
+    assessmentSetId: resolvedAssessmentSetId,
+    organizationId: resolvedOrganizationId,
     dateStart: (!isOverall && dateRange?.from) ? format(dateRange.from, "yyyy-MM-dd") : undefined,
     dateEnd: (!isOverall && dateRange?.to) ? format(dateRange.to, "yyyy-MM-dd") : undefined,
-  }), [assessmentSetId, organizationId, isOverall, dateRange]);
+  }), [resolvedAssessmentSetId, resolvedOrganizationId, isOverall, dateRange]);
 
   // ── TanStack Query ─────────────────────────────────────────────────────────
+  const shouldRunOverviewQueries = activeTab === 'overview';
+
   const {
     data: dashboardResult,
     isLoading: dashLoading,
     error: dashError,
-  } = useDashboardQuery(queryParams);
+  } = useDashboardQuery(queryParams, { enabled: shouldRunOverviewQueries });
 
   const {
     data: participantDetails = [],
     isLoading: partLoading,
-  } = useParticipantQuery(queryParams);
+  } = useParticipantQuery(queryParams, { enabled: shouldRunOverviewQueries });
 
   // ── Derived data ───────────────────────────────────────────────────────────
-  const loading = dashLoading || partLoading;
-  const errorMessage = dashError?.message || "";
+  const loading = dashLoading || partLoading || ddlLoading;
+  const errorMessage =
+    dashError?.message ||
+    (ddlError instanceof Error ? ddlError.message : "") ||
+    "";
 
   const teamSummary = dashboardResult?.teamSummary ?? null;
-  const objectives = dashboardResult?.objectives ?? [];
-  const contributors = dashboardResult?.contributors ?? [];
-  const atRiskObjectives = dashboardResult?.atRiskObjectives ?? [];
+  const objectives = useMemo(
+    () => dashboardResult?.objectives ?? [],
+    [dashboardResult?.objectives],
+  );
+  const contributors = useMemo(
+    () => dashboardResult?.contributors ?? [],
+    [dashboardResult?.contributors],
+  );
+  const atRiskObjectives = useMemo(
+    () => dashboardResult?.atRiskObjectives ?? [],
+    [dashboardResult?.atRiskObjectives],
+  );
 
-  const dashboardData = {
-    summary: teamSummary,
-    objectives,
-    contributors,
-    atRisk: atRiskObjectives,
-  };
+  const dashboardData = useMemo(
+    () => ({
+      summary: teamSummary,
+      objectives,
+      contributors,
+      atRisk: atRiskObjectives,
+    }),
+    [atRiskObjectives, contributors, objectives, teamSummary],
+  );
 
-  const selectedCycle = useMemo(() => cycleOptions.find(c => c.setId === assessmentSetId), [cycleOptions, assessmentSetId]);
+  const selectedCycle = useMemo(
+    () => cycleOptions.find(c => c.setId === resolvedAssessmentSetId),
+    [cycleOptions, resolvedAssessmentSetId],
+  );
+
+  const topContributors = useMemo(() => {
+    if (participantDetails.length > 0) {
+      return [...participantDetails].sort((a, b) => a.seq - b.seq).slice(0, 3);
+    }
+
+    if (loading) {
+      return [
+        { employeeId: 'skel-1', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw,
+        { employeeId: 'skel-2', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw,
+        { employeeId: 'skel-3', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw,
+      ];
+    }
+
+    return [];
+  }, [loading, participantDetails]);
+
+  const { topUpdates, bottomUpdates } = useMemo(() => {
+    const allSubObjectives = objectives.flatMap((objective) => objective.subObjectives || []);
+
+    return {
+      topUpdates: [...allSubObjectives]
+        .filter((sub) => sub.objectiveOwnerType === 1 && (sub.progressUpdate || 0) > 0)
+        .sort((a, b) => (b.progressUpdate || 0) - (a.progressUpdate || 0))
+        .slice(0, 3),
+      bottomUpdates: [...allSubObjectives]
+        .filter((sub) => sub.objectiveOwnerType === 1)
+        .sort((a, b) => (a.progressUpdate || 0) - (b.progressUpdate || 0))
+        .slice(0, 3),
+    };
+  }, [objectives]);
 
   const showStatus = useMemo(() => {
     if (!selectedCycle?.dateEnd) return true;
@@ -144,11 +223,14 @@ export default function Dashboard() {
           {/* Settings / Controls */}
           <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto scrollbar-hide shrink-0 pb-2 xl:pb-0">
             <DashboardSelectors
-              selectedCycleId={assessmentSetId}
+              cycleOptions={cycleOptions}
+              orgGroupedOptions={groupedOrgOptions}
+              selectedCycleId={resolvedAssessmentSetId}
               onCycleChange={setAssessmentSetId}
-              selectedOrgId={organizationId}
+              selectedOrgId={resolvedOrganizationId}
               onOrgChange={setOrganizationId}
               disabled={loading}
+              loading={ddlLoading}
             />
             <div className="hidden lg:block w-px h-6 bg-white/10 mx-1" />
             <FilterBar
@@ -213,7 +295,11 @@ export default function Dashboard() {
 
             {activeTab === 'versus' ? (
                 <div className="w-full max-w-7xl mx-auto py-4">
-                   <VersusMode />
+                   <VersusMode
+                     cycleOptions={cycleOptions}
+                     orgGroupedOptions={groupedOrgOptions}
+                     ddlLoading={ddlLoading}
+                   />
                 </div>
             ) : (
               <>
@@ -231,21 +317,7 @@ export default function Dashboard() {
           {/* ── Main Layout: Dashboard Style ── */}
           <div className="flex flex-col gap-12">
             {/* ── Top Performers (HoloCard Leaderboard) ── */}
-            {(() => {
-              const topContributors =
-                participantDetails.length > 0
-                  ? [...participantDetails]
-                      .sort((a, b) => a.seq - b.seq)
-                      .slice(0, 3)
-                  : loading ? [
-                      { employeeId: 'skel-1', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw,
-                      { employeeId: 'skel-2', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw,
-                      { employeeId: 'skel-3', fullName: '...', totalCheckIn: 0, avgPercent: 0, pictureURL: '' } as unknown as ParticipantDetailRaw
-                    ] : [];
-
-              if (topContributors.length === 0) return null;
-
-              return (
+            {topContributors.length > 0 && (
                 <section className="relative">
                   {/* Section Header — Apple-style minimal */}
                   <div className="mb-12 flex flex-col items-center text-center relative">
@@ -333,8 +405,7 @@ export default function Dashboard() {
                     })()}
                   </div>
                 </section>
-              );
-            })()}
+            )}
 
             {/* ── Check-In Engagement (Top/Bottom Check-ins) ── */}
             <section className="relative max-w-7xl mx-auto w-full">
@@ -343,42 +414,24 @@ export default function Dashboard() {
 
             {/* ── Focus Areas (Unboxed) ── */}
             <section className="relative grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
-              {(() => {
-                const allSubObjectives = objectives.flatMap(o => o.subObjectives || []);
-
-                // Filter and sort for Top 3 (Highest positive progress updates)
-                const topUpdates = [...allSubObjectives]
-                  .filter(sub => sub.objectiveOwnerType === 1 && (sub.progressUpdate || 0) > 0)
-                  .sort((a, b) => (b.progressUpdate || 0) - (a.progressUpdate || 0))
-                  .slice(0, 3);
-
-                // Filter and sort for Bottom 3 (Lowest/Negative progress updates)
-                const bottomUpdates = [...allSubObjectives]
-                  .filter(sub => sub.objectiveOwnerType === 1)
-                  .sort((a, b) => (a.progressUpdate || 0) - (b.progressUpdate || 0))
-                  .slice(0, 3);
-
-                return (
-                  <>
-                    <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                      <ProgressUpdateSection
-                        title="Trending"
-                        description="Tasks with the highest acceleration"
-                        subObjectives={topUpdates}
-                        type="top"
-                      />
-                    </div>
-                    <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                      <ProgressUpdateSection
-                        title="Needs Attention"
-                        description="Tasks losing momentum"
-                        subObjectives={bottomUpdates}
-                        type="bottom"
-                      />
-                    </div>
-                  </>
-                );
-              })()}
+              <>
+                <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
+                  <ProgressUpdateSection
+                    title="Trending"
+                    description="Tasks with the highest acceleration"
+                    subObjectives={topUpdates}
+                    type="top"
+                  />
+                </div>
+                <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
+                  <ProgressUpdateSection
+                    title="Needs Attention"
+                    description="Tasks losing momentum"
+                    subObjectives={bottomUpdates}
+                    type="bottom"
+                  />
+                </div>
+              </>
             </section>
 
             {/* ── Period Comparison ── */}

@@ -1,5 +1,4 @@
-import { orgNodeMock } from '@/data/ddl.org-node.mock';
-import { ddlMock } from '@/data/ddl.mock';
+import type { AssessmentSetDto, OrgNodeDto } from '@/lib/types/ddl';
 
 export interface OrgOption {
   organizationId: number;
@@ -18,16 +17,10 @@ interface GroupedOrgOptionsConfig {
   rootOrganizationId?: number;
 }
 
-type OrgNode = {
-  organizationId: number;
-  value: number;
-  text?: string;
-  name?: string;
-  name_EN?: string;
-  children?: OrgNode[];
-};
-
-const findOrgNodeById = (node: OrgNode, targetId: number): OrgNode | null => {
+const findOrgNodeById = (
+  node: OrgNodeDto,
+  targetId: number,
+): OrgNodeDto | null => {
   if (node.organizationId === targetId) return node;
   if (!node.children?.length) return null;
 
@@ -39,16 +32,21 @@ const findOrgNodeById = (node: OrgNode, targetId: number): OrgNode | null => {
   return null;
 };
 
-export function getGroupedOrgOptions(config?: string | GroupedOrgOptionsConfig): GroupedOrgOption[] {
-  const root = orgNodeMock.data.find(node => node.organizationId === 1);
+export function mapOrgTreeToGroupedOrgOptions(
+  orgNodes: OrgNodeDto[],
+  config?: string | GroupedOrgOptionsConfig,
+): GroupedOrgOption[] {
+  const root = orgNodes.find((node) => node.organizationId === 1);
   if (!root || !root.children) return [];
 
   const resolvedConfig: GroupedOrgOptionsConfig =
     typeof config === "string" ? { groupLabelFilter: config } : (config ?? {});
   const { groupLabelFilter, rootOrganizationId } = resolvedConfig;
 
-  const extractLeaves = (node: OrgNode, leaves: OrgOption[]) => {
-    const validChildren = node.children ? node.children.filter((c: any) => !/^Team [1-9]$/i.test(c.name)) : [];
+  const extractLeaves = (node: OrgNodeDto, leaves: OrgOption[]) => {
+    const validChildren = node.children
+      ? node.children.filter((child) => !/^Team [1-9]$/i.test(child.name ?? ''))
+      : [];
 
     if (validChildren.length === 0) {
       leaves.push({
@@ -65,7 +63,7 @@ export function getGroupedOrgOptions(config?: string | GroupedOrgOptionsConfig):
   };
 
   if (rootOrganizationId) {
-    const targetNode = findOrgNodeById(root as OrgNode, rootOrganizationId);
+    const targetNode = findOrgNodeById(root, rootOrganizationId);
     if (!targetNode) return [];
 
     const leaves: OrgOption[] = [];
@@ -87,8 +85,8 @@ export function getGroupedOrgOptions(config?: string | GroupedOrgOptionsConfig):
     extractLeaves(child, leaves);
     if (leaves.length > 0) {
       groupedOptions.push({
-        groupLabel: child.text || child.name,
-        options: leaves
+        groupLabel: child.text || child.name || '',
+        options: leaves,
       });
     }
   }
@@ -110,13 +108,15 @@ export interface CycleOption {
   dateEnd: string;
 }
 
-export function getCycleOptions(): CycleOption[] {
-  return ddlMock.data.map(item => ({
+export function mapAssessmentSetsToCycleOptions(
+  assessmentSets: AssessmentSetDto[],
+): CycleOption[] {
+  return assessmentSets.map((item) => ({
     setId: item.setId,
     label: item.name,
     isCurrentCycle: item.isCurrentCycle,
     year: item.year,
     dateStart: item.dateStart,
-    dateEnd: item.dateEnd
+    dateEnd: item.dateEnd,
   }));
 }

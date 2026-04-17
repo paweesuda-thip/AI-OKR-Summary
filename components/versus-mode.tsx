@@ -7,7 +7,7 @@ import {
   SubObjective,
   type ParticipantDetailRaw,
 } from "@/lib/types/okr";
-import { Crosshair, Hexagon, Fingerprint, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft } from "lucide-react";
+import { Crosshair, Hexagon, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectSeparator,
 } from "@/components/ui/select";
-import { getGroupedOrgOptions, getCycleOptions } from "@/lib/utils/org-leaf";
+import type { CycleOption, GroupedOrgOption } from "@/lib/utils/org-leaf";
 import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
 import { useParticipantQuery } from "@/hooks/queries/use-participant-query";
 
@@ -45,6 +45,12 @@ interface ComparisonResult {
 type TopObjectiveEnhanced = ContributorSumObj & {
   actualDetails?: SubObjective[];
 };
+
+interface VersusModeProps {
+  cycleOptions: CycleOption[];
+  orgGroupedOptions: GroupedOrgOption[];
+  ddlLoading?: boolean;
+}
 
 type PlayerEnhanced = ContributorSum & {
   topObjectives: TopObjectiveEnhanced[];
@@ -118,7 +124,12 @@ const TypewriterText = ({ text, delay = 0, speed = 20 }: { text: string, delay?:
 }
 
 const buildPlayerPool = (contributors: ContributorSum[], objectives: Objective[]): PlayerEnhanced[] =>
-  contributors
+  {
+    const objectiveById = new Map(
+      objectives.map((objective) => [objective.objectiveId, objective]),
+    );
+
+    return contributors
     .filter((c) => c.fullName && c.objectives && c.objectives.length > 0)
     .map((c) => {
       let totalPersonalProgress = 0;
@@ -132,9 +143,9 @@ const buildPlayerPool = (contributors: ContributorSum[], objectives: Objective[]
             return totalKrProgress / krs.length;
           };
 
+          const sourceObjective = objectiveById.get(obj.objectiveId);
           const actualDetails =
-            objectives
-              .find((o) => o.objectiveId === obj.objectiveId)
+            sourceObjective
               ?.subObjectives.map((so) => ({
                 ...so,
                 details: so.details.filter((kr) => kr.fullName === c.fullName),
@@ -163,6 +174,7 @@ const buildPlayerPool = (contributors: ContributorSum[], objectives: Objective[]
 
       return { ...c, avgObjectiveProgress: newAvg, topObjectives: topObjs };
     });
+  };
 
 /** Client-side load heuristic from KR count + point gap (maps OKR weight vs progress). */
 function objectiveLoadHint(obj: TopObjectiveEnhanced): { chip: string; sub: string } {
@@ -177,17 +189,17 @@ function objectiveLoadHint(obj: TopObjectiveEnhanced): { chip: string; sub: stri
   return { chip: "LOAD · LOW", sub: n ? `${objectiveDetails.length} detail · ${n} KR` : "no KR rows" };
 }
 
-export default function VersusMode() {
+export default function VersusMode({
+  cycleOptions,
+  orgGroupedOptions,
+  ddlLoading = false,
+}: VersusModeProps) {
   const [step, setStep] = useState<Step>("select");
   const [p1, setP1] = useState<PlayerEnhanced | null>(null);
   const [p2, setP2] = useState<PlayerEnhanced | null>(null);
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [isComparing, setIsComparing] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
-
-  // Org/cycle picker options (static config from utils — not AI eval payload)
-  const cycleOptions = useMemo(() => getCycleOptions(), []);
-  const orgGroupedOptions = useMemo(() => getGroupedOrgOptions({ rootOrganizationId: 18473 }), []);
 
   const sortedCycles = useMemo(() => {
     return [...cycleOptions].sort((a, b) => {
@@ -212,19 +224,48 @@ export default function VersusMode() {
   const [p2CycleId, setP2CycleId] = useState<number>(defaultCycleId);
   const [p2OrgId, setP2OrgId] = useState<number>(defaultOrgId);
 
+  useEffect(() => {
+    if (sortedCycles.length === 0) return;
+    const validP1 = sortedCycles.some((cycle) => cycle.setId === p1CycleId);
+    const validP2 = sortedCycles.some((cycle) => cycle.setId === p2CycleId);
+    if (!validP1) setP1CycleId(defaultCycleId);
+    if (!validP2) setP2CycleId(defaultCycleId);
+  }, [defaultCycleId, p1CycleId, p2CycleId, sortedCycles]);
+
+  useEffect(() => {
+    if (orgGroupedOptions.length === 0) return;
+    const orgIds = new Set(
+      orgGroupedOptions.flatMap((group) => group.options.map((option) => option.organizationId)),
+    );
+    if (!orgIds.has(p1OrgId)) setP1OrgId(defaultOrgId);
+    if (!orgIds.has(p2OrgId)) setP2OrgId(defaultOrgId);
+  }, [defaultOrgId, orgGroupedOptions, p1OrgId, p2OrgId]);
+
+  const orgLabelMap = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const group of orgGroupedOptions) {
+      for (const option of group.options) {
+        map.set(option.organizationId, option.label);
+      }
+    }
+    return map;
+  }, [orgGroupedOptions]);
+
   const p1SelectedCycleLabel = sortedCycles.find(c => c.setId === p1CycleId)?.label || "Select Cycle";
-  const p1SelectedOrgLabel = orgGroupedOptions.flatMap(g => g.options).find(o => o.organizationId === p1OrgId)?.label || "Select Team";
+  const p1SelectedOrgLabel = orgLabelMap.get(p1OrgId) || "Select Team";
 
   const p2SelectedCycleLabel = sortedCycles.find(c => c.setId === p2CycleId)?.label || "Select Cycle";
-  const p2SelectedOrgLabel = orgGroupedOptions.flatMap(g => g.options).find(o => o.organizationId === p2OrgId)?.label || "Select Team";
+  const p2SelectedOrgLabel = orgLabelMap.get(p2OrgId) || "Select Team";
 
   const p1Params = useMemo(() => ({ assessmentSetId: p1CycleId, organizationId: p1OrgId }), [p1CycleId, p1OrgId]);
   const p2Params = useMemo(() => ({ assessmentSetId: p2CycleId, organizationId: p2OrgId }), [p2CycleId, p2OrgId]);
 
-  const { data: p1DashboardData, isLoading: p1Loading } = useDashboardQuery(p1Params);
-  const { data: p2DashboardData, isLoading: p2Loading } = useDashboardQuery(p2Params);
-  const { data: p1Participants } = useParticipantQuery(p1Params);
-  const { data: p2Participants } = useParticipantQuery(p2Params);
+  const queryEnabled = !ddlLoading && sortedCycles.length > 0 && orgGroupedOptions.length > 0;
+
+  const { data: p1DashboardData, isLoading: p1Loading } = useDashboardQuery(p1Params, { enabled: queryEnabled });
+  const { data: p2DashboardData, isLoading: p2Loading } = useDashboardQuery(p2Params, { enabled: queryEnabled });
+  const { data: p1Participants } = useParticipantQuery(p1Params, { enabled: queryEnabled });
+  const { data: p2Participants } = useParticipantQuery(p2Params, { enabled: queryEnabled });
 
   const p1Candidates = useMemo(
     () =>
@@ -349,11 +390,15 @@ export default function VersusMode() {
             <div className="grid grid-cols-2 gap-2 w-full">
               {/* P1 Cycle Selector */}
               <div className="relative min-w-0">
-                <Select value={p1CycleId.toString()} onValueChange={(val) => setP1CycleId(Number(val))}>
+                <Select
+                  value={p1CycleId.toString()}
+                  onValueChange={(val) => setP1CycleId(Number(val))}
+                  disabled={ddlLoading || sortedCycles.length === 0}
+                >
                   <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
                     <div className="flex items-center gap-2 truncate">
                       <CalendarDays className="w-3 h-3 shrink-0 text-rose-500/70" />
-                      <span className="truncate">{p1SelectedCycleLabel}</span>
+                      <span className="truncate">{ddlLoading ? "Loading cycles..." : p1SelectedCycleLabel}</span>
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl min-w-[var(--radix-select-trigger-width)]">
@@ -373,11 +418,15 @@ export default function VersusMode() {
 
               {/* P1 Organization Selector */}
               <div className="relative min-w-0">
-                <Select value={p1OrgId.toString()} onValueChange={(val) => setP1OrgId(Number(val))}>
+                <Select
+                  value={p1OrgId.toString()}
+                  onValueChange={(val) => setP1OrgId(Number(val))}
+                  disabled={ddlLoading || orgGroupedOptions.length === 0}
+                >
                   <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
                     <div className="flex items-center gap-2 truncate whitespace-nowrap">
                       <Users className="w-3 h-3 shrink-0 text-rose-500/70" />
-                      <span className="truncate">{p1SelectedOrgLabel}</span>
+                      <span className="truncate">{ddlLoading ? "Loading teams..." : p1SelectedOrgLabel}</span>
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px] min-w-[var(--radix-select-trigger-width)]">
@@ -403,13 +452,13 @@ export default function VersusMode() {
               {p1Loading && (
                 <div className="text-xs text-zinc-500 px-2 py-6 text-center">Loading roster...</div>
               )}
-              {!p1Loading && p1Candidates.map((c, i) => {
+              {!p1Loading && p1Candidates.map((c) => {
                 const isSelected = p1?.fullName === c.fullName;
                 const isPickedByOther = p2?.fullName === c.fullName;
                 return (
                   <motion.button
                     whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
-                    key={i} onClick={() => !isPickedByOther && setP1(c)} disabled={isPickedByOther}
+                    key={c.fullName} onClick={() => !isPickedByOther && setP1(c)} disabled={isPickedByOther}
                     className={`relative flex items-center gap-5 p-3 group transition-all duration-300 rounded-[20px]
                                         ${isSelected ? 'bg-gradient-to-r from-[#1a050a] to-[#0a0a0c] border border-rose-500/50 shadow-[0_4px_30px_rgba(244,63,94,0.15)] ring-1 ring-rose-500/20' :
                         isPickedByOther ? 'opacity-15 grayscale pointer-events-none' :
@@ -483,11 +532,15 @@ export default function VersusMode() {
             <div className="grid grid-cols-2 gap-2 w-full">
               {/* P2 Cycle Selector */}
               <div className="relative min-w-0">
-                <Select value={p2CycleId.toString()} onValueChange={(val) => setP2CycleId(Number(val))}>
+                <Select
+                  value={p2CycleId.toString()}
+                  onValueChange={(val) => setP2CycleId(Number(val))}
+                  disabled={ddlLoading || sortedCycles.length === 0}
+                >
                   <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
                     <div className="flex items-center gap-2 truncate">
                       <CalendarDays className="w-3 h-3 shrink-0 text-cyan-400/70" />
-                      <span className="truncate">{p2SelectedCycleLabel}</span>
+                      <span className="truncate">{ddlLoading ? "Loading cycles..." : p2SelectedCycleLabel}</span>
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl min-w-[var(--radix-select-trigger-width)]">
@@ -507,11 +560,15 @@ export default function VersusMode() {
 
               {/* P2 Organization Selector */}
               <div className="relative min-w-0">
-                <Select value={p2OrgId.toString()} onValueChange={(val) => setP2OrgId(Number(val))}>
+                <Select
+                  value={p2OrgId.toString()}
+                  onValueChange={(val) => setP2OrgId(Number(val))}
+                  disabled={ddlLoading || orgGroupedOptions.length === 0}
+                >
                   <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
                     <div className="flex items-center gap-2 truncate whitespace-nowrap">
                       <Users className="w-3 h-3 shrink-0 text-cyan-400/70" />
-                      <span className="truncate">{p2SelectedOrgLabel}</span>
+                      <span className="truncate">{ddlLoading ? "Loading teams..." : p2SelectedOrgLabel}</span>
                     </div>
                   </SelectTrigger>
                   <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px] min-w-[var(--radix-select-trigger-width)]">
@@ -537,13 +594,13 @@ export default function VersusMode() {
               {p2Loading && (
                 <div className="text-xs text-zinc-500 px-2 py-6 text-center">Loading roster...</div>
               )}
-              {!p2Loading && p2Candidates.map((c, i) => {
+              {!p2Loading && p2Candidates.map((c) => {
                 const isSelected = p2?.fullName === c.fullName;
                 const isPickedByOther = p1?.fullName === c.fullName;
                 return (
                   <motion.button
                     whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
-                    key={i} onClick={() => !isPickedByOther && setP2(c)} disabled={isPickedByOther}
+                    key={c.fullName} onClick={() => !isPickedByOther && setP2(c)} disabled={isPickedByOther}
                     className={`relative flex items-center gap-5 p-3 flex-row-reverse group transition-all duration-300 rounded-[20px]
                                         ${isSelected ? 'bg-gradient-to-l from-[#050910] to-[#0a0a0c] border border-cyan-400/50 shadow-[0_4px_30px_rgba(34,211,238,0.15)] ring-1 ring-cyan-400/20' :
                         isPickedByOther ? 'opacity-15 grayscale pointer-events-none' :

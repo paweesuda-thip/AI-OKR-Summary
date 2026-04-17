@@ -8,38 +8,42 @@ import {
   SelectItem,
   SelectLabel,
   SelectTrigger,
-  SelectValue,
   SelectSeparator,
 } from "@/components/ui/select";
-import { getGroupedOrgOptions, getCycleOptions } from "@/lib/utils/org-leaf";
+import type { CycleOption, GroupedOrgOption } from "@/lib/utils/org-leaf";
 import { Users, CalendarDays } from "lucide-react";
 
 interface DashboardSelectorsProps {
+  cycleOptions: CycleOption[];
+  orgGroupedOptions: GroupedOrgOption[];
   selectedCycleId: number;
   onCycleChange: (setId: number) => void;
   selectedOrgId: number;
   onOrgChange: (orgId: number) => void;
   disabled?: boolean;
+  loading?: boolean;
 }
 
 export default function DashboardSelectors({
+  cycleOptions,
+  orgGroupedOptions,
   selectedCycleId,
   onCycleChange,
   selectedOrgId,
   onOrgChange,
   disabled = false,
+  loading = false,
 }: DashboardSelectorsProps) {
-  const cycleOptions = useMemo(() => getCycleOptions(), []);
-  const orgGroupedOptions = useMemo(() => getGroupedOrgOptions({ rootOrganizationId: 18473 }), []);
-
-  const sortedCycles = useMemo(() => {
-    return [...cycleOptions].sort((a, b) => {
-      if (a.isCurrentCycle && !b.isCurrentCycle) return -1;
-      if (!a.isCurrentCycle && b.isCurrentCycle) return 1;
-      if (a.year !== b.year) return b.year - a.year;
-      return new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime();
-    });
-  }, [cycleOptions]);
+  const sortedCycles = useMemo(
+    () =>
+      [...cycleOptions].sort((a, b) => {
+        if (a.isCurrentCycle && !b.isCurrentCycle) return -1;
+        if (!a.isCurrentCycle && b.isCurrentCycle) return 1;
+        if (a.year !== b.year) return b.year - a.year;
+        return new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime();
+      }),
+    [cycleOptions],
+  );
 
   // Find the selected labels for the trigger display
   const selectedCycleLabel = sortedCycles.find(c => c.setId === selectedCycleId)?.label || "Select Cycle";
@@ -52,12 +56,12 @@ export default function DashboardSelectors({
         <Select
           value={selectedCycleId.toString()}
           onValueChange={(val) => onCycleChange(Number(val))}
-          disabled={disabled}
+          disabled={disabled || loading || sortedCycles.length === 0}
         >
           <SelectTrigger className="w-[140px] sm:w-[160px] h-9 bg-black/40 border-white/10 hover:bg-white/5 data-[state=open]:bg-white/5 data-[state=open]:border-white/20 transition-all rounded-full text-xs font-semibold px-3 overflow-hidden text-zinc-300">
             <div className="flex items-center gap-2 truncate">
               <CalendarDays className="w-3.5 h-3.5 shrink-0 text-cyan-500/70" />
-              <span className="truncate">{selectedCycleLabel}</span>
+              <span className="truncate">{loading ? "Loading cycles..." : selectedCycleLabel}</span>
             </div>
           </SelectTrigger>
           <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl">
@@ -80,12 +84,12 @@ export default function DashboardSelectors({
         <Select
           value={selectedOrgId.toString()}
           onValueChange={(val) => onOrgChange(Number(val))}
-          disabled={disabled}
+          disabled={disabled || loading || orgGroupedOptions.length === 0}
         >
           <SelectTrigger className="w-[150px] sm:w-[180px] h-9 bg-black/40 border-white/10 hover:bg-white/5 data-[state=open]:bg-white/5 data-[state=open]:border-white/20 transition-all rounded-full text-xs font-semibold px-3 overflow-hidden text-zinc-300">
             <div className="flex items-center gap-2 truncate">
               <Users className="w-3.5 h-3.5 shrink-0 text-amber-500/70" />
-              <span className="truncate">{selectedOrgLabel}</span>
+              <span className="truncate">{loading ? "Loading teams..." : selectedOrgLabel}</span>
             </div>
           </SelectTrigger>
           <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px]">
