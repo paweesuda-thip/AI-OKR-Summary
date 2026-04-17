@@ -4,6 +4,7 @@ import type { AssessmentSetDto, OrgNodeDto } from '@/lib/types/ddl';
 
 const API_CORE_BASE_URL = process.env.NEXT_PUBLIC_API_CORE_BASE_URL ?? 'https://api-core.empeo.com';
 const API_EMPEO_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://api.empeo.com';
+
 const DDL_USER_ID = process.env.DDL_USER_ID;
 const STATIO_GOFIVE_KEY = process.env.NEXT_PUBLIC_API_STATIO_GOFIVE_KEY;
 const EMPEO_API_KEY = process.env.NEXT_PUBLIC_API_KEY_EMPEO;
