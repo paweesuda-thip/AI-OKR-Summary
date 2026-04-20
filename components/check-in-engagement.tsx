@@ -31,8 +31,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { fetchEmployeeObjectiveSummary, type DashboardQueryParams } from "@/lib/api/okr-api";
-import { mapObjective } from "@/lib/transformers/okr-transformer";
-import type { Objective } from "@/lib/types/okr";
+import { mapObjective, mapObjectiveForPerson } from "@/lib/transformers/okr-transformer";
+import type { Objective, PersonObjective } from "@/lib/types/okr";
 
 interface CheckInEngagementProps {
   participantDetails: ParticipantDetailRaw[];
@@ -378,34 +378,19 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
               : heroStatus.color.includes('rose') ? '#fb7185'
               : '#71717a';
 
-            // Sub-OKR display progress: raw avg(pointOKR) of this person's KRs
-            const subPersonProgress = (sub: Objective['subObjectives'][number]) => {
-              if (sub.details.length === 0) return 0;
-              return sub.details.reduce((a, d) => a + d.pointOKR, 0) / sub.details.length;
-            };
-
-            // For main-obj computation, cap by sub.progress (to account for hidden 0% KRs at team level)
-            const subPersonProgressCapped = (sub: Objective['subObjectives'][number]) => {
-              if (sub.details.length === 0) return 0;
-              return Math.min(subPersonProgress(sub), sub.progress);
-            };
-
-            const objPersonProgress = (obj: Objective) => {
-              const nonEmpty = obj.subObjectives.filter(s => s.details.length > 0);
-              return nonEmpty.length > 0
-                ? nonEmpty.reduce((a, s) => a + subPersonProgressCapped(s), 0) / nonEmpty.length
-                : 0;
-            };
+            // Build per-person objectives via shared helper (single source of truth
+            // aligned with versus-mode). Objectives where the person owns zero KRs
+            // are dropped entirely — we don't render or count them.
+            const personObjectives: PersonObjective[] = employeeObjectives
+              .map(o => mapObjectiveForPerson(o, objectiveModalPerson.fullName))
+              .filter((o): o is PersonObjective => o !== null);
 
             const toStatus = (p: number): 'On Track' | 'At Risk' | 'Behind' =>
               p >= 70 ? 'On Track' : p >= 40 ? 'At Risk' : 'Behind';
 
-            const objProgressMap = new Map<number, number>();
-            employeeObjectives.forEach(o => objProgressMap.set(o.objectiveId, objPersonProgress(o)));
-
-            const onTrackCount = employeeObjectives.filter(o => toStatus(objProgressMap.get(o.objectiveId) ?? 0) === 'On Track').length;
-            const atRiskCount = employeeObjectives.filter(o => toStatus(objProgressMap.get(o.objectiveId) ?? 0) === 'At Risk').length;
-            const behindCount = employeeObjectives.filter(o => toStatus(objProgressMap.get(o.objectiveId) ?? 0) === 'Behind').length;
+            const onTrackCount = personObjectives.filter(o => toStatus(o.personProgress) === 'On Track').length;
+            const atRiskCount = personObjectives.filter(o => toStatus(o.personProgress) === 'At Risk').length;
+            const behindCount = personObjectives.filter(o => toStatus(o.personProgress) === 'Behind').length;
 
             return (
               <div className="relative">
@@ -519,7 +504,7 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                     </div>
                   )}
 
-                  {!objectivesLoading && !objectivesError && employeeObjectives.length === 0 && (
+                  {!objectivesLoading && !objectivesError && personObjectives.length === 0 && (
                     <div className="flex flex-col items-center justify-center py-16 gap-3 text-zinc-600">
                       <div className="p-3 rounded-2xl border border-white/5 bg-white/5">
                         <Target className="w-6 h-6 opacity-50" />
@@ -528,27 +513,27 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                     </div>
                   )}
 
-                  {!objectivesLoading && (
+                  {!objectivesLoading && personObjectives.length > 0 && (
                     <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-2">
                         <div className="h-px w-6 bg-white/20" />
                         <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Objectives</span>
                       </div>
                       <span className="text-[10px] font-mono text-zinc-600">
-                        {employeeObjectives.length} total
+                        {personObjectives.length} total
                       </span>
                     </div>
                   )}
 
                   <div className="space-y-2.5">
-                    {!objectivesLoading && employeeObjectives.map((obj, idx) => {
+                    {!objectivesLoading && personObjectives.map((obj, idx) => {
                       const isExpanded = expandedObjectiveId === obj.objectiveId;
-                      const personProgress = objProgressMap.get(obj.objectiveId) ?? 0;
+                      const personProgress = obj.personProgress;
                       const objStatus = toStatus(personProgress);
                       const statusColor = objStatus === 'On Track' ? 'text-emerald-400' : objStatus === 'At Risk' ? 'text-amber-400' : 'text-rose-400';
                       const statusBg = objStatus === 'On Track' ? 'bg-emerald-500/10 border-emerald-500/20' : objStatus === 'At Risk' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-rose-500/10 border-rose-500/20';
                       const stripeColor = objStatus === 'On Track' ? 'bg-emerald-500' : objStatus === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500';
-                      const krCount = obj.subObjectives.filter(s => s.details.length > 0).length;
+                      const krCount = obj.subObjectives.length;
 
                       return (
                         <div
@@ -615,8 +600,8 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                                 <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-zinc-500">Key Results</span>
                               </div>
                               <div className="px-3 pb-3 space-y-2">
-                                {obj.subObjectives.filter(s => s.details.length > 0).map((sub, subIdx) => {
-                                  const subProg = subPersonProgress(sub);
+                                {obj.subObjectives.map((sub, subIdx) => {
+                                  const subProg = sub.personProgress;
                                   const subStatus = toStatus(subProg);
                                   const subColor = subStatus === 'On Track' ? 'text-emerald-400' : subStatus === 'At Risk' ? 'text-amber-400' : 'text-rose-400';
                                   const subBar = subStatus === 'On Track' ? 'bg-emerald-500' : subStatus === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500';

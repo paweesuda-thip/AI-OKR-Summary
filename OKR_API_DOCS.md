@@ -2,6 +2,25 @@
 
 เอกสารนี้อธิบาย field ทั้งหมดที่ได้จาก API response ของระบบ OKR, ความหมาย, ความสัมพันธ์ระหว่าง field, และวิธีการคำนวณ progress สำหรับแต่ละระดับ
 
+## ⚡ TL;DR สำหรับคน implement
+
+**อย่าเขียน person-specific progress logic ใหม่** — ใช้ helper ที่มีแล้ว:
+
+```ts
+import { mapObjectiveForPerson } from '@/lib/transformers/okr-transformer';
+import type { PersonObjective } from '@/lib/types/okr';
+
+const personObj: PersonObjective | null = mapObjectiveForPerson(objective, personName);
+// personObj.personProgress          → main-obj % ของคนนี้
+// personObj.subObjectives[].personProgress       → sub-OKR % (raw, สำหรับแสดงผล)
+// personObj.subObjectives[].personProgressCapped → sub-OKR % (capped) — internal, caller ไม่ต้องใช้ปกติ
+// return null → คนนี้ไม่มี KR เลยใน objective นี้ (skip ทั้ง render + การคำนวณ)
+```
+
+helper นี้คือ **single source of truth** — ใช้ทั้งใน `check-in-engagement.tsx` และ `versus-mode.tsx`
+
+**แสดงผลตัวเลข:** ใช้ `Math.floor()` เสมอ (source system truncate, ไม่ใช่ round)
+
 ---
 
 ## 1. Data Hierarchy (โครงสร้างข้อมูล)

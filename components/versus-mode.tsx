@@ -2,11 +2,11 @@ import { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import {
   ContributorSum,
-  ContributorSumObj,
   Objective,
-  SubObjective,
+  PersonObjective,
   type ParticipantDetailRaw,
 } from "@/lib/types/okr";
+import { mapObjectiveForPerson } from "@/lib/transformers/okr-transformer";
 import { Crosshair, Hexagon, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -42,9 +42,11 @@ interface ComparisonResult {
   conclusion: string;
 }
 
-type TopObjectiveEnhanced = ContributorSumObj & {
-  actualDetails?: SubObjective[];
-};
+/**
+ * Alias kept for readability at call sites. Comes from shared
+ * `mapObjectiveForPerson()` so versus-mode and check-in-engagement stay in sync.
+ */
+type TopObjectiveEnhanced = PersonObjective;
 
 interface VersusModeProps {
   cycleOptions: CycleOption[];
@@ -123,70 +125,47 @@ const TypewriterText = ({ text, delay = 0, speed = 20 }: { text: string, delay?:
   return <span>{displayed}</span>;
 }
 
-const buildPlayerPool = (contributors: ContributorSum[], objectives: Objective[]): PlayerEnhanced[] =>
-  {
-    const objectiveById = new Map(
-      objectives.map((objective) => [objective.objectiveId, objective]),
-    );
+const buildPlayerPool = (
+  contributors: ContributorSum[],
+  objectives: Objective[],
+): PlayerEnhanced[] => {
+  const objectiveById = new Map(
+    objectives.map((objective) => [objective.objectiveId, objective]),
+  );
 
-    return contributors
+  return contributors
     .filter((c) => c.fullName && c.objectives && c.objectives.length > 0)
     .map((c) => {
-      let totalPersonalProgress = 0;
-      let validObjCount = 0;
-
-      const topObjs = [...c.objectives]
-        .map((obj) => {
-          const calcDetailProgressFromKrs = (krs: SubObjective["details"]): number => {
-            if (!krs.length) return 0;
-            const totalKrProgress = krs.reduce((acc, kr) => acc + (kr.pointOKR ?? 0), 0);
-            return totalKrProgress / krs.length;
-          };
-
-          const sourceObjective = objectiveById.get(obj.objectiveId);
-          const actualDetails =
-            sourceObjective
-              ?.subObjectives.map((so) => ({
-                ...so,
-                details: so.details.filter((kr) => kr.fullName === c.fullName),
-              }))
-              .map((so) => ({
-                ...so,
-                // Use contributor KR progress to derive detail progress (not global detail progress).
-                progress: calcDetailProgressFromKrs(so.details),
-              }))
-              .filter((so) => so.details.length > 0) || [];
-
-          const validObjectiveDetails = actualDetails.filter((detail) => detail.progress !== undefined);
-          const personalObjProgress =
-            validObjectiveDetails.length > 0
-              ? validObjectiveDetails.reduce((acc, detail) => acc + detail.progress, 0) / validObjectiveDetails.length
-              : obj.progress;
-
-          totalPersonalProgress += personalObjProgress;
-          validObjCount++;
-
-          return { ...obj, progress: personalObjProgress, actualDetails };
+      // Route ALL per-person progress math through the shared helper so
+      // versus-mode and check-in-engagement can't drift apart.
+      const topObjs: TopObjectiveEnhanced[] = c.objectives
+        .map((contribObj) => {
+          const source = objectiveById.get(contribObj.objectiveId);
+          return source ? mapObjectiveForPerson(source, c.fullName) : null;
         })
-        .sort((a, b) => b.progress - a.progress);
+        .filter((o): o is TopObjectiveEnhanced => o !== null)
+        .sort((a, b) => b.personProgress - a.personProgress);
 
-      const newAvg = validObjCount > 0 ? totalPersonalProgress / validObjCount : c.avgObjectiveProgress;
+      const avgObjectiveProgress =
+        topObjs.length > 0
+          ? topObjs.reduce((s, o) => s + o.personProgress, 0) / topObjs.length
+          : c.avgObjectiveProgress;
 
-      return { ...c, avgObjectiveProgress: newAvg, topObjectives: topObjs };
+      return { ...c, avgObjectiveProgress, topObjectives: topObjs };
     });
-  };
+};
 
 /** Client-side load heuristic from KR count + point gap (maps OKR weight vs progress). */
 function objectiveLoadHint(obj: TopObjectiveEnhanced): { chip: string; sub: string } {
-  const objectiveDetails = obj.actualDetails ?? [];
-  const krs = objectiveDetails.flatMap((detail) => detail.details ?? []);
+  const subs = obj.subObjectives;
+  const krs = subs.flatMap((s) => s.details ?? []);
   const n = krs.length;
   const gapSum = krs.reduce((acc, kr) => acc + Math.max(0, (kr.pointOKR || 0) - (kr.pointCurrent || 0)), 0);
   const avgGap = n > 0 ? gapSum / n : 0;
-  const score = objectiveDetails.length * 10 + n * 8 + avgGap;
-  if (score >= 72) return { chip: "LOAD · HIGH", sub: `${objectiveDetails.length} detail · ${n} KR · ~${Math.round(avgGap)}% gap avg` };
-  if (score >= 32) return { chip: "LOAD · MED", sub: `${objectiveDetails.length} detail · ${n} KR` };
-  return { chip: "LOAD · LOW", sub: n ? `${objectiveDetails.length} detail · ${n} KR` : "no KR rows" };
+  const score = subs.length * 10 + n * 8 + avgGap;
+  if (score >= 72) return { chip: "LOAD · HIGH", sub: `${subs.length} detail · ${n} KR · ~${Math.round(avgGap)}% gap avg` };
+  if (score >= 32) return { chip: "LOAD · MED", sub: `${subs.length} detail · ${n} KR` };
+  return { chip: "LOAD · LOW", sub: n ? `${subs.length} detail · ${n} KR` : "no KR rows" };
 }
 
 export default function VersusMode({
@@ -464,7 +443,7 @@ export default function VersusMode({
                     <div className="flex-1 text-left flex flex-col justify-center">
                       <div className={`text-base truncate max-w-[200px] font-sans ${isSelected ? 'text-white font-bold tracking-wide drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-zinc-300 font-medium tracking-wider group-hover:text-white transition-colors'}`}>{c.fullName}</div>
                       <div className="text-[10px] font-sans font-bold text-rose-500/80 tracking-widest uppercase mt-1 flex items-center gap-2">
-                        AVG Progress <span className="text-white text-xs px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded">{(c.avgParticipantPercent ?? c.avgObjectiveProgress).toFixed(0)}</span>
+                        AVG Progress <span className="text-white text-xs px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded">{Math.floor(c.avgParticipantPercent ?? c.avgObjectiveProgress)}</span>
                       </div>
                     </div>
                     {isSelected && <Zap className="w-6 h-6 text-rose-400 absolute right-4 drop-shadow-[0_0_10px_rgba(244,63,94,0.9)] animate-pulse" />}
@@ -609,7 +588,7 @@ export default function VersusMode({
                     <div className="flex-1 text-right flex flex-col justify-center">
                       <div className={`text-base truncate max-w-[200px] inline-block font-sans ${isSelected ? 'text-white font-bold tracking-wide drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-zinc-300 font-medium tracking-wider group-hover:text-white transition-colors'}`}>{c.fullName}</div>
                       <div className="text-[10px] font-sans font-bold text-cyan-500/80 tracking-widest uppercase mt-1 flex items-center justify-end gap-2">
-                        <span className="text-white text-xs px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded">{(c.avgParticipantPercent ?? c.avgObjectiveProgress).toFixed(0)}</span> AVG Progress
+                        <span className="text-white text-xs px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded">{Math.floor(c.avgParticipantPercent ?? c.avgObjectiveProgress)}</span> AVG Progress
                       </div>
                     </div>
                     {isSelected && <Zap className="w-6 h-6 text-cyan-400 absolute left-4 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse" />}
@@ -650,7 +629,7 @@ export default function VersusMode({
         );
       }
       const load = objectiveLoadHint(obj);
-      const objectiveDetails = obj.actualDetails ?? [];
+      const objectiveDetails = obj.subObjectives;
 
       return (
         <div
@@ -668,12 +647,12 @@ export default function VersusMode({
                   className={isLeft ? "stroke-rose-500" : "stroke-cyan-400"}
                   strokeWidth="2.5"
                   strokeDasharray="88"
-                  strokeDashoffset={88 - (88 * Math.min(100, Math.max(0, obj.progress))) / 100}
+                  strokeDashoffset={88 - (88 * Math.min(100, Math.max(0, obj.personProgress))) / 100}
                   strokeLinecap="round"
                 />
               </svg>
               <span className={`absolute text-[9px] font-bold font-mono ${isLeft ? "text-rose-400" : "text-cyan-400"}`}>
-                {obj.progress.toFixed(0)}
+                {Math.floor(obj.personProgress)}
               </span>
             </div>
             <div className={`flex-1 min-w-0 ${isLeft ? "text-left" : "text-right"}`}>
@@ -701,7 +680,7 @@ export default function VersusMode({
                       </div>
                     </div>
                     <span className={`shrink-0 text-[10px] font-mono px-2 py-1 rounded border ${isLeft ? "border-rose-500/30 text-rose-400" : "border-cyan-400/30 text-cyan-400"}`}>
-                      {Math.round(detail.progress ?? 0)}%
+                      {Math.floor(detail.personProgress)}%
                     </span>
                   </div>
 
@@ -715,7 +694,7 @@ export default function VersusMode({
                           <Crosshair className={`w-3 h-3 shrink-0 mt-0.5 ${isLeft ? "text-rose-500/80" : "text-cyan-400/80"}`} />
                           <div className={`flex-1 min-w-0 leading-relaxed ${isLeft ? "text-left" : "text-right"} text-zinc-400`}>{kr.krTitle}</div>
                           <div className={`flex flex-col items-end shrink-0 gap-0.5 font-mono text-[9px] ${isLeft ? "" : "items-start"}`}>
-                            <span className={isLeft ? "text-rose-400" : "text-cyan-400"}>{kr.pointOKR}%</span>
+                            <span className={isLeft ? "text-rose-400" : "text-cyan-400"}>{Math.floor(kr.pointOKR)}%</span>
                             <span className="text-zinc-600">
                               {kr.pointCurrent ?? 0} pt.
                             </span>
@@ -791,7 +770,7 @@ export default function VersusMode({
               <div>
                 <div className="text-[9px] text-rose-500/80 tracking-[0.3em] uppercase">alpha</div>
                 <div className="text-white font-sans font-bold text-lg truncate max-w-[240px]">{p1.fullName}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {(p1.avgParticipantPercent ?? p1.avgObjectiveProgress).toFixed(0)} · in {p1.checkInCount} check-ins</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {Math.floor(p1.avgParticipantPercent ?? p1.avgObjectiveProgress)} · in {p1.checkInCount} check-ins</div>
               </div>
             </div>
             <div className="space-y-3">
@@ -823,7 +802,7 @@ export default function VersusMode({
               <div className="flex-1 min-w-0">
                 <div className="text-[9px] text-cyan-400/80 tracking-[0.3em] uppercase">omega</div>
                 <div className="text-white font-sans font-bold text-lg truncate max-w-[240px] ml-auto">{p2.fullName}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {(p2.avgParticipantPercent ?? p2.avgObjectiveProgress).toFixed(0)} · in {p2.checkInCount} check-ins</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {Math.floor(p2.avgParticipantPercent ?? p2.avgObjectiveProgress)} · in {p2.checkInCount} check-ins</div>
               </div>
             </div>
             <div className="space-y-3">
@@ -854,7 +833,7 @@ export default function VersusMode({
   // -------------------------------------------------------------
   const HologramObjective = ({ obj, isActive, isLeft, badge }: { obj?: TopObjectiveEnhanced, isActive: boolean, isLeft: boolean, badge?: string }) => {
     const [expanded, setExpanded] = useState(false);
-    const hasDetails = obj && obj.actualDetails && obj.actualDetails.length > 0;
+    const hasDetails = obj && obj.subObjectives && obj.subObjectives.length > 0;
 
     // Reset expansion map when round changes implicitly
     useEffect(() => {
@@ -895,12 +874,12 @@ export default function VersusMode({
                 className={isLeft ? "stroke-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.4)]" : "stroke-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.4)]"}
                 strokeWidth="2.5" strokeDasharray="91.1"
                 initial={{ strokeDashoffset: 91.1 }}
-                animate={{ strokeDashoffset: isActive ? 91.1 - (91.1 * Math.min(100, Math.max(0, obj.progress)) / 100) : 91.1 }}
+                animate={{ strokeDashoffset: isActive ? 91.1 - (91.1 * Math.min(100, Math.max(0, obj.personProgress)) / 100) : 91.1 }}
                 transition={{ duration: 1.5, type: "spring", delay: 0.2 }}
                 strokeLinecap="round"
               />
             </svg>
-            <span className={`absolute text-[10px] font-bold ${isLeft ? 'text-rose-400' : 'text-cyan-400'}`}>{isActive ? obj.progress.toFixed(0) : '0'}</span>
+            <span className={`absolute text-[10px] font-bold ${isLeft ? 'text-rose-400' : 'text-cyan-400'}`}>{isActive ? Math.floor(obj.personProgress) : '0'}</span>
           </div>
 
           <div className="flex-1 min-w-0 pr-6">
@@ -952,7 +931,7 @@ export default function VersusMode({
             >
               <div className="p-4 md:p-6 pt-0 border-t border-[#1a1a1a] bg-[#070709]">
                 <div className="flex flex-col gap-3 mt-4">
-                  {obj.actualDetails!.map((detail, idx) => (
+                  {obj.subObjectives.map((detail, idx) => (
                     <div key={detail.objectiveId ?? idx} className="rounded-lg bg-[#0e0e11] border border-[#161616] p-3.5 space-y-3">
                       <div className={`flex items-start gap-3 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
                         <div className="flex-1 min-w-0">
@@ -960,7 +939,7 @@ export default function VersusMode({
                           <div className="text-sm font-sans leading-relaxed text-zinc-300 mt-1">{detail.title}</div>
                         </div>
                         <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>
-                          {Math.round(detail.progress ?? 0)}%
+                          {Math.floor(detail.personProgress)}%
                         </span>
                       </div>
 
@@ -975,7 +954,7 @@ export default function VersusMode({
                                   progress {kr.pointCurrent ?? 0}/{kr.pointOKR ?? 0}%
                                 </div>
                               </div>
-                              <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>{Math.round(kr.krProgress)}%</span>
+                              <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>{Math.floor(kr.krProgress)}%</span>
                             </div>
                           ))}
                         </div>
