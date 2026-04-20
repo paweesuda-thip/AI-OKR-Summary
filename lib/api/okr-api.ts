@@ -99,6 +99,38 @@ export async function fetchOKRObjectiveSummary(
 }
 
 /**
+ * POST /api/v1/goal-managements/objective-summary (per employee)
+ *
+ * Returns raw OKR data for a specific employee.
+ */
+export interface EmployeeObjectiveQueryParams extends DashboardQueryParams {
+  employeeId: number;
+}
+
+export async function fetchEmployeeObjectiveSummary(
+  params: EmployeeObjectiveQueryParams,
+): Promise<OkrDataRaw[]> {
+  const json = await post<unknown>(
+    '/api/v1/goal-managements/objective-summary',
+    {
+      AssessmentSetId: params.assessmentSetId,
+      OrganizationId: params.organizationId,
+      DateStart: params.dateStart,
+      DateEnd: params.dateEnd,
+      EmployeeId: params.employeeId,
+    },
+  );
+
+  if (Array.isArray(json)) return json;
+
+  const obj = json as Record<string, unknown>;
+  if (Array.isArray(obj?.data)) return obj.data as OkrDataRaw[];
+  if (Array.isArray(obj?.Data)) return obj.Data as OkrDataRaw[];
+
+  return [];
+}
+
+/**
  * POST /api/v1/goal-managements/participant-details
  */
 export async function fetchParticipantDetails(

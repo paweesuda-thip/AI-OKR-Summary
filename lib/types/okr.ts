@@ -78,6 +78,28 @@ export interface Objective {
   details: KrDetail[]; // Flattened from all subObjectives for backwards compatibility if needed
 }
 
+/**
+ * Sub-Objective with person-specific progress values.
+ * See OKR_API_DOCS.md §5.1–5.2.
+ */
+export interface PersonSubObjective extends SubObjective {
+  /** avg(details[].pointOKR) — for sub-OKR display */
+  personProgress: number;
+  /** min(personProgress, sub.progress) — for aggregating into main obj */
+  personProgressCapped: number;
+}
+
+/**
+ * Objective with person-specific progress and filtered sub-OKRs.
+ * Only sub-OKRs where the person owns at least one KR are kept.
+ * See OKR_API_DOCS.md §5.3.
+ */
+export interface PersonObjective extends Omit<Objective, 'subObjectives'> {
+  subObjectives: PersonSubObjective[];
+  /** avg(subObjectives[].personProgressCapped) */
+  personProgress: number;
+}
+
 export interface ContributorSumObj {
     objectiveId: number;
     objectiveName: string;

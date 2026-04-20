@@ -40,11 +40,17 @@ const parseModelResponse = (text: string): any | null => {
 
 export async function POST(req: Request) {
   try {
-    const { playerA, playerB } = await req.json();
+    const { playerA, playerB, cycleLabelA, cycleLabelB } = await req.json();
 
     if (!playerA || !playerB) {
       return NextResponse.json({ error: 'Missing player data' }, { status: 400 });
     }
+
+    const nameA = typeof playerA?.fullName === 'string' ? playerA.fullName.trim() : '';
+    const nameB = typeof playerB?.fullName === 'string' ? playerB.fullName.trim() : '';
+    const isSelfComparison = nameA !== '' && nameA === nameB;
+    const labelA = typeof cycleLabelA === 'string' && cycleLabelA.trim() ? cycleLabelA.trim() : 'รอบ A';
+    const labelB = typeof cycleLabelB === 'string' && cycleLabelB.trim() ? cycleLabelB.trim() : 'รอบ B';
 
     const trimPlayer = (p: any) => {
         return {
@@ -114,10 +120,137 @@ export async function POST(req: Request) {
        roundNumber: i + 1,
        p1_badge: `Badge for P1's obj in Thai`,
        p2_badge: `Badge for P2's obj in Thai`,
-       commentary: `Thai commentary for round ${i + 1}.`
+       commentary: [
+         `สรุปรอบ: ประเด็นหลักของรอบ ${i + 1} แบบย่อ (1 บรรทัด)`,
+         ``,
+         `- ข้อมูลอ้างอิงจาก OKR (อ้างถึงงาน/KR ที่เกี่ยวข้อง): …`,
+         `- วิเคราะห์ ${dataA.name}: … (เชิงหลักฐาน ไม่ใช่คำชมทั่วไป)`,
+         `- วิเคราะห์ ${dataB.name}: …`,
+         `- คำตัดสินรอบนี้: ฝั่งใดมีความพร้อม/ความสมเหตุสมผลมากกว่าในขอบเขตรอบนี้ และเพราะอะไร`,
+       ].join('\n'),
     }));
 
-    const prompt = `You are a witty staff+ engineer doing a dry OKR "eval pass" — like reviewing two PRs of someone's quarter. Tone: playful dev humor (latency, APIs, deploys, p99, caching) but grounded in the OKR tasks below. NOT e-sports or fighting game commentary.
+    const selfComparePrompt = `You are a principal engineer writing a strict OKR self-review brief.
+
+IMPORTANT CONTEXT:
+- This is NOT a battle between two different people.
+- Both sides are the SAME person (${nameA}) evaluated across two different OKR cycles.
+- Player 1 represents ${nameA} in cycle "${labelA}".
+- Player 2 represents ${nameA} in cycle "${labelB}".
+- Reframe all copy as a self-progression review: growth, regression, consistency, pattern shifts between "${labelA}" and "${labelB}".
+- Do NOT use rivalry, combat, winner-vs-loser, or violent metaphors. Use neutral, constructive Thai language.
+- When you must report a "winner", frame it as "รอบที่ดำเนินงานได้แข็งแรงกว่า" (the cycle that executed more strongly). The JSON "winner" field value is fixed to the person's name — do not argue with it, just let the prose identify which cycle was stronger.
+
+Tone and language requirements:
+- Write in Thai (can mix concise engineering English terms such as API, latency, p99, backlog, rollout).
+- Style: formal, readable, structured. Prefer clarity over flourish.
+- Every bullet must tie to objective/task evidence or the fixed scoring dimensions.
+
+READABILITY & FIXED FORMAT (MANDATORY for all multi-line string fields):
+- Inside each JSON string value, use real line breaks between sections (JSON will serialize them as \\n).
+- Use hyphen bullets exactly like "- " at the start of each bullet line (one space after the hyphen).
+- Start named sections with a short Thai heading line on its own line, then a blank line, then bullets.
+
+rounds[].commentary skeleton (self-review, per objective slot — keep all four bullets):
+  Line1: "สรุปรอบ: …" (one line summarizing this objective slot across both cycles)
+  blank line
+  "- ข้อมูลอ้างอิงจาก OKR ทั้งสองรอบ: …"
+  "- ${labelA}: … (พัฒนาการ / ความคืบหน้า / ปัญหาที่พบ)"
+  "- ${labelB}: …"
+  "- ประเมินการเปลี่ยนแปลง: ดีขึ้น / ถดถอย / คงที่ และเพราะอะไร"
+
+playerA_strengths_weaknesses and playerB_strengths_weaknesses use EXACTLY these Thai headings in order:
+  "จุดแข็ง"
+  then 2-4 bullets (strengths observed in THIS cycle, compared against the other cycle of the same person)
+  blank line
+  "จุดที่ควรพัฒนา / ความเสี่ยง"
+  then 2-4 bullets
+  blank line
+  "เชื่อมโยงกับคะแนน (ทำไมถึงได้ระดับนี้)"
+  then 2-3 bullets referencing progress breadth, KR/task clarity, consistency, check-in behavior.
+- playerA_strengths_weaknesses is about ${nameA} during "${labelA}".
+- playerB_strengths_weaknesses is about ${nameA} during "${labelB}".
+
+conclusion uses EXACTLY:
+  "สรุปผลการประเมินตนเอง"
+  then 2-3 bullets
+  blank line
+  "เหตุผลที่รอบที่แข็งแรงกว่าได้คะแนนสูงกว่า"
+  then 3-5 bullets (explicit comparison by dimension between "${labelA}" and "${labelB}")
+  blank line
+  "ข้อเสนอแนะสำหรับรอบถัดไป"
+  then EXACTLY 2 bullets:
+    - one bullet starting "- สิ่งที่ควรรักษาไว้: …"
+    - one bullet starting "- สิ่งที่ควรปรับปรุง: …"
+
+intro_hype: short, max ~2 sentences OR up to 3 bullet lines under heading "บทนำ" with "- " bullets. Neutral self-review tone, not hype. Max one emoji in the whole intro.
+
+The math is FIXED. You MUST use these EXACT scores and winner:
+${labelA} Final Score: ${p1Score}
+${labelB} Final Score: ${p2Score}
+Winner field value (person name, fixed): ${nameA}
+
+This is OBJECTIVE-BY-OBJECTIVE across the two cycles. You MUST create EXACTLY ${maxRounds} rounds in your JSON array. Use the pre-matched round data. If one side has "NO OBJECTIVE (ว่างเปล่า)", note it professionally (backlog empty / no scoped work in that cycle) — still fill every bullet in the commentary skeleton.
+For each round:
+- p1_badge MUST describe ${nameA} during "${labelA}" for that objective (short, max ~8 words, Thai or Thai+English).
+- p2_badge MUST describe ${nameA} during "${labelB}" for that objective.
+- commentary MUST follow the skeleton above without omitting any bullet row.
+DO NOT confuse the two cycles.
+
+Pre-Matched Rounds Data:
+${JSON.stringify(matchedRounds, null, 2)}
+
+Respond with a JSON object EXACTLY in this format:
+{
+  "winner": "${nameA}",
+  "scoreA": ${p1Score},
+  "scoreB": ${p2Score},
+  "intro_hype": "Follow intro_hype format rules above.",
+  "rounds": ${JSON.stringify(schemaExampleRounds, null, 4)},
+  "playerA_strengths_weaknesses": "Self-review section for ${nameA} during ${labelA} only.",
+  "playerB_strengths_weaknesses": "Self-review section for ${nameA} during ${labelB} only.",
+  "conclusion": "Follow conclusion format rules above."
+}
+
+Return ONLY raw JSON, no code fences, no extra text.`;
+
+    const versusPrompt = `You are a principal engineer writing a strict OKR evaluation brief.
+Tone and language requirements:
+- Write in Thai (can mix concise engineering English terms such as API, latency, p99, backlog, rollout).
+- Style: formal, readable, structured. Prefer clarity over flourish.
+- Avoid generic praise. Every bullet must tie to objective/task evidence or to the fixed scoring dimensions.
+- Do NOT use violent metaphors.
+
+READABILITY & FIXED FORMAT (MANDATORY for all multi-line string fields):
+- Inside each JSON string value, use real line breaks between sections (when serialized, JSON will show these as \\n — that is correct).
+- Use hyphen bullets exactly like "- " at the start of each bullet line (one space after the hyphen).
+- Start named sections with a short Thai heading line on its own line, then a blank line, then bullets. Example section headings you MUST follow:
+  - For rounds[].commentary use this skeleton (replace … with real content; keep the four section ideas):
+    Line1: "สรุปรอบ: …" (one line)
+    blank line
+    "- ข้อมูลอ้างอิงจาก OKR: …"
+    "- วิเคราะห์ ${dataA.name}: …"
+    "- วิเคราะห์ ${dataB.name}: …"
+    "- คำตัดสินรอบนี้: …"
+  - For playerA_strengths_weaknesses and playerB_strengths_weaknesses use EXACTLY these section headings (Thai), in order, each followed by bullets:
+    "จุดแข็ง"
+    then 2-4 bullets
+    blank line
+    "จุดที่ควรพัฒนา / ความเสี่ยง"
+    then 2-4 bullets
+    blank line
+    "เชื่อมโยงกับคะแนน (ทำไมถึงได้ระดับนี้)"
+    then 2-3 bullets that reference progress breadth, KR/task clarity, consistency, check-in behavior as relevant.
+  - For conclusion use EXACTLY:
+    "สรุปผลการประเมิน"
+    then 2-3 bullets
+    blank line
+    "เหตุผลที่ผู้ชนะได้คะแนนสูงกว่า"
+    then 3-5 bullets (explicit comparison by dimension)
+    blank line
+    "ข้อเสนอแนะ"
+    then exactly 2 bullets: one line starting "- ${dataA.name}: …" and one "- ${dataB.name}: …"
+  - For intro_hype: still short (max ~2 sentences OR max 3 bullet lines under heading "บทนำ" with "- " bullets). Keep optional one emoji max total in the whole intro.
 
 The math is FIXED. You MUST use these EXACT scores and winner:
 Player 1 (${dataA.name}) Final Score: ${p1Score}
@@ -125,8 +258,10 @@ Player 2 (${dataB.name}) Final Score: ${p2Score}
 Winner: ${exactWinner}
 
 This is OBJECTIVE-BY-OBJECTIVE. You MUST create EXACTLY ${maxRounds} rounds in your JSON array.
-Use the pre-matched round data. If a player has "NO OBJECTIVE (ว่างเปล่า)", tease them lightly in engineer voice (empty queue / no tickets).
-For each round, p1_badge and p2_badge MUST be short (max ~8 words), Thai or Thai+English, funny "tuning" vibes — e.g. self-deprecating ship culture, NOT violent metaphors.
+Use the pre-matched round data. If a player has "NO OBJECTIVE (ว่างเปล่า)", note it professionally (backlog empty / no scoped work) — still fill every bullet in the commentary skeleton.
+For each round:
+- p1_badge and p2_badge MUST be short (max ~8 words), Thai or Thai+English.
+- commentary MUST follow the skeleton above without omitting any bullet row.
 DO NOT MIX UP PLAYER 1 AND PLAYER 2.
 
 Pre-Matched Rounds Data:
@@ -137,18 +272,20 @@ Respond with a JSON object EXACTLY in this format:
   "winner": "${exactWinner}",
   "scoreA": ${p1Score},
   "scoreB": ${p2Score},
-  "intro_hype": "Short Thai intro to this OKR comparison; optional one emoji max.",
+  "intro_hype": "Follow intro_hype format rules above.",
   "rounds": ${JSON.stringify(schemaExampleRounds, null, 4)},
-  "playerA_strengths_weaknesses": "Short Thai paragraph: strengths/risks for Player A from OKR angle.",
-  "playerB_strengths_weaknesses": "Short Thai paragraph: strengths/risks for Player B from OKR angle.",
-  "conclusion": "Thai: why the winner scored higher in plain OKR terms (progress, breadth, consistency)."
+  "playerA_strengths_weaknesses": "Follow player section format for ${dataA.name} only.",
+  "playerB_strengths_weaknesses": "Follow player section format for ${dataB.name} only.",
+  "conclusion": "Follow conclusion format rules above."
 }
 
 Return ONLY raw JSON, no code fences, no extra text.`;
 
+    const prompt = isSelfComparison ? selfComparePrompt : versusPrompt;
+
     const anthropic = createAnthropic({ apiKey: apiKey });
     const { text } = await generateText({
-        model: anthropic('claude-3-haiku-20240307'),
+        model: anthropic('claude-sonnet-4-20250514'),
         prompt: prompt,
     });
 
@@ -156,8 +293,15 @@ Return ONLY raw JSON, no code fences, no extra text.`;
     
     if (parsed) {
         if (!Array.isArray(parsed.rounds)) parsed.rounds = [];
+        parsed.winner = exactWinner;
+        parsed.scoreA = p1Score;
+        parsed.scoreB = p2Score;
         
         // Safety for missing keys
+        parsed.intro_hype =
+          typeof parsed.intro_hype === 'string'
+            ? parsed.intro_hype
+            : '';
         parsed.playerA_strengths_weaknesses =
           typeof parsed.playerA_strengths_weaknesses === 'string'
             ? parsed.playerA_strengths_weaknesses

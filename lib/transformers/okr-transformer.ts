@@ -5,6 +5,8 @@ import type {
   KrDetail,
   SubObjective,
   Objective,
+  PersonObjective,
+  PersonSubObjective,
   ContributorSum,
   ContributorSumObj,
   TeamSummary,
@@ -197,5 +199,63 @@ export function transformDashboardData(raw: OkrDataRaw[]): DashboardData {
     contributors,
     atRiskObjectives,
     noCheckInEmployees,
+  };
+}
+
+// ─── Per-Person Mapping ────────────────────────────────────────────────────────
+
+/**
+ * Transforms a team-level Objective into a person-specific view by:
+ *   1. Keeping only sub-OKRs where `personName` owns at least one KR.
+ *   2. Computing raw `personProgress` per sub-OKR: avg(details[].pointOKR).
+ *   3. Computing `personProgressCapped` = min(personProgress, sub.progress) to
+ *      account for 0% KRs that backend includes in sub.progress but hides from
+ *      details[].
+ *   4. Main `personProgress` = avg(subObjectives[].personProgressCapped).
+ *
+ * Returns `null` when the person has no KRs anywhere in this objective.
+ *
+ * See OKR_API_DOCS.md §5 for full rationale.
+ *
+ * Display numbers should use `Math.floor()` (source system truncates).
+ */
+export function mapObjectiveForPerson(
+  obj: Objective,
+  personName: string,
+): PersonObjective | null {
+  const target = personName.trim();
+  if (!target) return null;
+
+  const personSubs: PersonSubObjective[] = obj.subObjectives
+    .map((sub): PersonSubObjective | null => {
+      const personDetails = sub.details.filter(
+        (d) => d.fullName.trim() === target,
+      );
+      if (personDetails.length === 0) return null;
+
+      const personProgress =
+        personDetails.reduce((acc, d) => acc + (d.pointOKR ?? 0), 0) /
+        personDetails.length;
+      const personProgressCapped = Math.min(personProgress, sub.progress);
+
+      return {
+        ...sub,
+        details: personDetails,
+        personProgress,
+        personProgressCapped,
+      };
+    })
+    .filter((s): s is PersonSubObjective => s !== null);
+
+  if (personSubs.length === 0) return null;
+
+  const personProgress =
+    personSubs.reduce((acc, s) => acc + s.personProgressCapped, 0) /
+    personSubs.length;
+
+  return {
+    ...obj,
+    subObjectives: personSubs,
+    personProgress,
   };
 }
