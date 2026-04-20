@@ -395,7 +395,7 @@ export default function VersusMode({
                   onValueChange={(val) => setP1CycleId(Number(val))}
                   disabled={ddlLoading || sortedCycles.length === 0}
                 >
-                  <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                  <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
                     <div className="flex items-center gap-2 truncate">
                       <CalendarDays className="w-3 h-3 shrink-0 text-rose-500/70" />
                       <span className="truncate">{ddlLoading ? "Loading cycles..." : p1SelectedCycleLabel}</span>
@@ -423,7 +423,7 @@ export default function VersusMode({
                   onValueChange={(val) => setP1OrgId(Number(val))}
                   disabled={ddlLoading || orgGroupedOptions.length === 0}
                 >
-                  <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                  <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
                     <div className="flex items-center gap-2 truncate whitespace-nowrap">
                       <Users className="w-3 h-3 shrink-0 text-rose-500/70" />
                       <span className="truncate">{ddlLoading ? "Loading teams..." : p1SelectedOrgLabel}</span>
@@ -459,7 +459,7 @@ export default function VersusMode({
                   <motion.button
                     whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
                     key={c.fullName} onClick={() => !isPickedByOther && setP1(c)} disabled={isPickedByOther}
-                    className={`relative flex items-center gap-5 p-3 group transition-all duration-300 rounded-[20px]
+                    className={`relative cursor-pointer disabled:cursor-not-allowed flex items-center gap-5 p-3 group transition-all duration-300 rounded-[20px]
                                         ${isSelected ? 'bg-gradient-to-r from-[#1a050a] to-[#0a0a0c] border border-rose-500/50 shadow-[0_4px_30px_rgba(244,63,94,0.15)] ring-1 ring-rose-500/20' :
                         isPickedByOther ? 'opacity-15 grayscale pointer-events-none' :
                           'bg-[#0a0a0c] hover:bg-[#111115] border border-[#1a1a1a] hover:border-[#333] shadow-lg'}
@@ -497,7 +497,7 @@ export default function VersusMode({
                 whileTap={{ scale: 0.95 }}
                 transition={{ type: "spring", stiffness: 300, damping: 20 }}
                 onClick={() => setStep("preview")}
-                className="group relative flex items-center justify-center w-44 h-12 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
+                className="group relative cursor-pointer flex items-center justify-center w-44 h-12 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
                 style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
               >
                 <div
@@ -537,7 +537,7 @@ export default function VersusMode({
                   onValueChange={(val) => setP2CycleId(Number(val))}
                   disabled={ddlLoading || sortedCycles.length === 0}
                 >
-                  <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                  <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
                     <div className="flex items-center gap-2 truncate">
                       <CalendarDays className="w-3 h-3 shrink-0 text-cyan-400/70" />
                       <span className="truncate">{ddlLoading ? "Loading cycles..." : p2SelectedCycleLabel}</span>
@@ -565,7 +565,7 @@ export default function VersusMode({
                   onValueChange={(val) => setP2OrgId(Number(val))}
                   disabled={ddlLoading || orgGroupedOptions.length === 0}
                 >
-                  <SelectTrigger className="w-full h-9 bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                  <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
                     <div className="flex items-center gap-2 truncate whitespace-nowrap">
                       <Users className="w-3 h-3 shrink-0 text-cyan-400/70" />
                       <span className="truncate">{ddlLoading ? "Loading teams..." : p2SelectedOrgLabel}</span>
@@ -601,7 +601,7 @@ export default function VersusMode({
                   <motion.button
                     whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
                     key={c.fullName} onClick={() => !isPickedByOther && setP2(c)} disabled={isPickedByOther}
-                    className={`relative flex items-center gap-5 p-3 flex-row-reverse group transition-all duration-300 rounded-[20px]
+                    className={`relative cursor-pointer disabled:cursor-not-allowed flex items-center gap-5 p-3 flex-row-reverse group transition-all duration-300 rounded-[20px]
                                         ${isSelected ? 'bg-gradient-to-l from-[#050910] to-[#0a0a0c] border border-cyan-400/50 shadow-[0_4px_30px_rgba(34,211,238,0.15)] ring-1 ring-cyan-400/20' :
                         isPickedByOther ? 'opacity-15 grayscale pointer-events-none' :
                           'bg-[#0a0a0c] hover:bg-[#111115] border border-[#1a1a1a] hover:border-[#333] shadow-lg'}
@@ -753,12 +753,12 @@ export default function VersusMode({
         transition={{ duration: 0.35 }}
         className="w-full flex flex-col font-mono min-h-[70vh] px-4 sm:px-6"
       >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 max-w-7xl mx-auto w-full">
+        <div className="flex items-center gap-3 mb-6 max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setStep("select")}
-              className="inline-flex items-center gap-2 text-[10px] uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors"
+              className="inline-flex items-center gap-2 cursor-pointer text-[10px] uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors"
             >
               <ArrowLeft className="w-4 h-4" /> roster
             </button>
@@ -768,15 +768,6 @@ export default function VersusMode({
               <p className="text-[9px] text-zinc-500 tracking-[0.2em] uppercase mt-0.5">verify OKR payload · then run eval</p>
             </div>
           </div>
-          <button
-            type="button"
-            disabled={isComparing}
-            onClick={runAiComparison}
-            className="group relative inline-flex items-center justify-center gap-2 self-start sm:self-auto px-6 py-3 rounded-xl bg-[#0c0c0f] border border-zinc-700 hover:border-emerald-500/50 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors"
-          >
-            {isComparing ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <Cpu className="w-4 h-4 text-emerald-400/90" />}
-            {isComparing ? "tuning model…" : "run AI eval"}
-          </button>
         </div>
 
         {isComparing && (
@@ -795,7 +786,7 @@ export default function VersusMode({
           </div>
         )}
 
-        <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 pb-28">
+        <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-8 lg:gap-8 pb-28">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4 pb-4 border-b border-zinc-800/80">
               <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-black border border-rose-500/30 shrink-0">
@@ -814,6 +805,18 @@ export default function VersusMode({
                 <PreviewObjectiveCard key={`pv1-${i}`} obj={p1.topObjectives[i]} isLeft={true} index={i} />
               ))}
             </div>
+          </div>
+
+          <div className="hidden lg:flex items-start justify-center pt-2">
+            <button
+              type="button"
+              disabled={isComparing}
+              onClick={runAiComparison}
+              className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl cursor-pointer disabled:cursor-not-allowed bg-[#0c0c0f] border border-zinc-700 hover:border-emerald-500/50 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors whitespace-nowrap"
+            >
+              {isComparing ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <Cpu className="w-4 h-4 text-emerald-400/90" />}
+              {isComparing ? "tuning model…" : "run AI eval"}
+            </button>
           </div>
 
           <div className="flex flex-col gap-4">
@@ -842,7 +845,7 @@ export default function VersusMode({
             type="button"
             disabled={isComparing}
             onClick={runAiComparison}
-            className="w-full py-3 rounded-xl bg-[#0c0c0f] border border-zinc-700 text-[10px] font-bold uppercase tracking-[0.25em] text-white flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3 rounded-xl cursor-pointer disabled:cursor-not-allowed bg-[#0c0c0f] border border-zinc-700 text-[10px] font-bold uppercase tracking-[0.25em] text-white flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4" />}
             {isComparing ? "tuning…" : "run AI eval"}
@@ -881,7 +884,7 @@ export default function VersusMode({
         // Replaced the thick colored AI-like borders with a stark, brutalist-cyber layout.
         className={`w-full transition-all duration-300 relative group overflow-hidden rounded-xl border
                 ${isActive
-            ? 'bg-[#0a0a0c] border-[#222] shadow-2xl hover:bg-[#111115] cursor-pointer'
+            ? `bg-[#0a0a0c] border-[#222] shadow-2xl hover:bg-[#111115] ${hasDetails ? 'cursor-pointer' : ''}`
             : 'bg-[#050505] border-[#161616] pointer-events-none'
           }`}
         onClick={() => isActive && hasDetails && setExpanded(!expanded)}
@@ -1021,7 +1024,7 @@ export default function VersusMode({
   }
 
   const ShowdownArena = () => {
-    const [phase, setPhase] = useState(0);
+    const [phase, setPhase] = useState(1);
     // Phases: 0 = Intro, 1..N = Rounds, N+1 = Final Analysis
 
     if (!result || !p1 || !p2) return null;
@@ -1057,10 +1060,10 @@ export default function VersusMode({
           </div>
 
           <AnimatePresence mode="wait">
-            <motion.div key={phase} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="text-center max-w-4xl mx-auto min-h-[5.5rem] flex items-center justify-center px-2">
-              {isIntro && <h2 className="text-xl md:text-3xl lg:text-4xl font-sans text-white font-medium drop-shadow-xl leading-snug"><TypewriterText text={result.intro_hype} speed={15} /></h2>}
-              {isRound && <p className="text-base md:text-xl lg:text-2xl font-sans text-zinc-200 leading-relaxed font-semibold text-center max-w-3xl"><TypewriterText text={currentRoundData!.commentary} speed={15} delay={100} /></p>}
-              {isFinalResult && <h2 className="text-lg md:text-2xl lg:text-3xl font-sans text-white font-medium drop-shadow-xl leading-snug px-2"><TypewriterText text={result.conclusion} speed={15} delay={100} /></h2>}
+            <motion.div key={phase} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-4xl mx-auto min-h-[5.5rem] w-full flex items-start justify-center px-2">
+              {isIntro && <h2 className="text-xl md:text-3xl lg:text-4xl font-sans text-white font-medium drop-shadow-xl leading-snug whitespace-pre-line text-center w-full"><TypewriterText text={result.intro_hype} speed={15} /></h2>}
+              {isRound && <p className="text-base md:text-xl lg:text-2xl font-sans text-zinc-200 leading-relaxed font-semibold text-left max-w-3xl mx-auto whitespace-pre-line w-full"><TypewriterText text={currentRoundData!.commentary} speed={15} delay={100} /></p>}
+              {isFinalResult && <h2 className="text-lg md:text-2xl lg:text-3xl font-sans text-white font-medium drop-shadow-xl leading-snug px-2 whitespace-pre-line text-left w-full"><TypewriterText text={result.conclusion} speed={15} delay={100} /></h2>}
             </motion.div>
           </AnimatePresence>
         </motion.div>
@@ -1107,7 +1110,9 @@ export default function VersusMode({
                   <div className="p-5 md:p-6 bg-gradient-to-tr from-[#0a0505] to-[#120505] border border-rose-900/30 rounded-xl text-base md:text-lg font-sans text-zinc-200 leading-relaxed">
                     <div className="text-xs tracking-wide text-rose-400 font-bold mb-3 uppercase flex items-center gap-2 font-sans"><Terminal className="w-3.5 h-3.5 shrink-0" /> สรุปจาก AI · alpha</div>
                     {result.playerA_strengths_weaknesses?.trim() ? (
-                      <TypewriterText text={result.playerA_strengths_weaknesses} speed={10} delay={500} />
+                      <div className="whitespace-pre-line text-left text-[15px] md:text-base">
+                        <TypewriterText text={result.playerA_strengths_weaknesses} speed={10} delay={500} />
+                      </div>
                     ) : (
                       <p className="text-zinc-500 text-sm leading-relaxed">โมเดลไม่ได้ส่งข้อความสรุปสำหรับผู้เล่นฝั่งนี้</p>
                     )}
@@ -1138,7 +1143,7 @@ export default function VersusMode({
                 <motion.button
                   key="nextBTN" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0, opacity: 0 }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
                   onClick={() => setPhase(p => p + 1)}
-                  className="relative z-30 w-16 h-16 bg-[#0a0a0c] border border-zinc-700 hover:border-white rounded-full flex items-center justify-center shadow-2xl transition-colors group overflow-hidden"
+                  className="relative z-30 w-16 h-16 cursor-pointer bg-[#0a0a0c] border border-zinc-700 hover:border-white rounded-full flex items-center justify-center shadow-2xl transition-colors group overflow-hidden"
                 >
                   {isIntro ? <Terminal className="w-6 h-6 text-emerald-500/90 group-hover:text-emerald-300 transition-colors" /> : <ChevronRight className="w-8 h-8 text-zinc-400 group-hover:text-white group-hover:translate-x-1 transition-all" />}
                 </motion.button>
@@ -1146,7 +1151,7 @@ export default function VersusMode({
                 <motion.button
                   key="resetBTN" initial={{ scale: 0 }} animate={{ scale: 1 }} whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.95 }}
                   onClick={resetState}
-                  className="relative z-30 w-16 h-16 bg-[#0a0a0c] border border-zinc-800 hover:border-zinc-500 rounded-full flex items-center justify-center shadow-xl group"
+                  className="relative z-30 w-16 h-16 cursor-pointer bg-[#0a0a0c] border border-zinc-800 hover:border-zinc-500 rounded-full flex items-center justify-center shadow-xl group"
                 >
                   <span className="text-[10px] font-bold text-zinc-500 group-hover:text-zinc-200 transition-colors tracking-[0.15em] uppercase text-center block leading-tight font-sans">New<br />Run</span>
                 </motion.button>
@@ -1159,7 +1164,7 @@ export default function VersusMode({
             <AnimatePresence mode="popLayout">
               <motion.button
                 onClick={!isFinalResult ? () => setPhase(p => p + 1) : resetState}
-                className="px-8 py-3 bg-[#111] border border-zinc-700 rounded-full text-xs font-bold tracking-widest text-white uppercase shadow-xl"
+                className="px-8 py-3 cursor-pointer bg-[#111] border border-zinc-700 rounded-full text-xs font-bold tracking-widest text-white uppercase shadow-xl"
               >
                 {!isFinalResult ? (isIntro ? 'START EVAL' : 'NEXT OBJECTIVE') : 'NEW RUN'}
               </motion.button>
@@ -1204,7 +1209,9 @@ export default function VersusMode({
                   <div className="p-5 md:p-6 bg-gradient-to-tl from-[#050a0a] to-[#050d12] border border-cyan-900/30 rounded-xl text-base md:text-lg font-sans text-zinc-200 leading-relaxed text-right">
                     <div className="text-xs tracking-wide text-cyan-400 font-bold mb-3 uppercase flex items-center justify-end gap-2 font-sans">สรุปจาก AI · omega <Terminal className="w-3.5 h-3.5 shrink-0" /></div>
                     {result.playerB_strengths_weaknesses?.trim() ? (
-                      <TypewriterText text={result.playerB_strengths_weaknesses} speed={10} delay={500} />
+                      <div className="whitespace-pre-line text-right text-[15px] md:text-base">
+                        <TypewriterText text={result.playerB_strengths_weaknesses} speed={10} delay={500} />
+                      </div>
                     ) : (
                       <p className="text-zinc-500 text-sm leading-relaxed">โมเดลไม่ได้ส่งข้อความสรุปสำหรับผู้เล่นฝั่งนี้</p>
                     )}

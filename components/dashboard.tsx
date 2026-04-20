@@ -245,14 +245,14 @@ export default function Dashboard() {
           <div className="bg-[#0a0a0c] border border-white/5 p-1 rounded-full flex items-center shadow-inner relative shrink-0">
             <button 
               onClick={() => setActiveTab('overview')} 
-              className={`relative px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none ${activeTab === 'overview' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`relative cursor-pointer px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none ${activeTab === 'overview' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
               {activeTab === 'overview' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-zinc-800/80 rounded-full shadow-[inset_0_1px_rgba(255,255,255,0.1)]" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
               <span className="relative z-10 transition-colors">Overall</span>
             </button>
             <button 
               onClick={() => setActiveTab('versus')} 
-              className={`group relative px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none flex items-center gap-2 ${activeTab === 'versus' ? 'text-fuchsia-100' : 'text-zinc-500 hover:text-zinc-300'}`}
+              className={`group relative cursor-pointer px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none flex items-center gap-2 ${activeTab === 'versus' ? 'text-fuchsia-100' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
               {activeTab === 'versus' && (
                 <motion.div
