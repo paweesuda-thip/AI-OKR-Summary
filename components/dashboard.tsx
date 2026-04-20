@@ -471,7 +471,7 @@ export default function Dashboard() {
 
             {/* ── Check-In Engagement (Top/Bottom Check-ins) ── */}
             <section className="relative max-w-7xl mx-auto w-full">
-              <CheckInEngagement participantDetails={participantDetails} showStatus={showStatus} />
+              <CheckInEngagement participantDetails={participantDetails} showStatus={showStatus} queryParams={queryParams} />
             </section>
 
             {/* ── Focus Areas (Unboxed) ── */}
