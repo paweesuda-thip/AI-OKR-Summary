@@ -7,7 +7,7 @@ import {
   type ParticipantDetailRaw,
 } from "@/lib/types/okr";
 import { mapObjectiveForPerson } from "@/lib/transformers/okr-transformer";
-import { Crosshair, Hexagon, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft } from "lucide-react";
+import { Crosshair, Hexagon, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft, Swords, Dot } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
@@ -124,6 +124,110 @@ const TypewriterText = ({ text, delay = 0, speed = 20 }: { text: string, delay?:
 
   return <span>{displayed}</span>;
 }
+
+// -------------------------------------------------------------
+// ROUND DOSSIER — editorial / magazine take on round commentary.
+// No card, no left accent bar, no glass. A ghost phase numeral sits
+// behind the text, the summary lands as a serif italic pull-quote,
+// and each evidence line is indexed with a roman numeral gutter.
+// -------------------------------------------------------------
+const toRoman = (n: number): string => {
+  const map: [number, string][] = [
+    [10, "X"], [9, "IX"], [5, "V"], [4, "IV"], [1, "I"],
+  ];
+  let out = "";
+  let r = Math.max(1, Math.floor(n));
+  for (const [v, s] of map) {
+    while (r >= v) {
+      out += s;
+      r -= v;
+    }
+  }
+  return out || "I";
+};
+
+const RoundDossier = ({
+  phase,
+  totalRounds,
+  text,
+}: {
+  phase: number;
+  totalRounds: number;
+  text: string;
+}) => {
+  const lines = (text ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+
+  const bullets = lines
+    .filter((l) => l.startsWith("-"))
+    .map((l) => l.replace(/^-+\s*/, ""));
+
+  const summaryRaw = lines.find((l) => !l.startsWith("-")) ?? "";
+  const summary = summaryRaw.replace(/^สรุปรอบ\s*:\s*/i, "").trim();
+
+  const hasStructured = bullets.length > 0;
+
+  return (
+    <div className="relative w-full max-w-2xl mx-auto text-left pl-2 pr-4 pt-1 pb-2">
+      <span
+        aria-hidden
+        className="pointer-events-none select-none absolute -top-6 -left-3 md:-top-8 md:-left-5 font-sans font-bold leading-none tracking-[-0.06em] text-zinc-100/[0.05] text-[9rem] md:text-[12rem] tabular-nums"
+      >
+        {String(phase).padStart(2, "0")}
+      </span>
+
+      <div className="relative mb-5 flex items-center gap-3 text-[10px] uppercase tracking-[0.32em] text-amber-300/55">
+        <span className="font-sans font-semibold">Fragment {String(phase).padStart(2, "0")} / {String(totalRounds).padStart(2, "0")}</span>
+        <span className="flex-1 h-px bg-[linear-gradient(to_right,theme(colors.zinc.700)_0,theme(colors.zinc.700)_50%,transparent_50%)] [background-size:6px_1px]" />
+      </div>
+
+      {summary && (
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+          className="relative font-sans font-light text-xl md:text-[26px] leading-[1.45] text-zinc-50 mb-7 tracking-tight"
+        >
+          <span className="text-amber-300/70 mr-1 font-normal">“</span>
+          {summary}
+          <span className="text-amber-300/70 ml-1 font-normal">”</span>
+        </motion.p>
+      )}
+
+      {hasStructured ? (
+        <ol className="relative space-y-3.5">
+          {bullets.map((b, i) => (
+            <motion.li
+              key={`${phase}-${i}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.42,
+                delay: 0.25 + i * 0.1,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="relative flex gap-4 text-[13px] md:text-[14px] leading-[1.85] text-zinc-300"
+            >
+              <span><Dot/></span>
+              <span className="flex-1 whitespace-pre-line">{b}</span>
+            </motion.li>
+          ))}
+        </ol>
+      ) : (
+        <motion.p
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.45, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
+          className="relative text-[13px] md:text-sm leading-[1.85] text-zinc-300 whitespace-pre-line"
+        >
+          {text}
+        </motion.p>
+      )}
+    </div>
+  );
+};
 
 const buildPlayerPool = (
   contributors: ContributorSum[],
@@ -276,6 +380,13 @@ export default function VersusMode({
     }
   }, [p2, p2Candidates]);
 
+  // If user flips cycles back to equal while self-selected on both sides, clear P2.
+  useEffect(() => {
+    if (p1 && p2 && p1.fullName === p2.fullName && p1CycleId === p2CycleId) {
+      setP2(null);
+    }
+  }, [p1, p2, p1CycleId, p2CycleId]);
+
   const resetState = () => {
     setStep("select");
     setP1(null);
@@ -294,7 +405,12 @@ export default function VersusMode({
       const response = await fetch('/api/compare', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerA: p1, playerB: p2 }),
+        body: JSON.stringify({
+          playerA: p1,
+          playerB: p2,
+          cycleLabelA: p1SelectedCycleLabel,
+          cycleLabelB: p2SelectedCycleLabel,
+        }),
       });
 
       const data = await response.json();
@@ -422,7 +538,7 @@ export default function VersusMode({
               )}
               {!p1Loading && p1Candidates.map((c) => {
                 const isSelected = p1?.fullName === c.fullName;
-                const isPickedByOther = p2?.fullName === c.fullName;
+                const isPickedByOther = p2?.fullName === c.fullName && p1CycleId === p2CycleId;
                 return (
                   <motion.button
                     whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
@@ -467,16 +583,15 @@ export default function VersusMode({
               whileTap={{ scale: 0.95 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
               onClick={() => setStep("preview")}
-              className="group relative cursor-pointer flex items-center justify-center w-44 h-12 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
+              aria-label="Compare"
+              className="group relative cursor-pointer flex items-center justify-center w-14 h-14 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
               style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
             >
               <div
                 className="w-full h-full bg-[#050505] flex items-center justify-center transition-colors duration-300 group-hover:bg-gradient-to-r group-hover:from-rose-500/20 group-hover:to-cyan-500/20 relative z-10"
                 style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
               >
-                <span className="text-[10px] font-black uppercase tracking-[0.2em] font-sans text-white flex items-center gap-2 drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
-                  <Terminal className="w-4 h-4 shrink-0" /> PREVIEW
-                </span>
+                <Swords className="w-5 h-5 text-white drop-shadow-[0_0_8px_rgba(255,255,255,1)]" />
               </div>
               <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 opacity-30 group-hover:opacity-100 blur-lg transition-opacity duration-300 pointer-events-none" />
             </motion.button>
@@ -567,7 +682,7 @@ export default function VersusMode({
               )}
               {!p2Loading && p2Candidates.map((c) => {
                 const isSelected = p2?.fullName === c.fullName;
-                const isPickedByOther = p1?.fullName === c.fullName;
+                const isPickedByOther = p1?.fullName === c.fullName && p1CycleId === p2CycleId;
                 return (
                   <motion.button
                     whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
@@ -1045,9 +1160,23 @@ export default function VersusMode({
 
           <AnimatePresence mode="wait">
             <motion.div key={phase} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }} className="max-w-4xl mx-auto min-h-[5.5rem] w-full flex items-start justify-center px-2">
-              {isIntro && <h2 className="text-xl md:text-3xl lg:text-4xl font-sans text-white font-medium drop-shadow-xl leading-snug whitespace-pre-line text-center w-full"><TypewriterText text={result.intro_hype} speed={15} /></h2>}
-              {isRound && <p className="text-base md:text-xl lg:text-2xl font-sans text-zinc-200 leading-relaxed font-semibold text-left max-w-3xl mx-auto whitespace-pre-line w-full"><TypewriterText text={currentRoundData!.commentary} speed={15} delay={100} /></p>}
-              {isFinalResult && <h2 className="text-lg md:text-2xl lg:text-3xl font-sans text-white font-medium drop-shadow-xl leading-snug px-2 whitespace-pre-line text-left w-full"><TypewriterText text={result.conclusion} speed={15} delay={100} /></h2>}
+              {isIntro && (
+                <h2 className="text-lg md:text-2xl lg:text-3xl font-sans text-white font-semibold drop-shadow-xl leading-snug whitespace-pre-line text-center w-full max-w-3xl">
+                  <TypewriterText text={result.intro_hype} speed={15} />
+                </h2>
+              )}
+              {isRound && (
+                <RoundDossier
+                  phase={phase}
+                  totalRounds={totalRounds}
+                  text={currentRoundData!.commentary}
+                />
+              )}
+              {isFinalResult && (
+                <h2 className="text-base md:text-xl lg:text-2xl font-sans text-white font-medium drop-shadow-xl leading-relaxed px-2 whitespace-pre-line text-left w-full max-w-3xl">
+                  <TypewriterText text={result.conclusion} speed={15} delay={100} />
+                </h2>
+              )}
             </motion.div>
           </AnimatePresence>
         </motion.div>

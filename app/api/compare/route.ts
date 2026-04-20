@@ -40,11 +40,17 @@ const parseModelResponse = (text: string): any | null => {
 
 export async function POST(req: Request) {
   try {
-    const { playerA, playerB } = await req.json();
+    const { playerA, playerB, cycleLabelA, cycleLabelB } = await req.json();
 
     if (!playerA || !playerB) {
       return NextResponse.json({ error: 'Missing player data' }, { status: 400 });
     }
+
+    const nameA = typeof playerA?.fullName === 'string' ? playerA.fullName.trim() : '';
+    const nameB = typeof playerB?.fullName === 'string' ? playerB.fullName.trim() : '';
+    const isSelfComparison = nameA !== '' && nameA === nameB;
+    const labelA = typeof cycleLabelA === 'string' && cycleLabelA.trim() ? cycleLabelA.trim() : 'รอบ A';
+    const labelB = typeof cycleLabelB === 'string' && cycleLabelB.trim() ? cycleLabelB.trim() : 'รอบ B';
 
     const trimPlayer = (p: any) => {
         return {
@@ -124,7 +130,91 @@ export async function POST(req: Request) {
        ].join('\n'),
     }));
 
-    const prompt = `You are a principal engineer writing a strict OKR evaluation brief.
+    const selfComparePrompt = `You are a principal engineer writing a strict OKR self-review brief.
+
+IMPORTANT CONTEXT:
+- This is NOT a battle between two different people.
+- Both sides are the SAME person (${nameA}) evaluated across two different OKR cycles.
+- Player 1 represents ${nameA} in cycle "${labelA}".
+- Player 2 represents ${nameA} in cycle "${labelB}".
+- Reframe all copy as a self-progression review: growth, regression, consistency, pattern shifts between "${labelA}" and "${labelB}".
+- Do NOT use rivalry, combat, winner-vs-loser, or violent metaphors. Use neutral, constructive Thai language.
+- When you must report a "winner", frame it as "รอบที่ดำเนินงานได้แข็งแรงกว่า" (the cycle that executed more strongly). The JSON "winner" field value is fixed to the person's name — do not argue with it, just let the prose identify which cycle was stronger.
+
+Tone and language requirements:
+- Write in Thai (can mix concise engineering English terms such as API, latency, p99, backlog, rollout).
+- Style: formal, readable, structured. Prefer clarity over flourish.
+- Every bullet must tie to objective/task evidence or the fixed scoring dimensions.
+
+READABILITY & FIXED FORMAT (MANDATORY for all multi-line string fields):
+- Inside each JSON string value, use real line breaks between sections (JSON will serialize them as \\n).
+- Use hyphen bullets exactly like "- " at the start of each bullet line (one space after the hyphen).
+- Start named sections with a short Thai heading line on its own line, then a blank line, then bullets.
+
+rounds[].commentary skeleton (self-review, per objective slot — keep all four bullets):
+  Line1: "สรุปรอบ: …" (one line summarizing this objective slot across both cycles)
+  blank line
+  "- ข้อมูลอ้างอิงจาก OKR ทั้งสองรอบ: …"
+  "- ${labelA}: … (พัฒนาการ / ความคืบหน้า / ปัญหาที่พบ)"
+  "- ${labelB}: …"
+  "- ประเมินการเปลี่ยนแปลง: ดีขึ้น / ถดถอย / คงที่ และเพราะอะไร"
+
+playerA_strengths_weaknesses and playerB_strengths_weaknesses use EXACTLY these Thai headings in order:
+  "จุดแข็ง"
+  then 2-4 bullets (strengths observed in THIS cycle, compared against the other cycle of the same person)
+  blank line
+  "จุดที่ควรพัฒนา / ความเสี่ยง"
+  then 2-4 bullets
+  blank line
+  "เชื่อมโยงกับคะแนน (ทำไมถึงได้ระดับนี้)"
+  then 2-3 bullets referencing progress breadth, KR/task clarity, consistency, check-in behavior.
+- playerA_strengths_weaknesses is about ${nameA} during "${labelA}".
+- playerB_strengths_weaknesses is about ${nameA} during "${labelB}".
+
+conclusion uses EXACTLY:
+  "สรุปผลการประเมินตนเอง"
+  then 2-3 bullets
+  blank line
+  "เหตุผลที่รอบที่แข็งแรงกว่าได้คะแนนสูงกว่า"
+  then 3-5 bullets (explicit comparison by dimension between "${labelA}" and "${labelB}")
+  blank line
+  "ข้อเสนอแนะสำหรับรอบถัดไป"
+  then EXACTLY 2 bullets:
+    - one bullet starting "- สิ่งที่ควรรักษาไว้: …"
+    - one bullet starting "- สิ่งที่ควรปรับปรุง: …"
+
+intro_hype: short, max ~2 sentences OR up to 3 bullet lines under heading "บทนำ" with "- " bullets. Neutral self-review tone, not hype. Max one emoji in the whole intro.
+
+The math is FIXED. You MUST use these EXACT scores and winner:
+${labelA} Final Score: ${p1Score}
+${labelB} Final Score: ${p2Score}
+Winner field value (person name, fixed): ${nameA}
+
+This is OBJECTIVE-BY-OBJECTIVE across the two cycles. You MUST create EXACTLY ${maxRounds} rounds in your JSON array. Use the pre-matched round data. If one side has "NO OBJECTIVE (ว่างเปล่า)", note it professionally (backlog empty / no scoped work in that cycle) — still fill every bullet in the commentary skeleton.
+For each round:
+- p1_badge MUST describe ${nameA} during "${labelA}" for that objective (short, max ~8 words, Thai or Thai+English).
+- p2_badge MUST describe ${nameA} during "${labelB}" for that objective.
+- commentary MUST follow the skeleton above without omitting any bullet row.
+DO NOT confuse the two cycles.
+
+Pre-Matched Rounds Data:
+${JSON.stringify(matchedRounds, null, 2)}
+
+Respond with a JSON object EXACTLY in this format:
+{
+  "winner": "${nameA}",
+  "scoreA": ${p1Score},
+  "scoreB": ${p2Score},
+  "intro_hype": "Follow intro_hype format rules above.",
+  "rounds": ${JSON.stringify(schemaExampleRounds, null, 4)},
+  "playerA_strengths_weaknesses": "Self-review section for ${nameA} during ${labelA} only.",
+  "playerB_strengths_weaknesses": "Self-review section for ${nameA} during ${labelB} only.",
+  "conclusion": "Follow conclusion format rules above."
+}
+
+Return ONLY raw JSON, no code fences, no extra text.`;
+
+    const versusPrompt = `You are a principal engineer writing a strict OKR evaluation brief.
 Tone and language requirements:
 - Write in Thai (can mix concise engineering English terms such as API, latency, p99, backlog, rollout).
 - Style: formal, readable, structured. Prefer clarity over flourish.
@@ -190,6 +280,8 @@ Respond with a JSON object EXACTLY in this format:
 }
 
 Return ONLY raw JSON, no code fences, no extra text.`;
+
+    const prompt = isSelfComparison ? selfComparePrompt : versusPrompt;
 
     const anthropic = createAnthropic({ apiKey: apiKey });
     const { text } = await generateText({
