@@ -9,20 +9,30 @@ import {
   Crown,
   Medal,
   Swords,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
 
 import { DateRange } from "react-day-picker";
 import { format } from "date-fns";
 
-import { AIScoreResult } from "./ai-score-section";
+import { AIScoreResult, AIScoreSection } from "./ai-score-section";
 import OverviewCards from "./overview-cards";
 import ObjectivesSection from "./objectives-section";
 import PeriodComparisonSection from "./period-comparison-section";
 import { CheckInEngagement } from "@/components/check-in-engagement";
 import ClickSpark from "@/components/react-bits/ClickSpark";
 import Image from "next/image";
+import MagicRings from "@/components/react-bits/MagicRings";
 
 import type {
   ParticipantDetailRaw,
@@ -66,9 +76,12 @@ export default function Dashboard() {
   const [assessmentSetId, setAssessmentSetId] = useState(FALLBACK_CYCLE_ID);
   const [organizationId, setOrganizationId] = useState(FALLBACK_ORG_ID);
 
-  const [dateRange, setDateRange] = useState<DateRange | undefined>({
-    from: new Date(2026, 1, 12), // Feb 12, 2026
-    to: new Date(2026, 2, 15),   // Mar 15, 2026
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date();
+    return {
+      from: new Date(today.getFullYear(), today.getMonth(), 1),
+      to: today,
+    };
   });
   const [isOverall, setIsOverall] = useState(true);
 
@@ -209,73 +222,108 @@ export default function Dashboard() {
     >
       <div className="flex flex-col h-svh w-full overflow-hidden bg-black text-white">
         <DashboardTopbar
-          aiDrawerOpen={aiDrawerOpen}
-          setAiDrawerOpen={setAiDrawerOpen}
-          teamSummary={teamSummary}
-          dashboardData={dashboardData}
-          aiScoreResult={aiScoreResult}
-          setAiScoreResult={setAiScoreResult}
+          activeTab={activeTab}
+          setActiveTab={setActiveTab}
         />
 
-        {/* ── Control Strip & Tab Switcher ── */}
-        <div className="w-full z-40 bg-[#050505]/95 backdrop-blur-xl border-b border-white/5 shrink-0 sticky top-0 shadow-2xl px-4 sm:px-8 py-3 flex flex-col xl:flex-row items-center justify-between gap-4">
-          
-          {/* Settings / Controls */}
-          <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto scrollbar-hide shrink-0 pb-2 xl:pb-0">
-            <DashboardSelectors
-              cycleOptions={cycleOptions}
-              orgGroupedOptions={groupedOrgOptions}
-              selectedCycleId={resolvedAssessmentSetId}
-              onCycleChange={setAssessmentSetId}
-              selectedOrgId={resolvedOrganizationId}
-              onOrgChange={setOrganizationId}
-              disabled={loading}
-              loading={ddlLoading}
-            />
-            <div className="hidden lg:block w-px h-6 bg-white/10 mx-1" />
-            <FilterBar
-              dateRange={dateRange}
-              setDateRange={setDateRange}
-              isOverall={isOverall}
-              setIsOverall={setIsOverall}
-            />
-          </div>
+        {/* ── Overview Control Strip (hidden in Versus) ── */}
+        <AnimatePresence initial={false}>
+          {activeTab === "overview" && (
+            <motion.div
+              key="overview-control-strip"
+              layout
+              initial={{ opacity: 0, y: -8, height: 0 }}
+              animate={{ opacity: 1, y: 0, height: "auto" }}
+              exit={{ opacity: 0, y: -8, height: 0 }}
+              transition={{ duration: 0.24, ease: "easeOut" }}
+              className="w-full z-40 bg-[#050505]/95 backdrop-blur-xl border-b border-white/5 shrink-0 sticky top-0 shadow-2xl px-4 sm:px-8 py-3 overflow-hidden"
+            >
+              <div className="flex flex-col xl:flex-row items-center gap-4 justify-between">
+                <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto scrollbar-hide shrink-0 pb-2 xl:pb-0">
+                  <DashboardSelectors
+                    cycleOptions={cycleOptions}
+                    orgGroupedOptions={groupedOrgOptions}
+                    selectedCycleId={resolvedAssessmentSetId}
+                    onCycleChange={setAssessmentSetId}
+                    selectedOrgId={resolvedOrganizationId}
+                    onOrgChange={setOrganizationId}
+                    disabled={loading}
+                    loading={ddlLoading}
+                  />
+                  <div className="hidden lg:block w-px h-6 bg-white/10 mx-1" />
+                  <FilterBar
+                    dateRange={dateRange}
+                    setDateRange={setDateRange}
+                    isOverall={isOverall}
+                    setIsOverall={setIsOverall}
+                  />
+                </div>
 
-          {/* Sleek Glass Tab Switcher */}
-          <div className="bg-[#0a0a0c] border border-white/5 p-1 rounded-full flex items-center shadow-inner relative shrink-0">
-            <button 
-              onClick={() => setActiveTab('overview')} 
-              className={`relative cursor-pointer px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none ${activeTab === 'overview' ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'}`}
-            >
-              {activeTab === 'overview' && <motion.div layoutId="dashboard-tab-bg" className="absolute inset-0 bg-zinc-800/80 rounded-full shadow-[inset_0_1px_rgba(255,255,255,0.1)]" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />}
-              <span className="relative z-10 transition-colors">Overall</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab('versus')} 
-              className={`group relative cursor-pointer px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none flex items-center gap-2 ${activeTab === 'versus' ? 'text-fuchsia-100' : 'text-zinc-500 hover:text-zinc-300'}`}
-            >
-              {activeTab === 'versus' && (
-                <motion.div
-                  layoutId="dashboard-tab-bg"
-                  className="absolute right-0 bottom-0 w-full h-full rounded-full overflow-hidden"
-                  transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-r from-rose-500/20 via-fuchsia-500/25 to-cyan-500/20" />
-                  <div className="absolute inset-0 bg-gradient-to-br from-rose-400/20 to-cyan-400/20 blur-xl group-hover:from-rose-400/40 group-hover:to-cyan-400/40 transition-colors duration-500" />
-                  <div className="absolute inset-0 rounded-full border border-fuchsia-400/35 shadow-[inset_0_1px_rgba(255,255,255,0.12),0_0_18px_rgba(217,70,239,0.16)]" />
-                </motion.div>
-              )}
-              <span className="relative z-10 flex items-center gap-2 transition-colors">
-                <Swords className={`w-3.5 h-3.5 ${activeTab === 'versus' ? 'text-fuchsia-300' : 'text-cyan-500/70'}`} />
-                Statio Battles
-              </span>
-            </button>
-          </div>
-        </div>
+                <div className="shrink-0">
+                  <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
+                    <DrawerTrigger asChild>
+                      <button className="group relative h-9 px-4 rounded-full cursor-pointer transition-all bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 hover:border-indigo-500/40 flex items-center justify-center gap-2 overflow-hidden shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]">
+                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/10 to-indigo-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+                        <Sparkles className="w-3.5 h-3.5 animate-pulse" />
+                        <span className="text-[10px] font-bold tracking-wider uppercase relative z-10 hidden sm:inline">AI Insights</span>
+                      </button>
+                    </DrawerTrigger>
+                    <DrawerContent className="h-[90vh] bg-[#050505]/95 backdrop-blur-3xl border-white/10">
+                      <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
+                        <DrawerHeader className="shrink-0 text-center sm:text-left border-b border-white/5 pb-6">
+                          <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-3 font-bold tracking-tight text-white">
+                            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                              <Sparkles className="w-6 h-6 text-indigo-400" />
+                            </div>
+                            Neurometric Analysis
+                          </DrawerTitle>
+                          <DrawerDescription className="text-zinc-400 mt-2 text-sm tracking-wide max-w-xl">
+                            Deep dive into team performance trends, neural insights, and actionable trajectory modifications for your command center.
+                          </DrawerDescription>
+                        </DrawerHeader>
+                        <div className="flex-1 overflow-y-auto mt-6 pr-2 relative filter-container scrollbar-hide">
+                          <div className="pointer-events-none fixed inset-0 z-0 opacity-20 blur-2xl flex items-center justify-center">
+                            <MagicRings
+                              color="#6366f1"
+                              colorTwo="#22d3ee"
+                              speed={0.2}
+                              ringCount={4}
+                              attenuation={25}
+                              lineThickness={2}
+                              baseRadius={0.4}
+                              opacity={0.4}
+                              followMouse={false}
+                            />
+                          </div>
+                          <div className="relative z-10 h-full max-w-4xl mx-auto">
+                            <AIScoreSection
+                              teamSummary={teamSummary}
+                              dashboardData={dashboardData}
+                              aiScoreResult={aiScoreResult}
+                              onAiScoreResultChange={setAiScoreResult}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </DrawerContent>
+                  </Drawer>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Main Content ── */}
         <main className="relative flex-1 min-w-0 flex flex-col h-full bg-black overflow-y-auto scrollbar-hide">
-          <div className={`bg-transparent relative z-10 flex-1 pb-12 pt-6 px-4 sm:px-8 animate-in fade-in slide-in-from-bottom-8 duration-700 max-w-[1920px] mx-auto w-full ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}>
+          <motion.div
+            layout
+            transition={{ duration: 0.28, ease: "easeOut" }}
+            className={`bg-transparent relative z-10 flex-1 w-full ${
+              activeTab === "versus"
+                ? "pt-0 px-0 pb-0 max-w-none"
+                : "pt-6 px-4 sm:px-8 pb-12 max-w-[1920px] mx-auto"
+            } ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}
+          >
 
             {errorMessage && (
               <div className="mb-8 px-6 py-5 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center justify-between animate-in fade-in zoom-in duration-300 w-full">
@@ -293,16 +341,30 @@ export default function Dashboard() {
               </div>
             )}
 
-            {activeTab === 'versus' ? (
-                <div className="w-full max-w-7xl mx-auto py-4">
-                   <VersusMode
-                     cycleOptions={cycleOptions}
-                     orgGroupedOptions={groupedOrgOptions}
-                     ddlLoading={ddlLoading}
-                   />
-                </div>
-            ) : (
-              <>
+            <AnimatePresence mode="wait" initial={false}>
+              {activeTab === 'versus' ? (
+                <motion.div
+                  key="versus-content"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.24, ease: "easeOut" }}
+                  className="w-full"
+                >
+                  <VersusMode
+                    cycleOptions={cycleOptions}
+                    orgGroupedOptions={groupedOrgOptions}
+                    ddlLoading={ddlLoading}
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="overview-content"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.24, ease: "easeOut" }}
+                >
 
           {/* ── Overview Metrics Strip ── */}
           <section className="mb-10">
@@ -471,9 +533,10 @@ export default function Dashboard() {
 
           {/* ── Floating AI Chat ── */}
           <FloatingAiChat dashboardData={dashboardData} />
-              </>
-            )}
-            </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            </motion.div>
         </main>
       </div>
     </ClickSpark>

@@ -359,24 +359,12 @@ export default function VersusMode({
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9, filter: "blur(20px)" }}
       transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
-      className="w-full min-h-[70vh] flex flex-col items-center pt-8 pb-16 px-4 font-mono relative"
+      className="w-full min-h-[70vh] flex flex-col items-center  font-mono relative"
     >
       <div className="absolute top-1/4 left-1/4 w-[40vw] h-[40vw] bg-red-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-1/4 right-1/4 w-[40vw] h-[40vw] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
 
-      <div className="mb-16 text-center relative z-10 w-full flex flex-col items-center">
-        <div className="flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-cyan-500/20 border border-fuchsia-500/30 text-fuchsia-400 shadow-[0_0_20px_rgba(217,70,239,0.2)] group-hover:shadow-[0_0_30px_rgba(217,70,239,0.5)] transition-all duration-500 overflow-hidden relative">
-          <div className="absolute inset-0 bg-gradient-to-br from-rose-400/20 to-cyan-400/20 blur-xl group-hover:from-rose-400/40 group-hover:to-cyan-400/40 transition-colors duration-500" />
-          <Hexagon className="w-20 h-20 fill-fuchsia-500/30 relative z-10" />
-        </div>
-        <h2 className="text-4xl md:text-5xl font-bold tracking-widest uppercase text-white drop-shadow-[0_4px_20px_rgba(255,255,255,0.4)]">
-          STATIO BATTLES
-        </h2>
-        <p className="text-[10px] text-zinc-500 tracking-[0.35em] uppercase mt-2">pick roster · preview objectives · run AI diff</p>
-        <div className="w-[2px] h-16 bg-gradient-to-b from-cyan-400 via-fuchsia-500 to-transparent mt-6 mb-2" />
-      </div>
-
-      <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-8 items-stretch justify-center relative z-10">
+      <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-8 items-stretch justify-center relative py-8 z-10">
         {/* P1 Roster */}
         <div className="flex-1 flex flex-col bg-transparent relative">
           <div className="flex flex-col gap-3 mb-4 px-2">
@@ -447,7 +435,8 @@ export default function VersusMode({
             </div>
           </div>
 
-          <div className="flex-1 max-h-[500px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
+          <div className="relative flex-1">
+          <div className="max-h-[700px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
             <div className="flex flex-col gap-3">
               {p1Loading && (
                 <div className="text-xs text-zinc-500 px-2 py-6 text-center">Loading roster...</div>
@@ -484,112 +473,115 @@ export default function VersusMode({
               })}
             </div>
           </div>
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#08080c] to-transparent" />
         </div>
+      </div>
 
-        {/* Execute Button */}
-        <div className="flex flex-col justify-center items-center lg:w-48 shrink-0 z-20 py-12 lg:py-0">
-          <AnimatePresence mode="popLayout">
-            {p1 && p2 ? (
-              <motion.button
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                onClick={() => setStep("preview")}
-                className="group relative cursor-pointer flex items-center justify-center w-44 h-12 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
+      {/* Execute Button */}
+      <div className="flex flex-col justify-center items-center lg:w-48 shrink-0 z-20 py-12 lg:py-0">
+        <AnimatePresence mode="popLayout">
+          {p1 && p2 ? (
+            <motion.button
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              onClick={() => setStep("preview")}
+              className="group relative cursor-pointer flex items-center justify-center w-44 h-12 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
+              style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
+            >
+              <div
+                className="w-full h-full bg-[#050505] flex items-center justify-center transition-colors duration-300 group-hover:bg-gradient-to-r group-hover:from-rose-500/20 group-hover:to-cyan-500/20 relative z-10"
                 style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
               >
-                <div
-                  className="w-full h-full bg-[#050505] flex items-center justify-center transition-colors duration-300 group-hover:bg-gradient-to-r group-hover:from-rose-500/20 group-hover:to-cyan-500/20 relative z-10"
-                  style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
-                >
-                  <span className="text-[10px] font-black uppercase tracking-[0.2em] font-sans text-white flex items-center gap-2 drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
-                    <Terminal className="w-4 h-4 shrink-0" /> PREVIEW
-                  </span>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 opacity-30 group-hover:opacity-100 blur-lg transition-opacity duration-300 pointer-events-none" />
-              </motion.button>
-            ) : (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-12 relative w-full">
-                <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-zinc-800 to-transparent absolute top-1/2 -translate-y-1/2" />
-                <Hexagon className="w-6 h-6 text-zinc-700 bg-[#0a0a0b] relative z-10 animate-spin-slow" />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* P2 Roster */}
-        <div className="flex-1 flex flex-col bg-transparent relative">
-          <div className="flex flex-col gap-3 mb-4 px-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{p2Candidates.length} AVAILABLE</span>
-              <span className="text-sm tracking-widest text-cyan-400 font-bold uppercase flex items-center gap-2 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
-                OMEGA_SQUAD <Crosshair className="w-4 h-4" />
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 w-full">
-              {/* P2 Cycle Selector */}
-              <div className="relative min-w-0">
-                <Select
-                  value={p2CycleId.toString()}
-                  onValueChange={(val) => setP2CycleId(Number(val))}
-                  disabled={ddlLoading || sortedCycles.length === 0}
-                >
-                  <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
-                    <div className="flex items-center gap-2 truncate">
-                      <CalendarDays className="w-3 h-3 shrink-0 text-cyan-400/70" />
-                      <span className="truncate">{ddlLoading ? "Loading cycles..." : p2SelectedCycleLabel}</span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl min-w-[var(--radix-select-trigger-width)]">
-                    {sortedCycles.map((cycle) => (
-                      <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-cyan-400/20 focus:text-cyan-400 cursor-pointer rounded-lg text-xs">
-                        <div className="flex flex-col items-start gap-0.5 mt-[2px] mb-[2px]">
-                          <span className="font-medium text-[11px]">{cycle.label}</span>
-                          {cycle.isCurrentCycle && (
-                            <span className="text-[8px] text-cyan-400 font-bold uppercase tracking-wider">Current</span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <span className="text-[10px] font-black uppercase tracking-[0.2em] font-sans text-white flex items-center gap-2 drop-shadow-[0_0_8px_rgba(255,255,255,1)]">
+                  <Terminal className="w-4 h-4 shrink-0" /> PREVIEW
+                </span>
               </div>
+              <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 opacity-30 group-hover:opacity-100 blur-lg transition-opacity duration-300 pointer-events-none" />
+            </motion.button>
+          ) : (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-12 relative w-full">
+              <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-zinc-800 to-transparent absolute top-1/2 -translate-y-1/2" />
+              <Hexagon className="w-6 h-6 text-zinc-700 bg-[#0a0a0b] relative z-10 animate-spin-slow" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-              {/* P2 Organization Selector */}
-              <div className="relative min-w-0">
-                <Select
-                  value={p2OrgId.toString()}
-                  onValueChange={(val) => setP2OrgId(Number(val))}
-                  disabled={ddlLoading || orgGroupedOptions.length === 0}
-                >
-                  <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
-                    <div className="flex items-center gap-2 truncate whitespace-nowrap">
-                      <Users className="w-3 h-3 shrink-0 text-cyan-400/70" />
-                      <span className="truncate">{ddlLoading ? "Loading teams..." : p2SelectedOrgLabel}</span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px] min-w-[var(--radix-select-trigger-width)]">
-                    {orgGroupedOptions.map((group, idx) => (
-                      <SelectGroup key={group.groupLabel}>
-                        <SelectLabel className="text-[9px] uppercase tracking-wider text-zinc-500 px-2 py-1">{group.groupLabel}</SelectLabel>
-                        {group.options.map((opt) => (
-                          <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-cyan-400/20 focus:text-cyan-400 cursor-pointer rounded-lg px-2 my-[1px]">
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                        {idx < orgGroupedOptions.length - 1 && <SelectSeparator className="bg-white/5 my-1" />}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
+      {/* P2 Roster */}
+      <div className="flex-1 flex flex-col bg-transparent relative">
+        <div className="flex flex-col gap-3 mb-4 px-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{p2Candidates.length} AVAILABLE</span>
+            <span className="text-sm tracking-widest text-cyan-400 font-bold uppercase flex items-center gap-2 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
+              OMEGA_SQUAD <Crosshair className="w-4 h-4" />
+            </span>
           </div>
 
-          <div className="flex-1 max-h-[500px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
+          <div className="grid grid-cols-2 gap-2 w-full">
+            {/* P2 Cycle Selector */}
+            <div className="relative min-w-0">
+              <Select
+                value={p2CycleId.toString()}
+                onValueChange={(val) => setP2CycleId(Number(val))}
+                disabled={ddlLoading || sortedCycles.length === 0}
+              >
+                <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                  <div className="flex items-center gap-2 truncate">
+                    <CalendarDays className="w-3 h-3 shrink-0 text-cyan-400/70" />
+                    <span className="truncate">{ddlLoading ? "Loading cycles..." : p2SelectedCycleLabel}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl min-w-[var(--radix-select-trigger-width)]">
+                  {sortedCycles.map((cycle) => (
+                    <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-cyan-400/20 focus:text-cyan-400 cursor-pointer rounded-lg text-xs">
+                      <div className="flex flex-col items-start gap-0.5 mt-[2px] mb-[2px]">
+                        <span className="font-medium text-[11px]">{cycle.label}</span>
+                        {cycle.isCurrentCycle && (
+                          <span className="text-[8px] text-cyan-400 font-bold uppercase tracking-wider">Current</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* P2 Organization Selector */}
+            <div className="relative min-w-0">
+              <Select
+                value={p2OrgId.toString()}
+                onValueChange={(val) => setP2OrgId(Number(val))}
+                disabled={ddlLoading || orgGroupedOptions.length === 0}
+              >
+                <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                  <div className="flex items-center gap-2 truncate whitespace-nowrap">
+                    <Users className="w-3 h-3 shrink-0 text-cyan-400/70" />
+                    <span className="truncate">{ddlLoading ? "Loading teams..." : p2SelectedOrgLabel}</span>
+                  </div>
+                </SelectTrigger>
+                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px] min-w-[var(--radix-select-trigger-width)]">
+                  {orgGroupedOptions.map((group, idx) => (
+                    <SelectGroup key={group.groupLabel}>
+                      <SelectLabel className="text-[9px] uppercase tracking-wider text-zinc-500 px-2 py-1">{group.groupLabel}</SelectLabel>
+                      {group.options.map((opt) => (
+                        <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-cyan-400/20 focus:text-cyan-400 cursor-pointer rounded-lg px-2 my-[1px]">
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                      {idx < orgGroupedOptions.length - 1 && <SelectSeparator className="bg-white/5 my-1" />}
+                    </SelectGroup>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative flex-1">
+          <div className="max-h-[700px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
             <div className="flex flex-col gap-3">
               {p2Loading && (
                 <div className="text-xs text-zinc-500 px-2 py-6 text-center">Loading roster...</div>
@@ -626,10 +618,12 @@ export default function VersusMode({
               })}
             </div>
           </div>
+          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#08080c] to-transparent" />
         </div>
       </div>
-    </motion.div>
-  );
+    </div>
+  </motion.div>
+);
 
   // -------------------------------------------------------------
   // PREVIEW: objectives + KR (grounded) before running AI
@@ -1047,6 +1041,17 @@ export default function VersusMode({
 
     return (
       <div className="w-full h-full min-h-[85vh] relative flex flex-col font-mono" style={{ perspective: "1500px" }}>
+        <div className="relative z-40 w-full max-w-7xl mx-auto px-4 md:px-8 pt-2 flex justify-start shrink-0">
+          <button
+            type="button"
+            onClick={resetState}
+            className="inline-flex items-center gap-2.5 cursor-pointer rounded-xl border border-zinc-600/70 bg-zinc-950/90 px-4 py-2.5 font-sans text-xs sm:text-sm font-semibold uppercase tracking-[0.12em] text-zinc-200 shadow-sm transition-colors hover:border-zinc-400 hover:bg-zinc-900 hover:text-white"
+          >
+            <ArrowLeft className="w-5 h-5 shrink-0" />
+            เลือกผู้เล่นใหม่
+          </button>
+        </div>
+
         {/* Dynamic Aura Background */}
         <div className={`absolute top-0 right-1/2 bottom-0 left-0 transition-opacity duration-1000 blur-[150px] mix-blend-screen pointer-events-none ${P1Winner && isFinalResult ? 'bg-rose-600/10' : 'bg-rose-900/5'}`} />
         <div className={`absolute top-0 right-0 bottom-0 left-1/2 transition-opacity duration-1000 blur-[150px] mix-blend-screen pointer-events-none ${P2Winner && isFinalResult ? 'bg-cyan-600/10' : 'bg-cyan-900/5'}`} />
@@ -1244,10 +1249,12 @@ export default function VersusMode({
   // RENDER MAIN TAB SHELL
   // -------------------------------------------------------------
   return (
-    <div className="w-full bg-transparent min-h-[85vh] relative overflow-hidden scrollbar-hide">
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] mix-blend-overlay pointer-events-none fixed" />
+    <div className="w-full bg-transparent min-h-[85vh] relative overflow-hidden scrollbar-hide pb-12">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_70%_at_15%_25%,rgba(244,63,94,0.14),transparent_60%),radial-gradient(90%_70%_at_85%_30%,rgba(34,211,238,0.14),transparent_60%),linear-gradient(to_bottom,rgba(8,8,12,0.96),transparent)]" />
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.05] mix-blend-overlay pointer-events-none" />
+      <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black to-transparent z-20" />
 
-      <div className="w-full h-full pt-8 pb-10 flex flex-col">
+      <div className="relative z-10 w-full h-full flex flex-col">
         <AnimatePresence mode="wait">
           {step === "select" && <SelectScreen key="select" />}
           {step === "preview" && <PreviewArena key="preview" />}
