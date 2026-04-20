@@ -724,7 +724,7 @@ export default function VersusMode({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.35 }}
-        className="w-full flex flex-col font-mono min-h-[70vh] px-4 sm:px-6"
+        className="w-full flex flex-col font-mono min-h-[70vh] py-4 px-4 sm:px-6"
       >
         <div className="flex items-center gap-3 mb-6 max-w-7xl mx-auto w-full">
           <div className="flex items-center gap-3">

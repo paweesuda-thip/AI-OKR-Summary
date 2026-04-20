@@ -365,7 +365,7 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
 
       {/* ── Employee Objective Modal ── */}
       <Dialog open={objectiveModalOpen} onOpenChange={(open) => { if (!open) closeObjectiveModal(); }}>
-        <DialogContent className="max-w-3xl w-full bg-[#08080a] border border-white/10 rounded-3xl p-0 overflow-hidden shadow-[0_30px_80px_-10px_rgba(0,0,0,0.8)]">
+        <DialogContent className="max-w-2xl w-full bg-[#08080a] border border-white/10 rounded-3xl p-0 overflow-hidden shadow-[0_30px_80px_-10px_rgba(0,0,0,0.8)]">
           <DialogTitle className="sr-only">
             {objectiveModalPerson?.fullName} Objectives
           </DialogTitle>
@@ -373,10 +373,12 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
           {objectiveModalPerson && (() => {
             const heroStatus = getStatusData(objectiveModalPerson.avgPercent);
             const ringDash = Math.min(objectiveModalPerson.avgPercent, 100);
-            const ringColorHex = heroStatus.color.includes('emerald') ? '#34d399'
-              : heroStatus.color.includes('amber') ? '#fbbf24'
-              : heroStatus.color.includes('rose') ? '#fb7185'
-              : '#71717a';
+            const ringColorHex = showStatus
+              ? (heroStatus.color.includes('emerald') ? '#34d399'
+                : heroStatus.color.includes('amber') ? '#fbbf24'
+                : heroStatus.color.includes('rose') ? '#fb7185'
+                : '#71717a')
+              : '#818cf8';
 
             // Build per-person objectives via shared helper (single source of truth
             // aligned with versus-mode). Objectives where the person owns zero KRs
@@ -442,14 +444,16 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                     {/* Big progress number */}
                     <div className="shrink-0 text-right">
                       <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.2em] mb-1">Avg Progress</p>
-                      <p className={`text-5xl font-black font-mono leading-none ${heroStatus.color}`}>
+                      <p className={`text-5xl font-black font-mono leading-none ${showStatus ? heroStatus.color : 'text-indigo-300'}`}>
                         {objectiveModalPerson.avgPercent.toFixed(0)}
                         <span className="text-xl align-top">%</span>
                       </p>
-                      <div className={`mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${heroStatus.bg} ${heroStatus.border} ${heroStatus.color}`}>
-                        <div className="w-1 h-1 rounded-full bg-current" />
-                        <span className="text-[9px] font-bold uppercase tracking-[0.15em]">{heroStatus.label}</span>
-                      </div>
+                      {showStatus && (
+                        <div className={`mt-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${heroStatus.bg} ${heroStatus.border} ${heroStatus.color}`}>
+                          <div className="w-1 h-1 rounded-full bg-current" />
+                          <span className="text-[9px] font-bold uppercase tracking-[0.15em]">{heroStatus.label}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -476,16 +480,18 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                     <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Objectives</p>
                     <p className="text-lg font-black font-mono text-white mt-1">{employeeObjectives.length}</p>
                   </div>
-                  <div className="px-5 py-4">
-                    <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Breakdown</p>
-                    <div className="flex items-center gap-2 mt-1.5 text-[11px] font-mono font-bold">
-                      <span className="text-emerald-400">{onTrackCount}</span>
-                      <span className="text-zinc-700">·</span>
-                      <span className="text-amber-400">{atRiskCount}</span>
-                      <span className="text-zinc-700">·</span>
-                      <span className="text-rose-400">{behindCount}</span>
+                  {showStatus && (
+                    <div className="px-5 py-4">
+                      <p className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Breakdown</p>
+                      <div className="flex items-center gap-2 mt-1.5 text-[11px] font-mono font-bold">
+                        <span className="text-emerald-400">{onTrackCount}</span>
+                        <span className="text-zinc-700">·</span>
+                        <span className="text-amber-400">{atRiskCount}</span>
+                        <span className="text-zinc-700">·</span>
+                        <span className="text-rose-400">{behindCount}</span>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* ─── BODY ─── */}
@@ -530,9 +536,9 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                       const isExpanded = expandedObjectiveId === obj.objectiveId;
                       const personProgress = obj.personProgress;
                       const objStatus = toStatus(personProgress);
-                      const statusColor = objStatus === 'On Track' ? 'text-emerald-400' : objStatus === 'At Risk' ? 'text-amber-400' : 'text-rose-400';
-                      const statusBg = objStatus === 'On Track' ? 'bg-emerald-500/10 border-emerald-500/20' : objStatus === 'At Risk' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-rose-500/10 border-rose-500/20';
-                      const stripeColor = objStatus === 'On Track' ? 'bg-emerald-500' : objStatus === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500';
+                      const statusColor = showStatus ? (objStatus === 'On Track' ? 'text-emerald-400' : objStatus === 'At Risk' ? 'text-amber-400' : 'text-rose-400') : 'text-indigo-300';
+                      const statusBg = showStatus ? (objStatus === 'On Track' ? 'bg-emerald-500/10 border-emerald-500/20' : objStatus === 'At Risk' ? 'bg-amber-500/10 border-amber-500/20' : 'bg-rose-500/10 border-rose-500/20') : 'bg-indigo-500/10 border-indigo-500/20';
+                      const stripeColor = showStatus ? (objStatus === 'On Track' ? 'bg-emerald-500' : objStatus === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500') : 'bg-indigo-400';
                       const krCount = obj.subObjectives.length;
 
                       return (
@@ -547,7 +553,6 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                           >
                             {/* Number badge */}
                             <div className="shrink-0 flex flex-col items-center w-10">
-                              <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-wider">O{String(idx + 1).padStart(2, '0')}</span>
                               <span className={`text-2xl font-black font-mono leading-none mt-0.5 ${statusColor}`}>
                                 {Math.floor(personProgress)}
                               </span>
@@ -560,9 +565,11 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                             {/* Title + progress bar */}
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <div className={`text-[9px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5 rounded border ${statusBg} ${statusColor}`}>
-                                  {objStatus}
-                                </div>
+                                {showStatus && (
+                                  <div className={`text-[9px] font-bold uppercase tracking-[0.15em] px-1.5 py-0.5 rounded border ${statusBg} ${statusColor}`}>
+                                    {objStatus}
+                                  </div>
+                                )}
                                 {krCount > 0 && (
                                   <span className="text-[10px] text-zinc-600 font-mono">
                                     {krCount} Sub-OKR{krCount > 1 ? 's' : ''}
@@ -603,8 +610,8 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                                 {obj.subObjectives.map((sub, subIdx) => {
                                   const subProg = sub.personProgress;
                                   const subStatus = toStatus(subProg);
-                                  const subColor = subStatus === 'On Track' ? 'text-emerald-400' : subStatus === 'At Risk' ? 'text-amber-400' : 'text-rose-400';
-                                  const subBar = subStatus === 'On Track' ? 'bg-emerald-500' : subStatus === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500';
+                                  const subColor = showStatus ? (subStatus === 'On Track' ? 'text-emerald-400' : subStatus === 'At Risk' ? 'text-amber-400' : 'text-rose-400') : 'text-indigo-300';
+                                  const subBar = showStatus ? (subStatus === 'On Track' ? 'bg-emerald-500' : subStatus === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500') : 'bg-indigo-400';
 
                                   return (
                                     <div key={sub.objectiveId} className="rounded-xl border border-white/5 bg-black/40 overflow-hidden">
@@ -631,8 +638,8 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                                       {/* Individual KRs */}
                                       <div className="border-t border-white/5 divide-y divide-white/[0.03]">
                                           {sub.details.map((kr, krIdx) => {
-                                            const krColor = kr.pointOKR >= 70 ? 'text-emerald-400' : kr.pointOKR >= 40 ? 'text-amber-400' : 'text-rose-400';
-                                            const krBar = kr.pointOKR >= 70 ? 'bg-emerald-500' : kr.pointOKR >= 40 ? 'bg-amber-500' : 'bg-rose-500';
+                                            const krColor = showStatus ? (kr.pointOKR >= 70 ? 'text-emerald-400' : kr.pointOKR >= 40 ? 'text-amber-400' : 'text-rose-400') : 'text-indigo-300';
+                                            const krBar = showStatus ? (kr.pointOKR >= 70 ? 'bg-emerald-500' : kr.pointOKR >= 40 ? 'bg-amber-500' : 'bg-rose-500') : 'bg-indigo-400';
                                             return (
                                               <div key={krIdx} className="px-3.5 py-2.5 flex items-start gap-3 bg-black/20">
                                                 <Avatar className="w-6 h-6 mt-0.5 shrink-0 border border-white/10">
