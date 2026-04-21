@@ -59,22 +59,39 @@ export default function DashboardTopbar({
           <button
             onClick={() => setActiveTab("versus")}
             className={`group relative cursor-pointer px-6 py-2 text-[10px] sm:text-[11px] font-bold font-sans tracking-[0.2em] uppercase transition-colors rounded-full outline-none flex items-center gap-2 ${
-              activeTab === "versus" ? "text-fuchsia-100" : "text-zinc-500 hover:text-zinc-300"
+              activeTab === "versus" ? "text-[#f5e6e0]" : "text-zinc-500 hover:text-zinc-300"
             }`}
           >
             {activeTab === "versus" && (
               <motion.div
                 layoutId="dashboard-tab-bg"
-                className="absolute right-0 bottom-0 w-full h-full rounded-full overflow-hidden"
+                className="absolute right-0 bottom-0 w-full h-full rounded-full"
                 transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-rose-500/20 via-fuchsia-500/25 to-cyan-500/20" />
-                <div className="absolute inset-0 bg-gradient-to-br from-rose-400/20 to-cyan-400/20 blur-xl group-hover:from-rose-400/40 group-hover:to-cyan-400/40 transition-colors duration-500" />
-                <div className="absolute inset-0 rounded-full border border-fuchsia-400/35 shadow-[inset_0_1px_rgba(255,255,255,0.12),0_0_18px_rgba(217,70,239,0.16)]" />
+                {/* Subtle iridescent base */}
+                <div className="absolute inset-0 rounded-full bg-[#0e0a12]" />
+                <div
+                  className="absolute inset-0 rounded-full opacity-70"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,180,160,0.10), rgba(200,170,255,0.12), rgba(150,200,255,0.10))",
+                  }}
+                />
+
+                {/* Traveling-light border (Siri-style comet) */}
+                <div
+                  aria-hidden
+                  className="pointer-events-none absolute -inset-[1.5px] rounded-full ai-comet-border"
+                />
+
+                {/* Soft ambient halo */}
+                <div className="pointer-events-none absolute -inset-2 rounded-full bg-[radial-gradient(ellipse_at_center,rgba(236,180,220,0.18),transparent_60%)] blur-md" />
+
+                {/* Inner hairline for crispness */}
+                <div className="pointer-events-none absolute inset-0 rounded-full border border-white/10 shadow-[inset_0_1px_rgba(255,255,255,0.08)]" />
               </motion.div>
             )}
             <span className="relative z-10 flex items-center gap-2 transition-colors">
-              <Swords className={`w-3.5 h-3.5 ${activeTab === "versus" ? "text-fuchsia-300" : "text-cyan-500/70"}`} />
+              <Swords className={`w-3.5 h-3.5 ${activeTab === "versus" ? "text-[#f0c8b8]" : "text-cyan-500/70"}`} />
               Statio Battles
             </span>
           </button>
