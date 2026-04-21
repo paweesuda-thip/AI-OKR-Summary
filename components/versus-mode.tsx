@@ -7,7 +7,7 @@ import {
   type ParticipantDetailRaw,
 } from "@/lib/types/okr";
 import { mapObjectiveForPerson } from "@/lib/transformers/okr-transformer";
-import { Crosshair, Hexagon, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft, Swords, Dot } from "lucide-react";
+import { Crosshair, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft, Swords, Dot } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Select,
@@ -197,7 +197,7 @@ const RoundDossier = ({
       )}
 
       {hasStructured ? (
-        <ol className="relative space-y-3.5">
+        <ol className="relative space-y-3.5 font-sans">
           {bullets.map((b, i) => (
             <motion.li
               key={`${phase}-${i}`}
@@ -534,7 +534,19 @@ export default function VersusMode({
           <div className="max-h-[700px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
             <div className="flex flex-col gap-3">
               {p1Loading && (
-                <div className="text-xs text-zinc-500 px-2 py-6 text-center">Loading roster...</div>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-5 p-3 rounded-[20px] bg-[#0a0a0c] border border-[#1a1a1a]"
+                    style={{ opacity: 1 - i * 0.15 }}
+                  >
+                    <div className="w-16 h-16 rounded-[14px] shrink-0 bg-zinc-800/60 animate-pulse" />
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className="h-3.5 w-3/4 rounded bg-zinc-800/60 animate-pulse" />
+                      <div className="h-2.5 w-1/2 rounded bg-zinc-800/40 animate-pulse" />
+                    </div>
+                  </div>
+                ))
               )}
               {!p1Loading && p1Candidates.map((c) => {
                 const isSelected = p1?.fullName === c.fullName;
@@ -596,10 +608,21 @@ export default function VersusMode({
               <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 opacity-30 group-hover:opacity-100 blur-lg transition-opacity duration-300 pointer-events-none" />
             </motion.button>
           ) : (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-center h-12 relative w-full">
-              <div className="w-full h-[1px] bg-gradient-to-r from-transparent via-zinc-800 to-transparent absolute top-1/2 -translate-y-1/2" />
-              <Hexagon className="w-6 h-6 text-zinc-700 bg-[#0a0a0b] relative z-10 animate-spin-slow" />
-            </motion.div>
+            <motion.button
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 0.35 }}
+              disabled
+              aria-label="Compare"
+              className="relative cursor-not-allowed flex items-center justify-center w-14 h-14 bg-gradient-to-r from-zinc-600 via-zinc-500 to-zinc-600 p-[1px]"
+              style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
+            >
+              <div
+                className="w-full h-full bg-[#050505] flex items-center justify-center relative z-10"
+                style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
+              >
+                <Swords className="w-5 h-5 text-zinc-500" />
+              </div>
+            </motion.button>
           )}
         </AnimatePresence>
       </div>
@@ -678,7 +701,19 @@ export default function VersusMode({
           <div className="max-h-[700px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
             <div className="flex flex-col gap-3">
               {p2Loading && (
-                <div className="text-xs text-zinc-500 px-2 py-6 text-center">Loading roster...</div>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-5 p-3 rounded-[20px] bg-[#0a0a0c] border border-[#1a1a1a]"
+                    style={{ opacity: 1 - i * 0.15 }}
+                  >
+                    <div className="w-16 h-16 rounded-[14px] shrink-0 bg-zinc-800/60 animate-pulse" />
+                    <div className="flex-1 flex flex-col gap-2">
+                      <div className="h-3.5 w-3/4 rounded bg-zinc-800/60 animate-pulse" />
+                      <div className="h-2.5 w-1/2 rounded bg-zinc-800/40 animate-pulse" />
+                    </div>
+                  </div>
+                ))
               )}
               {!p2Loading && p2Candidates.map((c) => {
                 const isSelected = p2?.fullName === c.fullName;
@@ -1319,10 +1354,10 @@ export default function VersusMode({
             <AnimatePresence>
               {isFinalResult && (
                 <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mb-6 overflow-hidden">
-                  <div className="p-5 md:p-6 bg-gradient-to-tl from-[#050a0a] to-[#050d12] border border-cyan-900/30 rounded-xl text-base md:text-lg font-sans text-zinc-200 leading-relaxed text-right">
+                  <div className="p-5 md:p-6 bg-gradient-to-tl from-[#050a0a] to-[#050d12] border border-cyan-900/30 rounded-xl text-base md:text-lg font-sans text-zinc-200 leading-relaxed">
                     <div className="text-xs tracking-wide text-cyan-400 font-bold mb-3 uppercase flex items-center justify-end gap-2 font-sans">สรุปจาก AI · omega <Terminal className="w-3.5 h-3.5 shrink-0" /></div>
                     {result.playerB_strengths_weaknesses?.trim() ? (
-                      <div className="whitespace-pre-line text-right text-[15px] md:text-base">
+                      <div className="whitespace-pre-line text-left text-[15px] md:text-base">
                         <TypewriterText text={result.playerB_strengths_weaknesses} speed={10} delay={500} />
                       </div>
                     ) : (

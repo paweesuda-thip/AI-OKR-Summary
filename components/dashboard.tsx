@@ -45,7 +45,7 @@ import DashboardSelectors from "./dashboard-selectors";
 import FilterBar from "./filter-bar";
 import { useDashboardQuery } from "@/hooks/queries/use-dashboard-query";
 import { useParticipantQuery } from "@/hooks/queries/use-participant-query";
-import { useDdlOptions } from "@/hooks/queries/use-ddl-query";
+import { useDdlOptions, useOrgNodeQuery } from "@/hooks/queries/use-ddl-query";
 
 export default function Dashboard() {
   const FALLBACK_CYCLE_ID = 185467;
@@ -54,10 +54,11 @@ export default function Dashboard() {
   // ── Selectors (live DDL APIs) ──────────────────────────────────────────────
   const {
     cycleOptions,
-    groupedOrgOptions,
     isLoading: ddlLoading,
     error: ddlError,
   } = useDdlOptions({ rootOrganizationId: 18473 });
+
+  const { groupedOrgOptions: allOrgGroupedOptions } = useOrgNodeQuery();
 
   const currentCycle = useMemo(
     () => cycleOptions.find((cycle) => cycle.isCurrentCycle) || cycleOptions[0],
@@ -65,13 +66,13 @@ export default function Dashboard() {
   );
 
   const defaultOrgId = useMemo(() => {
-    const hasPreferred = groupedOrgOptions.some((group) =>
+    const hasPreferred = allOrgGroupedOptions.some((group) =>
       group.options.some((option) => option.organizationId === FALLBACK_ORG_ID),
     );
 
     if (hasPreferred) return FALLBACK_ORG_ID;
-    return groupedOrgOptions[0]?.options[0]?.organizationId ?? FALLBACK_ORG_ID;
-  }, [groupedOrgOptions]);
+    return allOrgGroupedOptions[0]?.options[0]?.organizationId ?? FALLBACK_ORG_ID;
+  }, [allOrgGroupedOptions]);
 
   const [assessmentSetId, setAssessmentSetId] = useState(FALLBACK_CYCLE_ID);
   const [organizationId, setOrganizationId] = useState(FALLBACK_ORG_ID);
@@ -97,12 +98,12 @@ export default function Dashboard() {
   }, [assessmentSetId, currentCycle?.setId, cycleOptions]);
 
   const resolvedOrganizationId = useMemo(() => {
-    const exists = groupedOrgOptions.some((group) =>
+    const exists = allOrgGroupedOptions.some((group) =>
       group.options.some((option) => option.organizationId === organizationId),
     );
     if (exists) return organizationId;
     return defaultOrgId;
-  }, [defaultOrgId, groupedOrgOptions, organizationId]);
+  }, [defaultOrgId, allOrgGroupedOptions, organizationId]);
 
   // ── Derived query params ───────────────────────────────────────────────────
   const queryParams = useMemo(() => ({
@@ -242,7 +243,7 @@ export default function Dashboard() {
                 <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto scrollbar-hide shrink-0 pb-2 xl:pb-0">
                   <DashboardSelectors
                     cycleOptions={cycleOptions}
-                    orgGroupedOptions={groupedOrgOptions}
+                    orgGroupedOptions={allOrgGroupedOptions}
                     selectedCycleId={resolvedAssessmentSetId}
                     onCycleChange={setAssessmentSetId}
                     selectedOrgId={resolvedOrganizationId}
@@ -353,7 +354,7 @@ export default function Dashboard() {
                 >
                   <VersusMode
                     cycleOptions={cycleOptions}
-                    orgGroupedOptions={groupedOrgOptions}
+                    orgGroupedOptions={allOrgGroupedOptions}
                     ddlLoading={ddlLoading}
                   />
                 </motion.div>
