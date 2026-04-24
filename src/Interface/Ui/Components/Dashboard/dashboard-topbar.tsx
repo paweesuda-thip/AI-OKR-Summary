@@ -17,31 +17,22 @@ export default function DashboardTopbar({
   return (
     <header className="w-full h-14 shrink-0 bg-background/80 backdrop-blur-2xl border-b border-border/50 flex items-center justify-between px-4 sm:px-8 z-50 sticky top-0 transition-colors">
       {/* Brand / Logo */}
-      <div className="flex items-center gap-2.5 sm:gap-3 group">
-        <div className="relative flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#0a0a0c]">
-          {/* Glowing Aura */}
-          <div className="absolute -inset-2 bg-gradient-to-r from-fuchsia-600 via-purple-600 to-cyan-500 rounded-full blur-md opacity-30 group-hover:opacity-60 transition duration-500" />
-          
-          {/* Siri-style comet border (Color shifted to match logo) */}
-          <div
-            aria-hidden
-            className="pointer-events-none absolute -inset-[1.5px] rounded-full ai-comet-border opacity-90"
-            style={{ filter: "hue-rotate(220deg) brightness(1.2)" }}
-          />
-
-          <Hexagon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-white relative z-10" strokeWidth={1.5} />
+      <div
+        className="flex items-center gap-3 sm:gap-3.5 group min-w-0 transition-transform duration-500 motion-reduce:transform-none"
+        aria-label="Statio OKR"
+      >
+        <div className="relative flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-rose-500/20 via-fuchsia-500/20 to-cyan-500/20 border border-fuchsia-500/30 text-fuchsia-400 shadow-[0_0_20px_rgba(217,70,239,0.2)] transition-all duration-500 group-hover:shadow-[0_0_30px_rgba(217,70,239,0.5)]">
+          <div className="absolute inset-0 bg-gradient-to-br from-rose-400/20 to-cyan-400/20 blur-xl transition-colors duration-500 group-hover:from-rose-400/40 group-hover:to-cyan-400/40" />
+          <Hexagon className="relative z-10 size-6 fill-fuchsia-500/30" aria-hidden />
         </div>
-        <div className="flex items-center">
-          <ShinyText 
-            speed={5} 
-            backgroundImage="linear-gradient(110deg, #f0abfc 0%, #c084fc 30%, #67e8f9 50%, #c084fc 70%, #f0abfc 100%)"
-            text={
-              <React.Fragment>
-                <span className="text-[17px] sm:text-[19px] font-black italic tracking-tighter uppercase font-sans pr-1">Statio</span>
-                <span className="text-[17px] sm:text-[19px] font-light italic tracking-[0.2em] uppercase font-sans ml-0.5">OKR</span>
-              </React.Fragment>
-            }
-          />
+        <div className="flex min-w-0 flex-col">
+          <h1 className="font-sans text-base font-black uppercase leading-tight tracking-[0.2em] drop-shadow-[0_0_15px_rgba(217,70,239,0.4)] transition-all duration-500 sm:text-lg group-hover:drop-shadow-[0_0_25px_rgba(6,182,212,0.6)]">
+            <ShinyText
+              text="Statio-OKR"
+              speed={3}
+              backgroundImage="linear-gradient(120deg, #f43f5e 0%, #d946ef 20%, #8b5cf6 40%, #06b6d4 60%, #10b981 80%, #f43f5e 100%)"
+            />
+          </h1>
         </div>
       </div>
 
