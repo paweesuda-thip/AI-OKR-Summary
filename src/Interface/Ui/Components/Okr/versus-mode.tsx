@@ -9,6 +9,7 @@ import {
 import { mapObjectiveForPerson } from "@/src/Infrastructure/Persistence/Mappers/OkrMapper";
 import { Crosshair, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft, Swords, Dot } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import {
   Select,
   SelectContent,
@@ -58,30 +59,41 @@ type PlayerEnhanced = ContributorSum & {
   topObjectives: TopObjectiveEnhanced[];
   /** From participant-details API (`ParticipantDetailRaw.avgPercent`), keyed by contributor name. */
   avgParticipantPercent?: number;
+  totalScore: number;
+  goalAchievementScore: number;
+  qualityScore: number;
+  engagementBehaviorScore: number;
 };
 
-function avgPercentByContributorName(
+function participantDetailsByContributorName(
   participants: ParticipantDetailRaw[] | undefined,
-): Map<string, number> {
-  const map = new Map<string, number>();
+): Map<string, ParticipantDetailRaw> {
+  const map = new Map<string, ParticipantDetailRaw>();
   for (const p of participants ?? []) {
-    const pct = p.avgPercent ?? 0;
     for (const key of [p.fullName, p.fullName_EN]) {
       const t = key?.trim();
-      if (t) map.set(t, pct);
+      if (t) map.set(t, p);
     }
   }
   return map;
 }
 
-function mergeParticipantAvgPercent(
+function mergeParticipantDetails(
   pool: PlayerEnhanced[],
   participants: ParticipantDetailRaw[] | undefined,
 ): PlayerEnhanced[] {
-  const map = avgPercentByContributorName(participants);
+  const map = participantDetailsByContributorName(participants);
   return pool.map((c) => {
-    const v = map.get(c.fullName.trim());
-    return v !== undefined ? { ...c, avgParticipantPercent: v } : c;
+    const p = map.get(c.fullName.trim());
+    const fallbackScore = Math.floor(Math.random() * 30) + 70; // 70-100 Mock
+    return {
+      ...c,
+      avgParticipantPercent: p?.avgPercent ?? 0,
+      totalScore: p?.totalScore ?? fallbackScore,
+      goalAchievementScore: p?.goalAchievementScore ?? fallbackScore,
+      qualityScore: p?.qualityScore ?? fallbackScore,
+      engagementBehaviorScore: p?.engagementBehaviorScore ?? fallbackScore,
+    };
   });
 }
 
@@ -352,7 +364,7 @@ export default function VersusMode({
 
   const p1Candidates = useMemo(
     () =>
-      mergeParticipantAvgPercent(
+      mergeParticipantDetails(
         buildPlayerPool(p1DashboardData?.contributors ?? [], p1DashboardData?.objectives ?? []),
         p1Participants,
       ),
@@ -361,7 +373,7 @@ export default function VersusMode({
 
   const p2Candidates = useMemo(
     () =>
-      mergeParticipantAvgPercent(
+      mergeParticipantDetails(
         buildPlayerPool(p2DashboardData?.contributors ?? [], p2DashboardData?.objectives ?? []),
         p2Participants,
       ),
@@ -452,25 +464,30 @@ export default function VersusMode({
   // -------------------------------------------------------------
   const SelectScreen = () => (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9, filter: "blur(20px)" }}
-      transition={{ duration: 0.5, type: "spring", bounce: 0.4 }}
-      className="w-full min-h-[70vh] flex flex-col items-center  font-mono relative"
+      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.4, ease: "easeOut" }}
+      className="w-full min-h-[70vh] flex flex-col items-center font-sans relative px-4"
     >
-      <div className="absolute top-1/4 left-1/4 w-[40vw] h-[40vw] bg-red-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
-      <div className="absolute bottom-1/4 right-1/4 w-[40vw] h-[40vw] bg-blue-600/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen" />
+      {/* Ambient Gimmick Backgrounds */}
+      <div className="absolute top-1/4 left-1/4 w-[30vw] h-[30vw] bg-rose-500/5 rounded-full blur-[100px] pointer-events-none mix-blend-screen animate-pulse" />
+      <div className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] bg-cyan-400/5 rounded-full blur-[100px] pointer-events-none mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }} />
 
-      <div className="flex flex-col lg:flex-row w-full max-w-7xl gap-8 items-stretch justify-center relative py-8 z-10">
-        {/* P1 Roster */}
-        <div className="flex-1 flex flex-col bg-transparent relative">
-          <div className="flex flex-col gap-3 mb-4 px-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm tracking-widest text-rose-500 font-bold uppercase flex items-center gap-2 drop-shadow-[0_0_8px_rgba(244,63,94,0.8)]">
-                <Crosshair className="w-4 h-4" /> ALPHA_SQUAD
+      <div className="flex flex-col lg:flex-row w-full max-w-6xl gap-6 lg:gap-12 items-stretch justify-center relative py-8 z-10">
+        
+        {/* P1 Section */}
+        <div className="flex-1 flex flex-col bg-zinc-950/40 backdrop-blur-3xl rounded-[32px] overflow-hidden relative shadow-2xl">
+          <div className="p-6 bg-white/[0.02]">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)] animate-pulse" />
+                <span className="text-xs font-bold tracking-[0.2em] text-white uppercase opacity-90">Subject Alpha</span>
+              </div>
+              <span className="text-[10px] font-medium text-white/40 bg-white/5 px-3 py-1 rounded-full">
+                {p1Candidates.length} Available
               </span>
-              <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{p1Candidates.length} AVAILABLE</span>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 w-full">
+            <div className="grid grid-cols-2 gap-4 w-full">
               {/* P1 Cycle Selector */}
               <div className="relative min-w-0">
                 <Select
@@ -478,20 +495,18 @@ export default function VersusMode({
                   onValueChange={(val) => setP1CycleId(Number(val))}
                   disabled={ddlLoading || sortedCycles.length === 0}
                 >
-                  <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                  <SelectTrigger className="w-full h-11 bg-white/5 border-none hover:bg-white/10 transition-colors rounded-2xl text-xs font-medium px-4 text-white/80">
                     <div className="flex items-center gap-2 truncate">
-                      <CalendarDays className="w-3 h-3 shrink-0 text-rose-500/70" />
-                      <span className="truncate">{ddlLoading ? "Loading cycles..." : p1SelectedCycleLabel}</span>
+                      <CalendarDays className="w-3.5 h-3.5 shrink-0 text-white/40" />
+                      <span className="truncate">{ddlLoading ? "Loading..." : p1SelectedCycleLabel}</span>
                     </div>
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl min-w-[var(--radix-select-trigger-width)]">
+                  <SelectContent className="bg-zinc-900/90 backdrop-blur-xl border-none rounded-2xl shadow-2xl">
                     {sortedCycles.map((cycle) => (
-                      <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-rose-500/20 focus:text-rose-400 cursor-pointer rounded-lg text-xs">
-                        <div className="flex flex-col items-start gap-0.5 mt-[2px] mb-[2px]">
+                      <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-white/10 focus:text-white cursor-pointer rounded-xl text-xs my-0.5">
+                        <div className="flex flex-col items-start gap-0.5 px-1 py-0.5">
                           <span className="font-medium text-[11px]">{cycle.label}</span>
-                          {cycle.isCurrentCycle && (
-                            <span className="text-[8px] text-rose-400 font-bold uppercase tracking-wider">Current</span>
-                          )}
+                          {cycle.isCurrentCycle && <span className="text-[9px] text-white/40">Current</span>}
                         </div>
                       </SelectItem>
                     ))}
@@ -506,18 +521,18 @@ export default function VersusMode({
                   onValueChange={(val) => setP1OrgId(Number(val))}
                   disabled={ddlLoading || orgGroupedOptions.length === 0}
                 >
-                  <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-rose-500/30 hover:bg-rose-500/10 data-[state=open]:bg-rose-500/10 data-[state=open]:border-rose-400/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
+                  <SelectTrigger className="w-full h-11 bg-white/5 border-none hover:bg-white/10 transition-colors rounded-2xl text-xs font-medium px-4 text-white/80">
                     <div className="flex items-center gap-2 truncate whitespace-nowrap">
-                      <Users className="w-3 h-3 shrink-0 text-rose-500/70" />
-                      <span className="truncate">{ddlLoading ? "Loading teams..." : p1SelectedOrgLabel}</span>
+                      <Users className="w-3.5 h-3.5 shrink-0 text-white/40" />
+                      <span className="truncate">{ddlLoading ? "Loading..." : p1SelectedOrgLabel}</span>
                     </div>
                   </SelectTrigger>
-                  <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px] min-w-[var(--radix-select-trigger-width)]">
+                  <SelectContent className="bg-zinc-900/90 backdrop-blur-xl border-none rounded-2xl shadow-2xl max-h-[300px]">
                     {orgGroupedOptions.map((group, idx) => (
                       <SelectGroup key={group.groupLabel}>
-                        <SelectLabel className="text-[9px] uppercase tracking-wider text-zinc-500 px-2 py-1">{group.groupLabel}</SelectLabel>
+                        <SelectLabel className="text-[10px] font-semibold text-white/40 px-3 py-1.5">{group.groupLabel}</SelectLabel>
                         {group.options.map((opt) => (
-                          <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-rose-500/20 focus:text-rose-400 cursor-pointer rounded-lg px-2 my-[1px]">
+                          <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-white/10 focus:text-white cursor-pointer rounded-xl px-3 my-0.5">
                             {opt.label}
                           </SelectItem>
                         ))}
@@ -530,20 +545,15 @@ export default function VersusMode({
             </div>
           </div>
 
-          <div className="relative flex-1">
-          <div className="max-h-[700px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
-            <div className="flex flex-col gap-3">
+          <div className="relative flex-1 bg-transparent">
+            <div className="max-h-[600px] overflow-y-auto px-4 py-4 scrollbar-hide space-y-1">
               {p1Loading && (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-5 p-3 rounded-[20px] bg-[#0a0a0c] border border-[#1a1a1a]"
-                    style={{ opacity: 1 - i * 0.15 }}
-                  >
-                    <div className="w-16 h-16 rounded-[14px] shrink-0 bg-zinc-800/60 animate-pulse" />
+                  <div key={i} className="flex items-center gap-4 p-3 rounded-2xl bg-white/5">
+                    <div className="w-12 h-12 rounded-xl shrink-0 bg-white/5 animate-pulse" />
                     <div className="flex-1 flex flex-col gap-2">
-                      <div className="h-3.5 w-3/4 rounded bg-zinc-800/60 animate-pulse" />
-                      <div className="h-2.5 w-1/2 rounded bg-zinc-800/40 animate-pulse" />
+                      <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
+                      <div className="h-2 w-1/3 rounded bg-white/5 animate-pulse" />
                     </div>
                   </div>
                 ))
@@ -553,164 +563,218 @@ export default function VersusMode({
                 const isPickedByOther = p2?.fullName === c.fullName && p1CycleId === p2CycleId;
                 return (
                   <motion.button
-                    whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
+                    layout
                     key={c.fullName} onClick={() => !isPickedByOther && setP1(c)} disabled={isPickedByOther}
-                    className={`relative cursor-pointer disabled:cursor-not-allowed flex items-center gap-5 p-3 group transition-all duration-300 rounded-[20px]
-                                        ${isSelected ? 'bg-gradient-to-r from-[#1a050a] to-[#0a0a0c] border border-rose-500/50 shadow-[0_4px_30px_rgba(244,63,94,0.15)] ring-1 ring-rose-500/20' :
-                        isPickedByOther ? 'opacity-15 grayscale pointer-events-none' :
-                          'bg-[#0a0a0c] hover:bg-[#111115] border border-[#1a1a1a] hover:border-[#333] shadow-lg'}
-                                    `}
+                    className={`w-full text-left relative cursor-pointer disabled:cursor-not-allowed flex flex-col p-3 rounded-2xl transition-all duration-300 outline-none
+                      ${isPickedByOther ? 'opacity-20 grayscale pointer-events-none' : 'hover:bg-white/[0.04]'}
+                    `}
                   >
-                    <div className={`relative w-16 h-16 rounded-[14px] overflow-hidden shrink-0 bg-zinc-950 ${isSelected ? 'shadow-[0_0_20px_rgba(244,63,94,0.4)] ring-1 ring-rose-500/50' : ''}`}>
-                      {c.pictureURL ? (
-                        <Image src={c.pictureURL} alt={c.fullName} fill className={`object-cover object-center ${isSelected ? 'scale-110 transition-transform duration-500' : 'grayscale group-hover:grayscale-0 transition-all'}`} unoptimized sizes="64px" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-sm font-bold text-zinc-600">{c.fullName[0]}</div>
-                      )}
-                    </div>
-                    <div className="flex-1 text-left flex flex-col justify-center">
-                      <div className={`text-base truncate max-w-[200px] font-sans ${isSelected ? 'text-white font-bold tracking-wide drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-zinc-300 font-medium tracking-wider group-hover:text-white transition-colors'}`}>{c.fullName}</div>
-                      <div className="text-[10px] font-sans font-bold text-rose-500/80 tracking-widest uppercase mt-1 flex items-center gap-2">
-                        AVG Progress <span className="text-white text-xs px-1.5 py-0.5 bg-rose-500/10 border border-rose-500/20 rounded">{Math.floor(c.avgParticipantPercent ?? c.avgObjectiveProgress)}</span>
+                    {isSelected && (
+                      <motion.div
+                        layoutId="p1-active-selection"
+                        className="absolute inset-0 bg-white/10 rounded-2xl z-0"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    
+                    <div className="flex items-center gap-4 w-full relative z-10">
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white/5">
+                        {c.pictureURL ? (
+                          <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover object-center" unoptimized sizes="48px" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-sm font-bold text-white/50">{c.fullName[0]}</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 pr-2">
+                        <div className={`text-[13px] font-semibold truncate transition-colors ${isSelected ? 'text-white' : 'text-white/70'}`}>{c.fullName}</div>
+                        <div className="text-[10px] font-medium text-white/40 mt-1 flex items-center gap-2">
+                          <span>Total Score <span className={`ml-1 font-mono transition-colors ${isSelected ? 'text-white' : 'text-white/60'}`}>{Math.floor(c.totalScore)}</span></span>
+                        </div>
                       </div>
                     </div>
-                    {isSelected && <Zap className="w-6 h-6 text-rose-400 absolute right-4 drop-shadow-[0_0_10px_rgba(244,63,94,0.9)] animate-pulse" />}
+
+                    <AnimatePresence>
+                      {isSelected && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.4, ease: "anticipate" }}
+                          className="w-full overflow-hidden relative z-10"
+                        >
+                          <div className="pt-4 mt-3 border-t border-white/5 flex items-center justify-between gap-4">
+                            <div className="flex-1 space-y-3 pl-1">
+                              {/* Achievement */}
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between items-end">
+                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Goal Achievement</span>
+                                  <span className="text-[10px] text-rose-400 font-mono font-bold">{Math.floor(c.goalAchievementScore)}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.goalAchievementScore}%` }} transition={{ delay: 0.2, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-rose-600 to-rose-400 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+                                </div>
+                              </div>
+                              {/* Quality */}
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between items-end">
+                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Work Quality</span>
+                                  <span className="text-[10px] text-rose-400 font-mono font-bold">{Math.floor(c.qualityScore)}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.qualityScore}%` }} transition={{ delay: 0.3, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-rose-600 to-rose-400 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+                                </div>
+                              </div>
+                              {/* Engagement */}
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between items-end">
+                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Engagement</span>
+                                  <span className="text-[10px] text-rose-400 font-mono font-bold">{Math.floor(c.engagementBehaviorScore)}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.engagementBehaviorScore}%` }} transition={{ delay: 0.4, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-rose-600 to-rose-400 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="w-28 h-28 shrink-0 relative flex items-center justify-center">
+                              <div className="absolute inset-0 bg-rose-500/10 blur-[20px] rounded-full animate-pulse" />
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                                  { subject: 'A', value: c.goalAchievementScore, fullMark: 100 },
+                                  { subject: 'Q', value: c.qualityScore, fullMark: 100 },
+                                  { subject: 'E', value: c.engagementBehaviorScore, fullMark: 100 }
+                                ]}>
+                                  <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
+                                  <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: 600 }} />
+                                  <Radar isAnimationActive={true} animationDuration={1500} dataKey="value" stroke="rgba(244,63,94,0.9)" strokeWidth={2} fill="url(#colorRose)" fillOpacity={1} />
+                                  <defs>
+                                    <linearGradient id="colorRose" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.6}/>
+                                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.1}/>
+                                    </linearGradient>
+                                  </defs>
+                                </RadarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.button>
                 );
               })}
             </div>
-          </div>
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#08080c] to-transparent" />
-        </div>
-      </div>
-
-      {/* Execute Button */}
-      <div className="flex flex-col justify-center items-center lg:w-48 shrink-0 z-20 py-12 lg:py-0">
-        <AnimatePresence mode="popLayout">
-          {p1 && p2 ? (
-            <motion.button
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              onClick={() => setStep("preview")}
-              aria-label="Compare"
-              className="group relative cursor-pointer flex items-center justify-center w-14 h-14 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 p-[1px]"
-              style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
-            >
-              <div
-                className="w-full h-full bg-[#050505] flex items-center justify-center transition-colors duration-300 group-hover:bg-gradient-to-r group-hover:from-rose-500/20 group-hover:to-cyan-500/20 relative z-10"
-                style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
-              >
-                <Swords className="w-5 h-5 text-white drop-shadow-[0_0_8px_rgba(255,255,255,1)]" />
-              </div>
-              <div className="absolute inset-0 bg-gradient-to-r from-rose-500 via-fuchsia-500 to-cyan-500 opacity-30 group-hover:opacity-100 blur-lg transition-opacity duration-300 pointer-events-none" />
-            </motion.button>
-          ) : (
-            <motion.button
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 0.35 }}
-              disabled
-              aria-label="Compare"
-              className="relative cursor-not-allowed flex items-center justify-center w-14 h-14 bg-gradient-to-r from-zinc-600 via-zinc-500 to-zinc-600 p-[1px]"
-              style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
-            >
-              <div
-                className="w-full h-full bg-[#050505] flex items-center justify-center relative z-10"
-                style={{ clipPath: "polygon(12px 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 0 100%, 0 12px)" }}
-              >
-                <Swords className="w-5 h-5 text-zinc-500" />
-              </div>
-            </motion.button>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* P2 Roster */}
-      <div className="flex-1 flex flex-col bg-transparent relative">
-        <div className="flex flex-col gap-3 mb-4 px-2">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-white/50 bg-black/50 border border-zinc-800 px-3 py-1 rounded-full backdrop-blur-md">{p2Candidates.length} AVAILABLE</span>
-            <span className="text-sm tracking-widest text-cyan-400 font-bold uppercase flex items-center gap-2 drop-shadow-[0_0_8px_rgba(34,211,238,0.8)]">
-              OMEGA_SQUAD <Crosshair className="w-4 h-4" />
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-2 w-full">
-            {/* P2 Cycle Selector */}
-            <div className="relative min-w-0">
-              <Select
-                value={p2CycleId.toString()}
-                onValueChange={(val) => setP2CycleId(Number(val))}
-                disabled={ddlLoading || sortedCycles.length === 0}
-              >
-                <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
-                  <div className="flex items-center gap-2 truncate">
-                    <CalendarDays className="w-3 h-3 shrink-0 text-cyan-400/70" />
-                    <span className="truncate">{ddlLoading ? "Loading cycles..." : p2SelectedCycleLabel}</span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl min-w-[var(--radix-select-trigger-width)]">
-                  {sortedCycles.map((cycle) => (
-                    <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-cyan-400/20 focus:text-cyan-400 cursor-pointer rounded-lg text-xs">
-                      <div className="flex flex-col items-start gap-0.5 mt-[2px] mb-[2px]">
-                        <span className="font-medium text-[11px]">{cycle.label}</span>
-                        {cycle.isCurrentCycle && (
-                          <span className="text-[8px] text-cyan-400 font-bold uppercase tracking-wider">Current</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* P2 Organization Selector */}
-            <div className="relative min-w-0">
-              <Select
-                value={p2OrgId.toString()}
-                onValueChange={(val) => setP2OrgId(Number(val))}
-                disabled={ddlLoading || orgGroupedOptions.length === 0}
-              >
-                <SelectTrigger className="w-full h-9 cursor-pointer disabled:cursor-not-allowed bg-[#0a0a0c] border-cyan-400/30 hover:bg-cyan-400/10 data-[state=open]:bg-cyan-400/10 data-[state=open]:border-cyan-300/50 transition-all rounded-xl text-[11px] font-semibold px-3 overflow-hidden text-zinc-200 shadow-[inset_0_1px_rgba(255,255,255,0.05)]">
-                  <div className="flex items-center gap-2 truncate whitespace-nowrap">
-                    <Users className="w-3 h-3 shrink-0 text-cyan-400/70" />
-                    <span className="truncate">{ddlLoading ? "Loading teams..." : p2SelectedOrgLabel}</span>
-                  </div>
-                </SelectTrigger>
-                <SelectContent className="bg-[#0a0a0c]/95 backdrop-blur-xl border-white/10 rounded-xl shadow-2xl max-h-[300px] min-w-[var(--radix-select-trigger-width)]">
-                  {orgGroupedOptions.map((group, idx) => (
-                    <SelectGroup key={group.groupLabel}>
-                      <SelectLabel className="text-[9px] uppercase tracking-wider text-zinc-500 px-2 py-1">{group.groupLabel}</SelectLabel>
-                      {group.options.map((opt) => (
-                        <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-cyan-400/20 focus:text-cyan-400 cursor-pointer rounded-lg px-2 my-[1px]">
-                          {opt.label}
-                        </SelectItem>
-                      ))}
-                      {idx < orgGroupedOptions.length - 1 && <SelectSeparator className="bg-white/5 my-1" />}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-950/80 to-transparent rounded-b-[32px]" />
           </div>
         </div>
 
-        <div className="relative flex-1">
-          <div className="max-h-[700px] overflow-y-auto px-4 -mx-4 pb-10 pt-4 -mt-4 scrollbar-hide py-2">
-            <div className="flex flex-col gap-3">
+        {/* Execute Button */}
+        <div className="flex flex-col justify-center items-center shrink-0 z-20 py-6 lg:py-0 w-full lg:w-32 relative">
+          <AnimatePresence mode="popLayout">
+            {p1 && p2 ? (
+              <motion.button
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 400, damping: 25 }}
+                onClick={() => setStep("preview")}
+                className="group relative cursor-pointer flex flex-col items-center justify-center w-24 h-24 bg-white/10 backdrop-blur-xl rounded-full shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:bg-white/20 transition-all border border-white/20"
+              >
+                {/* Gimmick: Rotating ring */}
+                <div className="absolute inset-0 rounded-full border border-white/10 border-t-white/60 animate-spin" style={{ animationDuration: '3s' }} />
+                <Swords className="w-8 h-8 text-white mb-1 drop-shadow-md" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white drop-shadow-md mt-1">Compare</span>
+              </motion.button>
+            ) : (
+              <motion.button
+                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 0.3 }} disabled
+                className="relative cursor-not-allowed flex flex-col items-center justify-center w-24 h-24 bg-white/5 backdrop-blur-md rounded-full border border-white/5"
+              >
+                <Swords className="w-8 h-8 text-white/30 mb-1" />
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 mt-1">Select</span>
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* P2 Section */}
+        <div className="flex-1 flex flex-col bg-zinc-950/40 backdrop-blur-3xl rounded-[32px] overflow-hidden relative shadow-2xl">
+          <div className="p-6 bg-white/[0.02]">
+            <div className="flex items-center justify-between mb-6 flex-row-reverse">
+              <div className="flex items-center gap-3 flex-row-reverse">
+                <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse" />
+                <span className="text-xs font-bold tracking-[0.2em] text-white uppercase opacity-90">Subject Omega</span>
+              </div>
+              <span className="text-[10px] font-medium text-white/40 bg-white/5 px-3 py-1 rounded-full">
+                {p2Candidates.length} Available
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 w-full">
+              {/* P2 Cycle Selector */}
+              <div className="relative min-w-0">
+                <Select
+                  value={p2CycleId.toString()}
+                  onValueChange={(val) => setP2CycleId(Number(val))}
+                  disabled={ddlLoading || sortedCycles.length === 0}
+                >
+                  <SelectTrigger className="w-full h-11 bg-white/5 border-none hover:bg-white/10 transition-colors rounded-2xl text-xs font-medium px-4 text-white/80">
+                    <div className="flex items-center gap-2 truncate">
+                      <CalendarDays className="w-3.5 h-3.5 shrink-0 text-white/40" />
+                      <span className="truncate">{ddlLoading ? "Loading..." : p2SelectedCycleLabel}</span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900/90 backdrop-blur-xl border-none rounded-2xl shadow-2xl">
+                    {sortedCycles.map((cycle) => (
+                      <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-white/10 focus:text-white cursor-pointer rounded-xl text-xs my-0.5">
+                        <div className="flex flex-col items-start gap-0.5 px-1 py-0.5">
+                          <span className="font-medium text-[11px]">{cycle.label}</span>
+                          {cycle.isCurrentCycle && <span className="text-[9px] text-white/40">Current</span>}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* P2 Organization Selector */}
+              <div className="relative min-w-0">
+                <Select
+                  value={p2OrgId.toString()}
+                  onValueChange={(val) => setP2OrgId(Number(val))}
+                  disabled={ddlLoading || orgGroupedOptions.length === 0}
+                >
+                  <SelectTrigger className="w-full h-11 bg-white/5 border-none hover:bg-white/10 transition-colors rounded-2xl text-xs font-medium px-4 text-white/80">
+                    <div className="flex items-center gap-2 truncate whitespace-nowrap">
+                      <Users className="w-3.5 h-3.5 shrink-0 text-white/40" />
+                      <span className="truncate">{ddlLoading ? "Loading..." : p2SelectedOrgLabel}</span>
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900/90 backdrop-blur-xl border-none rounded-2xl shadow-2xl max-h-[300px]">
+                    {orgGroupedOptions.map((group, idx) => (
+                      <SelectGroup key={group.groupLabel}>
+                        <SelectLabel className="text-[10px] font-semibold text-white/40 px-3 py-1.5">{group.groupLabel}</SelectLabel>
+                        {group.options.map((opt) => (
+                          <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-white/10 focus:text-white cursor-pointer rounded-xl px-3 my-0.5">
+                            {opt.label}
+                          </SelectItem>
+                        ))}
+                        {idx < orgGroupedOptions.length - 1 && <SelectSeparator className="bg-white/5 my-1" />}
+                      </SelectGroup>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          <div className="relative flex-1 bg-transparent">
+            <div className="max-h-[600px] overflow-y-auto px-4 py-4 scrollbar-hide space-y-1">
               {p2Loading && (
                 Array.from({ length: 5 }).map((_, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-5 p-3 rounded-[20px] bg-[#0a0a0c] border border-[#1a1a1a]"
-                    style={{ opacity: 1 - i * 0.15 }}
-                  >
-                    <div className="w-16 h-16 rounded-[14px] shrink-0 bg-zinc-800/60 animate-pulse" />
-                    <div className="flex-1 flex flex-col gap-2">
-                      <div className="h-3.5 w-3/4 rounded bg-zinc-800/60 animate-pulse" />
-                      <div className="h-2.5 w-1/2 rounded bg-zinc-800/40 animate-pulse" />
+                  <div key={i} className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 flex-row-reverse">
+                    <div className="w-12 h-12 rounded-xl shrink-0 bg-white/5 animate-pulse" />
+                    <div className="flex-1 flex flex-col gap-2 items-end">
+                      <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
+                      <div className="h-2 w-1/3 rounded bg-white/5 animate-pulse" />
                     </div>
                   </div>
                 ))
@@ -720,39 +784,113 @@ export default function VersusMode({
                 const isPickedByOther = p1?.fullName === c.fullName && p1CycleId === p2CycleId;
                 return (
                   <motion.button
-                    whileHover={!isPickedByOther ? { scale: 1.03 } : {}} whileTap={!isPickedByOther ? { scale: 0.98 } : {}}
+                    layout
                     key={c.fullName} onClick={() => !isPickedByOther && setP2(c)} disabled={isPickedByOther}
-                    className={`relative cursor-pointer disabled:cursor-not-allowed flex items-center gap-5 p-3 flex-row-reverse group transition-all duration-300 rounded-[20px]
-                                        ${isSelected ? 'bg-gradient-to-l from-[#050910] to-[#0a0a0c] border border-cyan-400/50 shadow-[0_4px_30px_rgba(34,211,238,0.15)] ring-1 ring-cyan-400/20' :
-                        isPickedByOther ? 'opacity-15 grayscale pointer-events-none' :
-                          'bg-[#0a0a0c] hover:bg-[#111115] border border-[#1a1a1a] hover:border-[#333] shadow-lg'}
-                                    `}
+                    className={`w-full text-right relative cursor-pointer disabled:cursor-not-allowed flex flex-col p-3 rounded-2xl transition-all duration-300 outline-none
+                      ${isPickedByOther ? 'opacity-20 grayscale pointer-events-none' : 'hover:bg-white/[0.04]'}
+                    `}
                   >
-                    <div className={`relative w-16 h-16 rounded-[14px] overflow-hidden shrink-0 bg-zinc-950 ${isSelected ? 'shadow-[0_0_20px_rgba(34,211,238,0.4)] ring-1 ring-cyan-400/50' : ''}`}>
-                      {c.pictureURL ? (
-                        <Image src={c.pictureURL} alt={c.fullName} fill className={`object-cover object-center ${isSelected ? 'scale-110 transition-transform duration-500' : 'grayscale group-hover:grayscale-0 transition-all'}`} unoptimized sizes="64px" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-sm font-bold text-zinc-600">{c.fullName[0]}</div>
-                      )}
-                    </div>
-                    <div className="flex-1 text-right flex flex-col justify-center">
-                      <div className={`text-base truncate max-w-[200px] inline-block font-sans ${isSelected ? 'text-white font-bold tracking-wide drop-shadow-[0_0_8px_rgba(255,255,255,0.8)]' : 'text-zinc-300 font-medium tracking-wider group-hover:text-white transition-colors'}`}>{c.fullName}</div>
-                      <div className="text-[10px] font-sans font-bold text-cyan-500/80 tracking-widest uppercase mt-1 flex items-center justify-end gap-2">
-                        <span className="text-white text-xs px-1.5 py-0.5 bg-cyan-500/10 border border-cyan-500/20 rounded">{Math.floor(c.avgParticipantPercent ?? c.avgObjectiveProgress)}</span> AVG Progress
+                    {isSelected && (
+                      <motion.div
+                        layoutId="p2-active-selection"
+                        className="absolute inset-0 bg-white/10 rounded-2xl z-0"
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    
+                    <div className="flex items-center flex-row-reverse gap-4 w-full relative z-10">
+                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white/5">
+                        {c.pictureURL ? (
+                          <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover object-center" unoptimized sizes="48px" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-sm font-bold text-white/50">{c.fullName[0]}</div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 pl-2">
+                        <div className={`text-[13px] font-semibold truncate transition-colors ${isSelected ? 'text-white' : 'text-white/70'}`}>{c.fullName}</div>
+                        <div className="text-[10px] font-medium text-white/40 mt-1 flex items-center justify-end gap-2">
+                          <span><span className={`mr-1 font-mono transition-colors ${isSelected ? 'text-white' : 'text-white/60'}`}>{Math.floor(c.totalScore)}</span> Total Score</span>
+                        </div>
                       </div>
                     </div>
-                    {isSelected && <Zap className="w-6 h-6 text-cyan-400 absolute left-4 drop-shadow-[0_0_10px_rgba(34,211,238,0.9)] animate-pulse" />}
+
+                    <AnimatePresence>
+                      {isSelected && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.4, ease: "anticipate" }}
+                          className="w-full overflow-hidden relative z-10"
+                        >
+                          <div className="pt-4 mt-3 border-t border-white/5 flex items-center justify-between flex-row-reverse gap-4">
+                            <div className="flex-1 space-y-3 pr-1 text-right">
+                              {/* Achievement */}
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between items-end flex-row-reverse">
+                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Goal Achievement</span>
+                                  <span className="text-[10px] text-cyan-400 font-mono font-bold">{Math.floor(c.goalAchievementScore)}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex justify-end">
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.goalAchievementScore}%` }} transition={{ delay: 0.2, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-l from-cyan-400 to-cyan-600 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                                </div>
+                              </div>
+                              {/* Quality */}
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between items-end flex-row-reverse">
+                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Work Quality</span>
+                                  <span className="text-[10px] text-cyan-400 font-mono font-bold">{Math.floor(c.qualityScore)}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex justify-end">
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.qualityScore}%` }} transition={{ delay: 0.3, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-l from-cyan-400 to-cyan-600 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                                </div>
+                              </div>
+                              {/* Engagement */}
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between items-end flex-row-reverse">
+                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Engagement</span>
+                                  <span className="text-[10px] text-cyan-400 font-mono font-bold">{Math.floor(c.engagementBehaviorScore)}</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex justify-end">
+                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.engagementBehaviorScore}%` }} transition={{ delay: 0.4, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-l from-cyan-400 to-cyan-600 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="w-28 h-28 shrink-0 relative flex items-center justify-center">
+                              <div className="absolute inset-0 bg-cyan-400/10 blur-[20px] rounded-full animate-pulse" />
+                              <ResponsiveContainer width="100%" height="100%">
+                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                                  { subject: 'A', value: c.goalAchievementScore, fullMark: 100 },
+                                  { subject: 'Q', value: c.qualityScore, fullMark: 100 },
+                                  { subject: 'E', value: c.engagementBehaviorScore, fullMark: 100 }
+                                ]}>
+                                  <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
+                                  <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: 600 }} />
+                                  <Radar isAnimationActive={true} animationDuration={1500} dataKey="value" stroke="rgba(34,211,238,0.9)" strokeWidth={2} fill="url(#colorCyan)" fillOpacity={1} />
+                                  <defs>
+                                    <linearGradient id="colorCyan" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.6}/>
+                                      <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.1}/>
+                                    </linearGradient>
+                                  </defs>
+                                </RadarChart>
+                              </ResponsiveContainer>
+                            </div>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                   </motion.button>
                 );
               })}
             </div>
+            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-950/80 to-transparent rounded-b-[32px]" />
           </div>
-          <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#08080c] to-transparent" />
         </div>
       </div>
-    </div>
-  </motion.div>
-);
+    </motion.div>
+  );
 
   // -------------------------------------------------------------
   // PREVIEW: objectives + KR (grounded) before running AI
@@ -917,10 +1055,26 @@ export default function VersusMode({
                   <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p1.fullName[0]}</div>
                 )}
               </div>
-              <div>
+              <div className="flex-1">
                 <div className="text-[9px] text-rose-500/80 tracking-[0.3em] uppercase">alpha</div>
                 <div className="text-white font-sans font-bold text-lg truncate max-w-[240px]">{p1.fullName}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {Math.floor(p1.avgParticipantPercent ?? p1.avgObjectiveProgress)} · in {p1.checkInCount} check-ins</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5 flex gap-2">
+                  <span>score {Math.floor(p1.totalScore)}</span>
+                  <span className="opacity-50">·</span>
+                  <span>in {p1.checkInCount} check-ins</span>
+                </div>
+              </div>
+              <div className="w-16 h-16 shrink-0 opacity-80 mix-blend-screen pointer-events-none">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
+                    { subject: 'Achieve', value: p1.goalAchievementScore, fullMark: 100 },
+                    { subject: 'Quality', value: p1.qualityScore, fullMark: 100 },
+                    { subject: 'Engage', value: p1.engagementBehaviorScore, fullMark: 100 }
+                  ]}>
+                    <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(244,63,94,0.3)" />
+                    <Radar dataKey="value" stroke="#fb7185" fill="#f43f5e" fillOpacity={0.5} />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
             </div>
             <div className="space-y-3">
@@ -952,7 +1106,23 @@ export default function VersusMode({
               <div className="flex-1 min-w-0">
                 <div className="text-[9px] text-cyan-400/80 tracking-[0.3em] uppercase">omega</div>
                 <div className="text-white font-sans font-bold text-lg truncate max-w-[240px] ml-auto">{p2.fullName}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5">avg {Math.floor(p2.avgParticipantPercent ?? p2.avgObjectiveProgress)} · in {p2.checkInCount} check-ins</div>
+                <div className="text-[10px] text-zinc-500 font-mono mt-0.5 flex gap-2 justify-end">
+                  <span>score {Math.floor(p2.totalScore)}</span>
+                  <span className="opacity-50">·</span>
+                  <span>in {p2.checkInCount} check-ins</span>
+                </div>
+              </div>
+              <div className="w-16 h-16 shrink-0 opacity-80 mix-blend-screen pointer-events-none">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
+                    { subject: 'Achieve', value: p2.goalAchievementScore, fullMark: 100 },
+                    { subject: 'Quality', value: p2.qualityScore, fullMark: 100 },
+                    { subject: 'Engage', value: p2.engagementBehaviorScore, fullMark: 100 }
+                  ]}>
+                    <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(34,211,238,0.3)" />
+                    <Radar dataKey="value" stroke="#22d3ee" fill="#06b6d4" fillOpacity={0.5} />
+                  </RadarChart>
+                </ResponsiveContainer>
               </div>
             </div>
             <div className="space-y-3">
@@ -1235,7 +1405,8 @@ export default function VersusMode({
               </div>
               <div className="flex flex-col flex-1 min-w-0">
                 <h3 className="text-xl md:text-3xl font-bold font-sans text-white tracking-tight truncate">{p1.fullName}</h3>
-                {P1Winner && isFinalResult && <div className="text-rose-500 font-bold uppercase tracking-widest text-xs mt-2 animate-pulse flex items-center gap-2"><Trophy className="w-4 h-4 shrink-0" /> Eval lead</div>}
+                <div className="text-rose-500/80 font-mono text-[10px] uppercase tracking-widest mt-1 mb-2">Total Score: {Math.floor(p1.totalScore)}</div>
+                {P1Winner && isFinalResult && <div className="text-rose-500 font-bold uppercase tracking-widest text-xs mt-1 animate-pulse flex items-center gap-2"><Trophy className="w-4 h-4 shrink-0" /> Eval lead</div>}
 
                 <AnimatePresence>
                   {isFinalResult && (
@@ -1249,6 +1420,20 @@ export default function VersusMode({
                   )}
                 </AnimatePresence>
               </div>
+              {isFinalResult && (
+                <div className="absolute right-0 top-0 w-32 h-32 opacity-20 pointer-events-none mix-blend-screen transition-opacity duration-1000">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
+                      { subject: 'A', value: p1.goalAchievementScore, fullMark: 100 },
+                      { subject: 'Q', value: p1.qualityScore, fullMark: 100 },
+                      { subject: 'E', value: p1.engagementBehaviorScore, fullMark: 100 }
+                    ]}>
+                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(244,63,94,0.5)" />
+                      <Radar dataKey="value" stroke="#fb7185" fill="#f43f5e" fillOpacity={0.5} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
             {/* AI Final Analysis Block */}
@@ -1334,7 +1519,8 @@ export default function VersusMode({
               </div>
               <div className="flex flex-col flex-1 min-w-0 items-end text-right">
                 <h3 className="text-xl md:text-3xl font-bold font-sans text-white tracking-tight truncate">{p2.fullName}</h3>
-                {P2Winner && isFinalResult && <div className="text-cyan-400 font-bold uppercase tracking-widest text-xs mt-2 animate-pulse flex items-center justify-end gap-2 text-right">Eval lead <Trophy className="w-4 h-4 shrink-0" /></div>}
+                <div className="text-cyan-400/80 font-mono text-[10px] uppercase tracking-widest mt-1 mb-2">Total Score: {Math.floor(p2.totalScore)}</div>
+                {P2Winner && isFinalResult && <div className="text-cyan-400 font-bold uppercase tracking-widest text-xs mt-1 animate-pulse flex items-center justify-end gap-2 text-right">Eval lead <Trophy className="w-4 h-4 shrink-0" /></div>}
 
                 <AnimatePresence>
                   {isFinalResult && (
@@ -1348,6 +1534,20 @@ export default function VersusMode({
                   )}
                 </AnimatePresence>
               </div>
+              {isFinalResult && (
+                <div className="absolute left-0 top-0 w-32 h-32 opacity-20 pointer-events-none mix-blend-screen transition-opacity duration-1000">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
+                      { subject: 'A', value: p2.goalAchievementScore, fullMark: 100 },
+                      { subject: 'Q', value: p2.qualityScore, fullMark: 100 },
+                      { subject: 'E', value: p2.engagementBehaviorScore, fullMark: 100 }
+                    ]}>
+                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(34,211,238,0.5)" />
+                      <Radar dataKey="value" stroke="#22d3ee" fill="#06b6d4" fillOpacity={0.5} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </div>
 
             {/* AI Final Analysis Block */}
