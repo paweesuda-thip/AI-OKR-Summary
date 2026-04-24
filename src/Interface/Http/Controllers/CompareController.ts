@@ -261,16 +261,9 @@ export const compareController = {
 
       const schemaExampleRounds = Array.from({ length: maxRounds }).map((_, i) => ({
         roundNumber: i + 1,
-        p1_badge: `Badge for P1's obj in Thai`,
-        p2_badge: `Badge for P2's obj in Thai`,
-        commentary: [
-          `สรุปรอบ: ประเด็นหลักของรอบ ${i + 1} แบบย่อ (1 บรรทัด)`,
-          ``,
-          `- ข้อมูลอ้างอิงจาก OKR (อ้างถึงงาน/KR ที่เกี่ยวข้อง): …`,
-          `- วิเคราะห์ ${dataA.name}: … (เชิงหลักฐาน ไม่ใช่คำชมทั่วไป)`,
-          `- วิเคราะห์ ${dataB.name}: …`,
-          `- คำตัดสินรอบนี้: ฝั่งใดมีความพร้อม/ความสมเหตุสมผลมากกว่าในขอบเขตรอบนี้ และเพราะอะไร`,
-        ].join('\n'),
+        p1_badge: `Badge P1 (max 5 words Thai)`,
+        p2_badge: `Badge P2 (max 5 words Thai)`,
+        commentary: `สรุปรอบ: (one sentence)\n- ${dataA.name}: (one evidence bullet)\n- ${dataB.name}: (one evidence bullet)`,
       }));
 
       const sharedToneBlock = `Tone and language requirements:
@@ -290,20 +283,14 @@ ${isSelfComparison ? labelB : `Player 2 (${dataB.name})`} Final Score: ${p2Score
 Winner: ${exactWinner}`;
 
       const roundsCommentarySkeleton = isSelfComparison
-        ? `rounds[].commentary skeleton (self-review, per objective slot — keep all four bullets):
-  Line1: "สรุปรอบ: …" (one line summarizing this objective slot across both cycles)
-  blank line
-  "- ข้อมูลอ้างอิงจาก OKR ทั้งสองรอบ: …"
-  "- ${labelA}: … (พัฒนาการ / ความคืบหน้า / ปัญหาที่พบ)"
-  "- ${labelB}: …"
-  "- ประเมินการเปลี่ยนแปลง: ดีขึ้น / ถดถอย / คงที่ และเพราะอะไร"`
-        : `rounds[].commentary skeleton:
-  Line1: "สรุปรอบ: …" (one line)
-  blank line
-  "- ข้อมูลอ้างอิงจาก OKR: …"
-  "- วิเคราะห์ ${dataA.name}: …"
-  "- วิเคราะห์ ${dataB.name}: …"
-  "- คำตัดสินรอบนี้: …"`;
+        ? `rounds[].commentary: EXACTLY 3 lines per round, no blank lines.
+  Line 1: "สรุปรอบ: …" (one sentence)
+  Line 2: "- ${labelA}: …" (one bullet)
+  Line 3: "- ${labelB}: …" (one bullet)"`
+        : `rounds[].commentary: EXACTLY 3 lines per round, no blank lines.
+  Line 1: "สรุปรอบ: …" (one sentence)
+  Line 2: "- ${dataA.name}: …" (one evidence bullet)
+  Line 3: "- ${dataB.name}: …" (one evidence bullet)`;
 
       const roundsContextBlock = isSelfComparison
         ? `IMPORTANT CONTEXT:
@@ -357,37 +344,23 @@ Return ONLY raw JSON, no code fences, no extra text.`;
 - playerA_strengths_weaknesses is for ${dataA.name}.
 - playerB_strengths_weaknesses is for ${dataB.name}.`;
 
-      const strengthsSkeleton = `playerA_strengths_weaknesses and playerB_strengths_weaknesses use EXACTLY these Thai headings in order:
-  "จุดแข็ง"
-  then 2-4 bullets
-  blank line
-  "จุดที่ควรพัฒนา / ความเสี่ยง"
-  then 2-4 bullets
-  blank line
-  "เชื่อมโยงกับคะแนน (ทำไมถึงได้ระดับนี้)"
-  then 2-3 bullets referencing progress breadth, KR/task clarity, consistency, check-in behavior.`;
+      const strengthsSkeleton = `playerA_strengths_weaknesses and playerB_strengths_weaknesses: exactly 4 bullets each, no section headings.
+  Bullet 1: key strength with OKR evidence
+  Bullet 2: second strength or notable behaviour
+  Bullet 3: one area to develop
+  Bullet 4: why they scored at this level (check-ins, progress breadth, KR clarity)`;
 
       const conclusionSkeleton = isSelfComparison
-        ? `conclusion uses EXACTLY:
-  "สรุปผลการประเมินตนเอง"
-  then 2-3 bullets
-  blank line
-  "เหตุผลที่รอบที่แข็งแรงกว่าได้คะแนนสูงกว่า"
-  then 3-5 bullets (explicit comparison by dimension between "${labelA}" and "${labelB}")
-  blank line
-  "ข้อเสนอแนะสำหรับรอบถัดไป"
-  then EXACTLY 2 bullets:
-    - one bullet starting "- สิ่งที่ควรรักษาไว้: …"
-    - one bullet starting "- สิ่งที่ควรปรับปรุง: …"`
-        : `conclusion uses EXACTLY:
-  "สรุปผลการประเมิน"
-  then 2-3 bullets
-  blank line
-  "เหตุผลที่ผู้ชนะได้คะแนนสูงกว่า"
-  then 3-5 bullets (explicit comparison by dimension)
-  blank line
-  "ข้อเสนอแนะ"
-  then exactly 2 bullets: one line starting "- ${dataA.name}: …" and one "- ${dataB.name}: …"`;
+        ? `conclusion: exactly 4 bullets, no section headings.
+  "สรุป: …" (one sentence comparing ${labelA} vs ${labelB})
+  "- เหตุผล: …" (why one cycle scored higher)
+  "- สิ่งที่ควรรักษาไว้: …"
+  "- สิ่งที่ควรปรับปรุง: …"`
+        : `conclusion: exactly 4 bullets, no section headings.
+  "สรุป: …" (one sentence winner summary)
+  "- เหตุผล: …" (why winner scored higher, evidence-based)
+  "- ${dataA.name}: …" (one actionable recommendation)
+  "- ${dataB.name}: …" (one actionable recommendation)`;
 
       const introSkeleton = isSelfComparison
         ? `intro_hype: short, max ~2 sentences OR up to 3 bullet lines under heading "บทนำ" with "- " bullets. Neutral self-review tone, not hype. Max one emoji total.`
@@ -431,7 +404,7 @@ Return ONLY raw JSON, no code fences, no extra text.`;
           anthropic,
           prompt: roundsPrompt,
           label: 'rounds',
-          maxOutputTokens: 4096,
+          maxOutputTokens: 1500,
           temperature: 0.4,
         }),
         generateJsonWithRetry<{
@@ -443,7 +416,7 @@ Return ONLY raw JSON, no code fences, no extra text.`;
           anthropic,
           prompt: summaryPrompt,
           label: 'summary',
-          maxOutputTokens: 4096,
+          maxOutputTokens: 1500,
           temperature: 0.4,
         }),
       ]);

@@ -22,6 +22,7 @@ import {
 import type { CycleOption, GroupedOrgOption } from "@/src/Interface/Ui/utils/org-leaf";
 import { useDashboardQuery } from "@/src/Interface/Ui/Hooks/use-dashboard-query";
 import { useParticipantQuery } from "@/src/Interface/Ui/Hooks/use-participant-query";
+import BorderGlow from "@/src/Interface/Ui/Components/Shared/react-bits/BorderGlow";
 
 type Step = "select" | "preview" | "result";
 
@@ -461,436 +462,290 @@ export default function VersusMode({
 
   // -------------------------------------------------------------
   // SELECT SCREEN
-  // -------------------------------------------------------------
-  const SelectScreen = () => (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
-      transition={{ duration: 0.4, ease: "easeOut" }}
-      className="w-full min-h-[70vh] flex flex-col items-center font-sans relative px-4"
-    >
-      {/* Ambient Gimmick Backgrounds */}
-      <div className="absolute top-1/4 left-1/4 w-[30vw] h-[30vw] bg-rose-500/5 rounded-full blur-[100px] pointer-events-none mix-blend-screen animate-pulse" />
-      <div className="absolute bottom-1/4 right-1/4 w-[30vw] h-[30vw] bg-cyan-400/5 rounded-full blur-[100px] pointer-events-none mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }} />
-
-      <div className="flex flex-col lg:flex-row w-full max-w-6xl gap-6 lg:gap-12 items-stretch justify-center relative py-8 z-10">
-        
-        {/* P1 Section */}
-        <div className="flex-1 flex flex-col bg-zinc-950/40 backdrop-blur-3xl rounded-[32px] overflow-hidden relative shadow-2xl">
-          <div className="p-6 bg-white/[0.02]">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="w-2 h-2 rounded-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.8)] animate-pulse" />
-                <span className="text-xs font-bold tracking-[0.2em] text-white uppercase opacity-90">Subject Alpha</span>
-              </div>
-              <span className="text-[10px] font-medium text-white/40 bg-white/5 px-3 py-1 rounded-full">
-                {p1Candidates.length} Available
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 w-full">
-              {/* P1 Cycle Selector */}
-              <div className="relative min-w-0">
-                <Select
-                  value={p1CycleId.toString()}
-                  onValueChange={(val) => setP1CycleId(Number(val))}
-                  disabled={ddlLoading || sortedCycles.length === 0}
-                >
-                  <SelectTrigger className="w-full h-11 bg-white/5 border-none hover:bg-white/10 transition-colors rounded-2xl text-xs font-medium px-4 text-white/80">
-                    <div className="flex items-center gap-2 truncate">
-                      <CalendarDays className="w-3.5 h-3.5 shrink-0 text-white/40" />
-                      <span className="truncate">{ddlLoading ? "Loading..." : p1SelectedCycleLabel}</span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900/90 backdrop-blur-xl border-none rounded-2xl shadow-2xl">
-                    {sortedCycles.map((cycle) => (
-                      <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-white/10 focus:text-white cursor-pointer rounded-xl text-xs my-0.5">
-                        <div className="flex flex-col items-start gap-0.5 px-1 py-0.5">
-                          <span className="font-medium text-[11px]">{cycle.label}</span>
-                          {cycle.isCurrentCycle && <span className="text-[9px] text-white/40">Current</span>}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* P1 Organization Selector */}
-              <div className="relative min-w-0">
-                <Select
-                  value={p1OrgId.toString()}
-                  onValueChange={(val) => setP1OrgId(Number(val))}
-                  disabled={ddlLoading || orgGroupedOptions.length === 0}
-                >
-                  <SelectTrigger className="w-full h-11 bg-white/5 border-none hover:bg-white/10 transition-colors rounded-2xl text-xs font-medium px-4 text-white/80">
-                    <div className="flex items-center gap-2 truncate whitespace-nowrap">
-                      <Users className="w-3.5 h-3.5 shrink-0 text-white/40" />
-                      <span className="truncate">{ddlLoading ? "Loading..." : p1SelectedOrgLabel}</span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900/90 backdrop-blur-xl border-none rounded-2xl shadow-2xl max-h-[300px]">
-                    {orgGroupedOptions.map((group, idx) => (
-                      <SelectGroup key={group.groupLabel}>
-                        <SelectLabel className="text-[10px] font-semibold text-white/40 px-3 py-1.5">{group.groupLabel}</SelectLabel>
-                        {group.options.map((opt) => (
-                          <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-white/10 focus:text-white cursor-pointer rounded-xl px-3 my-0.5">
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                        {idx < orgGroupedOptions.length - 1 && <SelectSeparator className="bg-white/5 my-1" />}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative flex-1 bg-transparent">
-            <div className="max-h-[600px] overflow-y-auto px-4 py-4 scrollbar-hide space-y-1">
-              {p1Loading && (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 p-3 rounded-2xl bg-white/5">
-                    <div className="w-12 h-12 rounded-xl shrink-0 bg-white/5 animate-pulse" />
-                    <div className="flex-1 flex flex-col gap-2">
-                      <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
-                      <div className="h-2 w-1/3 rounded bg-white/5 animate-pulse" />
-                    </div>
-                  </div>
-                ))
-              )}
-              {!p1Loading && p1Candidates.map((c) => {
-                const isSelected = p1?.fullName === c.fullName;
-                const isPickedByOther = p2?.fullName === c.fullName && p1CycleId === p2CycleId;
-                return (
-                  <motion.button
-                    layout
-                    key={c.fullName} onClick={() => !isPickedByOther && setP1(c)} disabled={isPickedByOther}
-                    className={`w-full text-left relative cursor-pointer disabled:cursor-not-allowed flex flex-col p-3 rounded-2xl transition-all duration-300 outline-none
-                      ${isPickedByOther ? 'opacity-20 grayscale pointer-events-none' : 'hover:bg-white/[0.04]'}
-                    `}
-                  >
-                    {isSelected && (
-                      <motion.div
-                        layoutId="p1-active-selection"
-                        className="absolute inset-0 bg-white/10 rounded-2xl z-0"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-                    
-                    <div className="flex items-center gap-4 w-full relative z-10">
-                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white/5">
-                        {c.pictureURL ? (
-                          <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover object-center" unoptimized sizes="48px" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-sm font-bold text-white/50">{c.fullName[0]}</div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 pr-2">
-                        <div className={`text-[13px] font-semibold truncate transition-colors ${isSelected ? 'text-white' : 'text-white/70'}`}>{c.fullName}</div>
-                        <div className="text-[10px] font-medium text-white/40 mt-1 flex items-center gap-2">
-                          <span>Total Score <span className={`ml-1 font-mono transition-colors ${isSelected ? 'text-white' : 'text-white/60'}`}>{Math.floor(c.totalScore)}</span></span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <AnimatePresence>
-                      {isSelected && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.4, ease: "anticipate" }}
-                          className="w-full overflow-hidden relative z-10"
-                        >
-                          <div className="pt-4 mt-3 border-t border-white/5 flex items-center justify-between gap-4">
-                            <div className="flex-1 space-y-3 pl-1">
-                              {/* Achievement */}
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between items-end">
-                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Goal Achievement</span>
-                                  <span className="text-[10px] text-rose-400 font-mono font-bold">{Math.floor(c.goalAchievementScore)}</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.goalAchievementScore}%` }} transition={{ delay: 0.2, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-rose-600 to-rose-400 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
-                                </div>
-                              </div>
-                              {/* Quality */}
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between items-end">
-                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Work Quality</span>
-                                  <span className="text-[10px] text-rose-400 font-mono font-bold">{Math.floor(c.qualityScore)}</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.qualityScore}%` }} transition={{ delay: 0.3, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-rose-600 to-rose-400 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
-                                </div>
-                              </div>
-                              {/* Engagement */}
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between items-end">
-                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Engagement</span>
-                                  <span className="text-[10px] text-rose-400 font-mono font-bold">{Math.floor(c.engagementBehaviorScore)}</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.engagementBehaviorScore}%` }} transition={{ delay: 0.4, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-r from-rose-600 to-rose-400 rounded-full shadow-[0_0_8px_rgba(244,63,94,0.5)]" />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="w-28 h-28 shrink-0 relative flex items-center justify-center">
-                              <div className="absolute inset-0 bg-rose-500/10 blur-[20px] rounded-full animate-pulse" />
-                              <ResponsiveContainer width="100%" height="100%">
-                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
-                                  { subject: 'A', value: c.goalAchievementScore, fullMark: 100 },
-                                  { subject: 'Q', value: c.qualityScore, fullMark: 100 },
-                                  { subject: 'E', value: c.engagementBehaviorScore, fullMark: 100 }
-                                ]}>
-                                  <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
-                                  <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: 600 }} />
-                                  <Radar isAnimationActive={true} animationDuration={1500} dataKey="value" stroke="rgba(244,63,94,0.9)" strokeWidth={2} fill="url(#colorRose)" fillOpacity={1} />
-                                  <defs>
-                                    <linearGradient id="colorRose" x1="0" y1="0" x2="0" y2="1">
-                                      <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.6}/>
-                                      <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.1}/>
-                                    </linearGradient>
-                                  </defs>
-                                </RadarChart>
-                              </ResponsiveContainer>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.button>
-                );
-              })}
-            </div>
-            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-950/80 to-transparent rounded-b-[32px]" />
-          </div>
+  // -----------------------------------
+  const SelectScreen = () => {
+    // Helper for rendering detailed progress bars
+    const MetricBar = ({ label, value, color, isRight }: { label: string, value: number, color: 'rose' | 'cyan', isRight?: boolean }) => (
+      <div className="space-y-1.5 w-full">
+        <div className={`flex justify-between items-end ${isRight ? 'flex-row-reverse' : ''}`}>
+          <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">{label}</span>
+          <span className={`text-[10px] font-mono font-bold ${color === 'rose' ? 'text-rose-400' : 'text-cyan-400'}`}>{Math.floor(value)}</span>
         </div>
-
-        {/* Execute Button */}
-        <div className="flex flex-col justify-center items-center shrink-0 z-20 py-6 lg:py-0 w-full lg:w-32 relative">
-          <AnimatePresence mode="popLayout">
-            {p1 && p2 ? (
-              <motion.button
-                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400, damping: 25 }}
-                onClick={() => setStep("preview")}
-                className="group relative cursor-pointer flex flex-col items-center justify-center w-24 h-24 bg-white/10 backdrop-blur-xl rounded-full shadow-[0_0_40px_rgba(255,255,255,0.1)] hover:bg-white/20 transition-all border border-white/20"
-              >
-                {/* Gimmick: Rotating ring */}
-                <div className="absolute inset-0 rounded-full border border-white/10 border-t-white/60 animate-spin" style={{ animationDuration: '3s' }} />
-                <Swords className="w-8 h-8 text-white mb-1 drop-shadow-md" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white drop-shadow-md mt-1">Compare</span>
-              </motion.button>
-            ) : (
-              <motion.button
-                initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 0.3 }} disabled
-                className="relative cursor-not-allowed flex flex-col items-center justify-center w-24 h-24 bg-white/5 backdrop-blur-md rounded-full border border-white/5"
-              >
-                <Swords className="w-8 h-8 text-white/30 mb-1" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/30 mt-1">Select</span>
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* P2 Section */}
-        <div className="flex-1 flex flex-col bg-zinc-950/40 backdrop-blur-3xl rounded-[32px] overflow-hidden relative shadow-2xl">
-          <div className="p-6 bg-white/[0.02]">
-            <div className="flex items-center justify-between mb-6 flex-row-reverse">
-              <div className="flex items-center gap-3 flex-row-reverse">
-                <div className="w-2 h-2 rounded-full bg-cyan-400 shadow-[0_0_10px_rgba(34,211,238,0.8)] animate-pulse" />
-                <span className="text-xs font-bold tracking-[0.2em] text-white uppercase opacity-90">Subject Omega</span>
-              </div>
-              <span className="text-[10px] font-medium text-white/40 bg-white/5 px-3 py-1 rounded-full">
-                {p2Candidates.length} Available
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4 w-full">
-              {/* P2 Cycle Selector */}
-              <div className="relative min-w-0">
-                <Select
-                  value={p2CycleId.toString()}
-                  onValueChange={(val) => setP2CycleId(Number(val))}
-                  disabled={ddlLoading || sortedCycles.length === 0}
-                >
-                  <SelectTrigger className="w-full h-11 bg-white/5 border-none hover:bg-white/10 transition-colors rounded-2xl text-xs font-medium px-4 text-white/80">
-                    <div className="flex items-center gap-2 truncate">
-                      <CalendarDays className="w-3.5 h-3.5 shrink-0 text-white/40" />
-                      <span className="truncate">{ddlLoading ? "Loading..." : p2SelectedCycleLabel}</span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900/90 backdrop-blur-xl border-none rounded-2xl shadow-2xl">
-                    {sortedCycles.map((cycle) => (
-                      <SelectItem key={cycle.setId} value={cycle.setId.toString()} className="focus:bg-white/10 focus:text-white cursor-pointer rounded-xl text-xs my-0.5">
-                        <div className="flex flex-col items-start gap-0.5 px-1 py-0.5">
-                          <span className="font-medium text-[11px]">{cycle.label}</span>
-                          {cycle.isCurrentCycle && <span className="text-[9px] text-white/40">Current</span>}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* P2 Organization Selector */}
-              <div className="relative min-w-0">
-                <Select
-                  value={p2OrgId.toString()}
-                  onValueChange={(val) => setP2OrgId(Number(val))}
-                  disabled={ddlLoading || orgGroupedOptions.length === 0}
-                >
-                  <SelectTrigger className="w-full h-11 bg-white/5 border-none hover:bg-white/10 transition-colors rounded-2xl text-xs font-medium px-4 text-white/80">
-                    <div className="flex items-center gap-2 truncate whitespace-nowrap">
-                      <Users className="w-3.5 h-3.5 shrink-0 text-white/40" />
-                      <span className="truncate">{ddlLoading ? "Loading..." : p2SelectedOrgLabel}</span>
-                    </div>
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-900/90 backdrop-blur-xl border-none rounded-2xl shadow-2xl max-h-[300px]">
-                    {orgGroupedOptions.map((group, idx) => (
-                      <SelectGroup key={group.groupLabel}>
-                        <SelectLabel className="text-[10px] font-semibold text-white/40 px-3 py-1.5">{group.groupLabel}</SelectLabel>
-                        {group.options.map((opt) => (
-                          <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-[11px] focus:bg-white/10 focus:text-white cursor-pointer rounded-xl px-3 my-0.5">
-                            {opt.label}
-                          </SelectItem>
-                        ))}
-                        {idx < orgGroupedOptions.length - 1 && <SelectSeparator className="bg-white/5 my-1" />}
-                      </SelectGroup>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative flex-1 bg-transparent">
-            <div className="max-h-[600px] overflow-y-auto px-4 py-4 scrollbar-hide space-y-1">
-              {p2Loading && (
-                Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 flex-row-reverse">
-                    <div className="w-12 h-12 rounded-xl shrink-0 bg-white/5 animate-pulse" />
-                    <div className="flex-1 flex flex-col gap-2 items-end">
-                      <div className="h-3 w-2/3 rounded bg-white/5 animate-pulse" />
-                      <div className="h-2 w-1/3 rounded bg-white/5 animate-pulse" />
-                    </div>
-                  </div>
-                ))
-              )}
-              {!p2Loading && p2Candidates.map((c) => {
-                const isSelected = p2?.fullName === c.fullName;
-                const isPickedByOther = p1?.fullName === c.fullName && p1CycleId === p2CycleId;
-                return (
-                  <motion.button
-                    layout
-                    key={c.fullName} onClick={() => !isPickedByOther && setP2(c)} disabled={isPickedByOther}
-                    className={`w-full text-right relative cursor-pointer disabled:cursor-not-allowed flex flex-col p-3 rounded-2xl transition-all duration-300 outline-none
-                      ${isPickedByOther ? 'opacity-20 grayscale pointer-events-none' : 'hover:bg-white/[0.04]'}
-                    `}
-                  >
-                    {isSelected && (
-                      <motion.div
-                        layoutId="p2-active-selection"
-                        className="absolute inset-0 bg-white/10 rounded-2xl z-0"
-                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                      />
-                    )}
-                    
-                    <div className="flex items-center flex-row-reverse gap-4 w-full relative z-10">
-                      <div className="relative w-12 h-12 rounded-xl overflow-hidden shrink-0 bg-white/5">
-                        {c.pictureURL ? (
-                          <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover object-center" unoptimized sizes="48px" />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center text-sm font-bold text-white/50">{c.fullName[0]}</div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 pl-2">
-                        <div className={`text-[13px] font-semibold truncate transition-colors ${isSelected ? 'text-white' : 'text-white/70'}`}>{c.fullName}</div>
-                        <div className="text-[10px] font-medium text-white/40 mt-1 flex items-center justify-end gap-2">
-                          <span><span className={`mr-1 font-mono transition-colors ${isSelected ? 'text-white' : 'text-white/60'}`}>{Math.floor(c.totalScore)}</span> Total Score</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <AnimatePresence>
-                      {isSelected && (
-                        <motion.div
-                          initial={{ height: 0, opacity: 0 }}
-                          animate={{ height: "auto", opacity: 1 }}
-                          exit={{ height: 0, opacity: 0 }}
-                          transition={{ duration: 0.4, ease: "anticipate" }}
-                          className="w-full overflow-hidden relative z-10"
-                        >
-                          <div className="pt-4 mt-3 border-t border-white/5 flex items-center justify-between flex-row-reverse gap-4">
-                            <div className="flex-1 space-y-3 pr-1 text-right">
-                              {/* Achievement */}
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between items-end flex-row-reverse">
-                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Goal Achievement</span>
-                                  <span className="text-[10px] text-cyan-400 font-mono font-bold">{Math.floor(c.goalAchievementScore)}</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex justify-end">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.goalAchievementScore}%` }} transition={{ delay: 0.2, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-l from-cyan-400 to-cyan-600 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-                                </div>
-                              </div>
-                              {/* Quality */}
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between items-end flex-row-reverse">
-                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Work Quality</span>
-                                  <span className="text-[10px] text-cyan-400 font-mono font-bold">{Math.floor(c.qualityScore)}</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex justify-end">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.qualityScore}%` }} transition={{ delay: 0.3, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-l from-cyan-400 to-cyan-600 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-                                </div>
-                              </div>
-                              {/* Engagement */}
-                              <div className="space-y-1.5">
-                                <div className="flex justify-between items-end flex-row-reverse">
-                                  <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">Engagement</span>
-                                  <span className="text-[10px] text-cyan-400 font-mono font-bold">{Math.floor(c.engagementBehaviorScore)}</span>
-                                </div>
-                                <div className="w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex justify-end">
-                                  <motion.div initial={{ width: 0 }} animate={{ width: `${c.engagementBehaviorScore}%` }} transition={{ delay: 0.4, duration: 1, ease: "easeOut" }} className="h-full bg-gradient-to-l from-cyan-400 to-cyan-600 rounded-full shadow-[0_0_8px_rgba(34,211,238,0.5)]" />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="w-28 h-28 shrink-0 relative flex items-center justify-center">
-                              <div className="absolute inset-0 bg-cyan-400/10 blur-[20px] rounded-full animate-pulse" />
-                              <ResponsiveContainer width="100%" height="100%">
-                                <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
-                                  { subject: 'A', value: c.goalAchievementScore, fullMark: 100 },
-                                  { subject: 'Q', value: c.qualityScore, fullMark: 100 },
-                                  { subject: 'E', value: c.engagementBehaviorScore, fullMark: 100 }
-                                ]}>
-                                  <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.15)" strokeWidth={1} />
-                                  <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 9, fontWeight: 600 }} />
-                                  <Radar isAnimationActive={true} animationDuration={1500} dataKey="value" stroke="rgba(34,211,238,0.9)" strokeWidth={2} fill="url(#colorCyan)" fillOpacity={1} />
-                                  <defs>
-                                    <linearGradient id="colorCyan" x1="0" y1="0" x2="0" y2="1">
-                                      <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.6}/>
-                                      <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.1}/>
-                                    </linearGradient>
-                                  </defs>
-                                </RadarChart>
-                              </ResponsiveContainer>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.button>
-                );
-              })}
-            </div>
-            <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-950/80 to-transparent rounded-b-[32px]" />
-          </div>
+        <div className={`w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex ${isRight ? 'justify-end' : 'justify-start'}`}>
+          <motion.div initial={{ width: 0 }} animate={{ width: `${value}%` }} transition={{ delay: 0.2, duration: 1, ease: "easeOut" }} 
+            className={`h-full rounded-full ${color === 'rose' ? 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-gradient-to-l from-cyan-400 to-cyan-600 shadow-[0_0_8px_rgba(34,211,238,0.5)]'}`} 
+          />
         </div>
       </div>
-    </motion.div>
-  );
+    );
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="w-full h-[85vh] flex flex-col bg-[#050505] rounded-[32px] overflow-hidden relative shadow-2xl border border-white/5 font-sans"
+      >
+        {/* Background Ambience */}
+        <div className="absolute top-0 left-1/4 w-[50vw] h-[50vw] bg-rose-500/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen -translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-0 right-1/4 w-[50vw] h-[50vw] bg-cyan-400/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen -translate-y-1/2 translate-x-1/2" />
+        
+        {/* TOP ARENA SHOWCASE */}
+        <div className="flex-1 relative flex items-center justify-between px-8 lg:px-16 overflow-hidden">
+           {/* BIG VS TEXT */}
+           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-black text-[12rem] lg:text-[16rem] italic text-white/[0.02] select-none pointer-events-none">VS</div>
+
+           {/* P1 Showcase */}
+           <div className="w-1/2 h-full flex items-center justify-start relative z-10">
+              {p1 ? (
+                <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-8 lg:gap-12 w-full">
+                  {/* Portrait */}
+                  <div className="relative w-[200px] h-[280px] lg:w-[280px] lg:h-[380px] shrink-0">
+                    <div className="absolute inset-0 bg-rose-500/20 blur-3xl rounded-full" />
+                    {p1.pictureURL ? (
+                      <Image src={p1.pictureURL} alt={p1.fullName} fill className="object-cover rounded-2xl border border-rose-500/20 shadow-[0_0_50px_rgba(244,63,94,0.15)]" unoptimized />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-900 rounded-2xl border border-rose-500/20 flex items-center justify-center text-6xl text-white/10 font-black shadow-[0_0_50px_rgba(244,63,94,0.15)]">{p1.fullName[0]}</div>
+                    )}
+                    <div className="absolute -left-10 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold tracking-[0.5em] text-rose-500/50 uppercase">Subject Alpha</div>
+                  </div>
+                  {/* Stats */}
+                  <div className="flex flex-col gap-6 flex-1 min-w-0">
+                    <div>
+                      <div className="text-rose-500 font-bold tracking-[0.2em] text-[10px] mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> ALPHA SQUAD</div>
+                      <h1 className="text-4xl lg:text-5xl font-black uppercase italic text-white leading-none tracking-tight truncate">{p1.fullName.split(' ')[0]}</h1>
+                      <h2 className="text-xl lg:text-2xl font-bold uppercase italic text-white/50 leading-none truncate mt-1">{p1.fullName.split(' ').slice(1).join(' ')}</h2>
+                    </div>
+                    <div className="flex items-center gap-6">
+                      <div className="w-32 h-32 lg:w-40 lg:h-40 shrink-0 relative -ml-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                            { subject: 'A', value: p1.goalAchievementScore, fullMark: 100 },
+                            { subject: 'Q', value: p1.qualityScore, fullMark: 100 },
+                            { subject: 'E', value: p1.engagementBehaviorScore, fullMark: 100 }
+                          ]}>
+                            <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700 }} />
+                            <Radar isAnimationActive={true} animationDuration={1000} dataKey="value" stroke="rgba(244,63,94,0.9)" strokeWidth={2} fill="url(#colorRoseBg)" fillOpacity={1} />
+                            <defs>
+                              <linearGradient id="colorRoseBg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f43f5e" stopOpacity={0.5}/><stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0}/></linearGradient>
+                            </defs>
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex-1 space-y-4 max-w-[180px]">
+                        <MetricBar label="Achievement" value={p1.goalAchievementScore} color="rose" />
+                        <MetricBar label="Quality" value={p1.qualityScore} color="rose" />
+                        <MetricBar label="Engagement" value={p1.engagementBehaviorScore} color="rose" />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="w-full flex flex-col items-center justify-center opacity-20">
+                  <div className="text-6xl lg:text-8xl font-black italic uppercase tracking-widest text-transparent" style={{ WebkitTextStroke: '2px white' }}>ALPHA</div>
+                  <div className="mt-4 text-xs font-bold tracking-[0.3em] uppercase">Awaiting Selection</div>
+                </div>
+              )}
+           </div>
+
+           {/* P2 Showcase */}
+           <div className="w-1/2 h-full flex items-center justify-end relative z-10 flex-row-reverse">
+              {p2 ? (
+                <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-8 lg:gap-12 w-full flex-row-reverse text-right">
+                  {/* Portrait */}
+                  <div className="relative w-[200px] h-[280px] lg:w-[280px] lg:h-[380px] shrink-0">
+                    <div className="absolute inset-0 bg-cyan-400/20 blur-3xl rounded-full" />
+                    {p2.pictureURL ? (
+                      <Image src={p2.pictureURL} alt={p2.fullName} fill className="object-cover rounded-2xl border border-cyan-400/20 shadow-[0_0_50px_rgba(34,211,238,0.15)]" unoptimized />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-900 rounded-2xl border border-cyan-400/20 flex items-center justify-center text-6xl text-white/10 font-black shadow-[0_0_50px_rgba(34,211,238,0.15)]">{p2.fullName[0]}</div>
+                    )}
+                    <div className="absolute -right-10 top-1/2 -translate-y-1/2 rotate-90 text-[10px] font-bold tracking-[0.5em] text-cyan-400/50 uppercase">Subject Omega</div>
+                  </div>
+                  {/* Stats */}
+                  <div className="flex flex-col gap-6 flex-1 min-w-0 items-end">
+                    <div>
+                      <div className="text-cyan-400 font-bold tracking-[0.2em] text-[10px] mb-2 flex items-center gap-2 justify-end">OMEGA SQUAD <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" /></div>
+                      <h1 className="text-4xl lg:text-5xl font-black uppercase italic text-white leading-none tracking-tight truncate">{p2.fullName.split(' ')[0]}</h1>
+                      <h2 className="text-xl lg:text-2xl font-bold uppercase italic text-white/50 leading-none truncate mt-1">{p2.fullName.split(' ').slice(1).join(' ')}</h2>
+                    </div>
+                    <div className="flex items-center flex-row-reverse gap-6">
+                      <div className="w-32 h-32 lg:w-40 lg:h-40 shrink-0 relative -mr-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
+                            { subject: 'A', value: p2.goalAchievementScore, fullMark: 100 },
+                            { subject: 'Q', value: p2.qualityScore, fullMark: 100 },
+                            { subject: 'E', value: p2.engagementBehaviorScore, fullMark: 100 }
+                          ]}>
+                            <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700 }} />
+                            <Radar isAnimationActive={true} animationDuration={1000} dataKey="value" stroke="rgba(34,211,238,0.9)" strokeWidth={2} fill="url(#colorCyanBg)" fillOpacity={1} />
+                            <defs>
+                              <linearGradient id="colorCyanBg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#22d3ee" stopOpacity={0.5}/><stop offset="95%" stopColor="#22d3ee" stopOpacity={0.0}/></linearGradient>
+                            </defs>
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+                      <div className="flex-1 space-y-4 max-w-[180px]">
+                        <MetricBar label="Achievement" value={p2.goalAchievementScore} color="cyan" isRight />
+                        <MetricBar label="Quality" value={p2.qualityScore} color="cyan" isRight />
+                        <MetricBar label="Engagement" value={p2.engagementBehaviorScore} color="cyan" isRight />
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ) : (
+                <div className="w-full flex flex-col items-center justify-center opacity-20 text-right">
+                  <div className="text-6xl lg:text-8xl font-black italic uppercase tracking-widest text-transparent" style={{ WebkitTextStroke: '2px white' }}>OMEGA</div>
+                  <div className="mt-4 text-xs font-bold tracking-[0.3em] uppercase">Awaiting Selection</div>
+                </div>
+              )}
+           </div>
+        </div>
+
+        {/* CENTER EXECUTE BUTTON */}
+        <div className="absolute left-1/2 bottom-[35%] -translate-x-1/2 translate-y-1/2 z-40">
+           <AnimatePresence mode="wait">
+             {p1 && p2 ? (
+               <motion.div
+                 initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                 onClick={() => setStep('preview')}
+                 className="cursor-pointer"
+               >
+                 <BorderGlow
+                   borderRadius={999}
+                   backgroundColor="#07070e"
+                   glowColor="200 85 72"
+                   colors={['#f43f5e', '#22d3ee', '#c084fc']}
+                   glowIntensity={1.4}
+                   glowRadius={24}
+                   fillOpacity={0.25}
+                 >
+                   <div className="flex items-center gap-2.5 px-7 py-2.5 font-black italic uppercase tracking-[0.2em] text-white text-sm select-none pointer-events-none">
+                     <Swords className="w-4 h-4 shrink-0" />
+                     <span>COMPARE</span>
+                   </div>
+                 </BorderGlow>
+               </motion.div>
+             ) : null}
+           </AnimatePresence>
+        </div>
+
+        {/* BOTTOM SELECTION ROSTER */}
+        <div className="h-[35%] w-full bg-zinc-950/80 backdrop-blur-2xl border-t border-white/10 flex relative z-30">
+           
+           {/* P1 Roster */}
+           <div className="w-1/2 h-full flex flex-col border-r border-white/10 p-6 relative">
+              <div className="flex items-center justify-between mb-4">
+                 <div className="flex gap-3 w-3/4">
+                    <Select value={p1CycleId.toString()} onValueChange={(val) => setP1CycleId(Number(val))} disabled={ddlLoading}>
+                       <SelectTrigger className="h-10 bg-white/5 border-none rounded-xl text-xs font-medium text-white/80 focus:ring-0">
+                         <CalendarDays className="w-3.5 h-3.5 text-white/40 mr-2" />
+                         <span className="truncate">{p1SelectedCycleLabel}</span>
+                       </SelectTrigger>
+                       <SelectContent className="bg-zinc-900 border-none rounded-xl shadow-2xl">
+                          {sortedCycles.map(c => <SelectItem key={c.setId} value={c.setId.toString()} className="text-xs">{c.label}</SelectItem>)}
+                       </SelectContent>
+                    </Select>
+                    <Select value={p1OrgId.toString()} onValueChange={(val) => setP1OrgId(Number(val))} disabled={ddlLoading}>
+                       <SelectTrigger className="h-10 bg-white/5 border-none rounded-xl text-xs font-medium text-white/80 focus:ring-0">
+                         <Users className="w-3.5 h-3.5 text-white/40 mr-2" />
+                         <span className="truncate">{p1SelectedOrgLabel}</span>
+                       </SelectTrigger>
+                       <SelectContent className="bg-zinc-900 border-none rounded-xl shadow-2xl">
+                          {orgGroupedOptions.map(g => (
+                            <SelectGroup key={g.groupLabel}>
+                              <SelectLabel className="text-[10px] text-white/40">{g.groupLabel}</SelectLabel>
+                              {g.options.map(opt => <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-xs">{opt.label}</SelectItem>)}
+                            </SelectGroup>
+                          ))}
+                       </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="text-[10px] text-white/30 font-bold uppercase tracking-widest">{p1Candidates.length} Found</div>
+              </div>
+              
+              <div className="flex-1 flex gap-3 overflow-x-auto overflow-y-hidden pb-2 pt-1 px-1 scrollbar-hide snap-x items-center">
+                 {p1Loading ? (
+                   Array.from({ length: 6 }).map((_, i) => <div key={i} className="shrink-0 w-24 h-24 rounded-2xl bg-white/5 animate-pulse" />)
+                 ) : p1Candidates.map(c => {
+                   const isSelected = p1?.fullName === c.fullName;
+                   const isPickedByOther = p2?.fullName === c.fullName && p1CycleId === p2CycleId;
+                   return (
+                     <button key={c.fullName} onClick={() => !isPickedByOther && setP1(c)} disabled={isPickedByOther} 
+                        className={`relative shrink-0 w-20 h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden snap-start transition-all duration-300 ${isSelected ? 'ring-2 ring-rose-500 scale-105 shadow-[0_0_20px_rgba(244,63,94,0.4)]' : isPickedByOther ? 'opacity-20 grayscale cursor-not-allowed' : 'hover:ring-1 hover:ring-white/20 hover:scale-105 opacity-70 hover:opacity-100'}`}
+                     >
+                       {c.pictureURL ? (
+                         <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover" unoptimized sizes="96px" />
+                       ) : (
+                         <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xl font-black text-white/50">{c.fullName[0]}</div>
+                       )}
+                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-6">
+                         <div className="text-[10px] font-bold text-white truncate text-center uppercase tracking-wider">{c.fullName.split(' ')[0]}</div>
+                       </div>
+                     </button>
+                   )
+                 })}
+              </div>
+           </div>
+
+           {/* P2 Roster */}
+           <div className="w-1/2 h-full flex flex-col p-6 relative">
+              <div className="flex items-center justify-between mb-4 flex-row-reverse">
+                 <div className="flex gap-3 w-3/4 flex-row-reverse">
+                    <Select value={p2CycleId.toString()} onValueChange={(val) => setP2CycleId(Number(val))} disabled={ddlLoading}>
+                       <SelectTrigger className="h-10 bg-white/5 border-none rounded-xl text-xs font-medium text-white/80 focus:ring-0 flex-row-reverse">
+                         <CalendarDays className="w-3.5 h-3.5 text-white/40 ml-2" />
+                         <span className="truncate">{p2SelectedCycleLabel}</span>
+                       </SelectTrigger>
+                       <SelectContent className="bg-zinc-900 border-none rounded-xl shadow-2xl">
+                          {sortedCycles.map(c => <SelectItem key={c.setId} value={c.setId.toString()} className="text-xs text-right">{c.label}</SelectItem>)}
+                       </SelectContent>
+                    </Select>
+                    <Select value={p2OrgId.toString()} onValueChange={(val) => setP2OrgId(Number(val))} disabled={ddlLoading}>
+                       <SelectTrigger className="h-10 bg-white/5 border-none rounded-xl text-xs font-medium text-white/80 focus:ring-0 flex-row-reverse">
+                         <Users className="w-3.5 h-3.5 text-white/40 ml-2" />
+                         <span className="truncate">{p2SelectedOrgLabel}</span>
+                       </SelectTrigger>
+                       <SelectContent className="bg-zinc-900 border-none rounded-xl shadow-2xl">
+                          {orgGroupedOptions.map(g => (
+                            <SelectGroup key={g.groupLabel}>
+                              <SelectLabel className="text-[10px] text-white/40 text-right">{g.groupLabel}</SelectLabel>
+                              {g.options.map(opt => <SelectItem key={opt.organizationId} value={opt.organizationId.toString()} className="text-xs text-right">{opt.label}</SelectItem>)}
+                            </SelectGroup>
+                          ))}
+                       </SelectContent>
+                    </Select>
+                 </div>
+                 <div className="text-[10px] text-white/30 font-bold uppercase tracking-widest">{p2Candidates.length} Found</div>
+              </div>
+              
+              <div className="flex-1 flex gap-3 overflow-x-auto overflow-y-hidden pb-2 pt-1 px-1 scrollbar-hide snap-x items-center flex-row-reverse">
+                 {p2Loading ? (
+                   Array.from({ length: 6 }).map((_, i) => <div key={i} className="shrink-0 w-24 h-24 rounded-2xl bg-white/5 animate-pulse" />)
+                 ) : p2Candidates.map(c => {
+                   const isSelected = p2?.fullName === c.fullName;
+                   const isPickedByOther = p1?.fullName === c.fullName && p1CycleId === p2CycleId;
+                   return (
+                     <button key={c.fullName} onClick={() => !isPickedByOther && setP2(c)} disabled={isPickedByOther} 
+                        className={`relative shrink-0 w-20 h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden snap-start transition-all duration-300 ${isSelected ? 'ring-2 ring-cyan-400 scale-105 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : isPickedByOther ? 'opacity-20 grayscale cursor-not-allowed' : 'hover:ring-1 hover:ring-white/20 hover:scale-105 opacity-70 hover:opacity-100'}`}
+                     >
+                       {c.pictureURL ? (
+                         <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover" unoptimized sizes="96px" />
+                       ) : (
+                         <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xl font-black text-white/50">{c.fullName[0]}</div>
+                       )}
+                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-6">
+                         <div className="text-[10px] font-bold text-white truncate text-center uppercase tracking-wider">{c.fullName.split(' ')[0]}</div>
+                       </div>
+                     </button>
+                   )
+                 })}
+              </div>
+           </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   // -------------------------------------------------------------
   // PREVIEW: objectives + KR (grounded) before running AI
@@ -1012,22 +867,20 @@ export default function VersusMode({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.35 }}
-        className="w-full flex flex-col font-mono min-h-[70vh] py-4 px-4 sm:px-6"
+        className="w-full flex flex-col font-mono min-h-[85vh] pt-4 pb-20 px-4 sm:px-6"
       >
-        <div className="flex items-center gap-3 mb-6 max-w-7xl mx-auto w-full">
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setStep("select")}
-              className="inline-flex items-center gap-2 cursor-pointer text-[10px] uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors"
-            >
-              <ArrowLeft className="w-4 h-4" /> roster
-            </button>
-            <div className="h-4 w-px bg-zinc-800 hidden sm:block" />
-            <div>
-              <h2 className="text-lg sm:text-xl font-sans font-bold text-white tracking-tight">Objective manifest</h2>
-              <p className="text-[9px] text-zinc-500 tracking-[0.2em] uppercase mt-0.5">verify OKR payload · then run eval</p>
-            </div>
+        <div className="flex items-center gap-4 mb-6 max-w-7xl mx-auto w-full border-b border-zinc-800/50 pb-4">
+          <button
+            type="button"
+            onClick={() => setStep("select")}
+            className="inline-flex items-center gap-2 cursor-pointer text-[10px] uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors font-mono"
+          >
+            <ArrowLeft className="w-4 h-4" /> roster
+          </button>
+          <div className="h-4 w-px bg-zinc-800" />
+          <div>
+            <div className="text-[8px] text-zinc-600 tracking-[0.3em] uppercase font-mono">verify okr payload · then run eval</div>
+            <h2 className="text-base sm:text-lg font-black italic uppercase tracking-[0.1em] text-white leading-tight">Objective manifest</h2>
           </div>
         </div>
 
@@ -1049,32 +902,58 @@ export default function VersusMode({
 
         <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-8 lg:gap-8 pb-28">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4 pb-4 border-b border-zinc-800/80">
-              <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-black border border-rose-500/30 shrink-0">
-                {p1.pictureURL ? <Image src={p1.pictureURL} alt="" fill className="object-cover" unoptimized sizes="56px" /> : (
-                  <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p1.fullName[0]}</div>
-                )}
-              </div>
-              <div className="flex-1">
-                <div className="text-[9px] text-rose-500/80 tracking-[0.3em] uppercase">alpha</div>
-                <div className="text-white font-sans font-bold text-lg truncate max-w-[240px]">{p1.fullName}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5 flex gap-2">
-                  <span>score {Math.floor(p1.totalScore)}</span>
-                  <span className="opacity-50">·</span>
-                  <span>in {p1.checkInCount} check-ins</span>
+            <div className="pb-5 border-b border-rose-900/30 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-black border border-rose-500/30 shrink-0 shadow-[0_0_20px_rgba(244,63,94,0.1)]">
+                  {p1.pictureURL ? <Image src={p1.pictureURL} alt="" fill className="object-cover" unoptimized sizes="56px" /> : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p1.fullName[0]}</div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[9px] text-rose-500/80 tracking-[0.3em] uppercase font-bold">alpha</div>
+                  <div className="text-white font-sans font-bold text-lg leading-tight truncate">{p1.fullName}</div>
+                  <div className="text-[10px] font-mono mt-1 flex items-center gap-1.5">
+                    <span className="text-rose-400 font-bold">{Math.floor(p1.totalScore)}</span>
+                    <span className="text-zinc-600">pts</span>
+                    <span className="text-zinc-700 mx-0.5">·</span>
+                    <span className="text-zinc-500">{p1.checkInCount} check-ins</span>
+                  </div>
                 </div>
               </div>
-              <div className="w-16 h-16 shrink-0 opacity-80 mix-blend-screen pointer-events-none">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                    { subject: 'Achieve', value: p1.goalAchievementScore, fullMark: 100 },
-                    { subject: 'Quality', value: p1.qualityScore, fullMark: 100 },
-                    { subject: 'Engage', value: p1.engagementBehaviorScore, fullMark: 100 }
-                  ]}>
-                    <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(244,63,94,0.3)" />
-                    <Radar dataKey="value" stroke="#fb7185" fill="#f43f5e" fillOpacity={0.5} />
-                  </RadarChart>
-                </ResponsiveContainer>
+              <div className="flex items-stretch gap-3 bg-[#080810] border border-zinc-800/50 rounded-xl p-3">
+                <div className="w-28 h-28 shrink-0 pointer-events-none">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="62%" data={[
+                      { subject: 'Achieve', value: p1.goalAchievementScore, fullMark: 100 },
+                      { subject: 'Quality', value: p1.qualityScore, fullMark: 100 },
+                      { subject: 'Engage', value: p1.engagementBehaviorScore, fullMark: 100 }
+                    ]}>
+                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(244,63,94,0.15)" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 7, fill: '#52525b', fontFamily: 'monospace' }} />
+                      <Radar dataKey="value" stroke="#fb7185" fill="#f43f5e" fillOpacity={0.4} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 flex flex-col justify-center gap-2.5">
+                  {([
+                    { label: 'Achievement', val: p1.goalAchievementScore },
+                    { label: 'Quality', val: p1.qualityScore },
+                    { label: 'Engagement', val: p1.engagementBehaviorScore },
+                  ] as { label: string; val: number }[]).map(({ label, val }) => (
+                    <div key={label} className="flex items-center gap-2">
+                      <span className="text-[8px] font-mono text-zinc-600 uppercase tracking-wider w-[72px] shrink-0">{label}</span>
+                      <div className="flex-1 h-1 bg-zinc-900 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-gradient-to-r from-rose-700 to-rose-400"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, val || 0)}%` }}
+                          transition={{ delay: 0.2, duration: 0.9, ease: 'easeOut' }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-mono text-rose-400 shrink-0 w-6 text-right">{Math.floor(val || 0)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="space-y-3">
@@ -1089,40 +968,66 @@ export default function VersusMode({
               type="button"
               disabled={isComparing}
               onClick={runAiComparison}
-              className="group relative inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl cursor-pointer disabled:cursor-not-allowed bg-[#0c0c0f] border border-zinc-700 hover:border-emerald-500/50 text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-200 disabled:opacity-50 disabled:pointer-events-none transition-colors whitespace-nowrap"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl cursor-pointer disabled:cursor-not-allowed bg-[#080810] border border-emerald-900/50 hover:border-emerald-600/60 text-[10px] font-black italic uppercase tracking-[0.2em] text-emerald-400/80 hover:text-emerald-300 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200 shadow-[inset_0_0_20px_rgba(16,185,129,0.03)] hover:shadow-[0_0_20px_rgba(16,185,129,0.12)] whitespace-nowrap font-mono"
             >
-              {isComparing ? <Loader2 className="w-4 h-4 animate-spin text-emerald-400" /> : <Cpu className="w-4 h-4 text-emerald-400/90" />}
-              {isComparing ? "tuning model…" : "run AI eval"}
+              {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4" />}
+              {isComparing ? "evaluating…" : "RUN AI EVAL"}
             </button>
           </div>
 
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4 pb-4 border-b border-zinc-800/80 flex-row-reverse text-right">
-              <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-black border border-cyan-400/30 shrink-0">
-                {p2.pictureURL ? <Image src={p2.pictureURL} alt="" fill className="object-cover" unoptimized sizes="56px" /> : (
-                  <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p2.fullName[0]}</div>
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[9px] text-cyan-400/80 tracking-[0.3em] uppercase">omega</div>
-                <div className="text-white font-sans font-bold text-lg truncate max-w-[240px] ml-auto">{p2.fullName}</div>
-                <div className="text-[10px] text-zinc-500 font-mono mt-0.5 flex gap-2 justify-end">
-                  <span>score {Math.floor(p2.totalScore)}</span>
-                  <span className="opacity-50">·</span>
-                  <span>in {p2.checkInCount} check-ins</span>
+            <div className="pb-5 border-b border-cyan-900/30 space-y-3">
+              <div className="flex items-center gap-3 flex-row-reverse">
+                <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-black border border-cyan-400/30 shrink-0 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
+                  {p2.pictureURL ? <Image src={p2.pictureURL} alt="" fill className="object-cover" unoptimized sizes="56px" /> : (
+                    <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p2.fullName[0]}</div>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0 text-right">
+                  <div className="text-[9px] text-cyan-400/80 tracking-[0.3em] uppercase font-bold">omega</div>
+                  <div className="text-white font-sans font-bold text-lg leading-tight truncate">{p2.fullName}</div>
+                  <div className="text-[10px] font-mono mt-1 flex items-center gap-1.5 justify-end">
+                    <span className="text-cyan-400 font-bold">{Math.floor(p2.totalScore)}</span>
+                    <span className="text-zinc-600">pts</span>
+                    <span className="text-zinc-700 mx-0.5">·</span>
+                    <span className="text-zinc-500">{p2.checkInCount} check-ins</span>
+                  </div>
                 </div>
               </div>
-              <div className="w-16 h-16 shrink-0 opacity-80 mix-blend-screen pointer-events-none">
-                <ResponsiveContainer width="100%" height="100%">
-                  <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                    { subject: 'Achieve', value: p2.goalAchievementScore, fullMark: 100 },
-                    { subject: 'Quality', value: p2.qualityScore, fullMark: 100 },
-                    { subject: 'Engage', value: p2.engagementBehaviorScore, fullMark: 100 }
-                  ]}>
-                    <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(34,211,238,0.3)" />
-                    <Radar dataKey="value" stroke="#22d3ee" fill="#06b6d4" fillOpacity={0.5} />
-                  </RadarChart>
-                </ResponsiveContainer>
+              <div className="flex items-stretch gap-3 bg-[#080810] border border-zinc-800/50 rounded-xl p-3 flex-row-reverse">
+                <div className="w-28 h-28 shrink-0 pointer-events-none">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart cx="50%" cy="50%" outerRadius="62%" data={[
+                      { subject: 'Achieve', value: p2.goalAchievementScore, fullMark: 100 },
+                      { subject: 'Quality', value: p2.qualityScore, fullMark: 100 },
+                      { subject: 'Engage', value: p2.engagementBehaviorScore, fullMark: 100 }
+                    ]}>
+                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(34,211,238,0.15)" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 7, fill: '#52525b', fontFamily: 'monospace' }} />
+                      <Radar dataKey="value" stroke="#22d3ee" fill="#06b6d4" fillOpacity={0.4} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="flex-1 flex flex-col justify-center gap-2.5">
+                  {([
+                    { label: 'Achievement', val: p2.goalAchievementScore },
+                    { label: 'Quality', val: p2.qualityScore },
+                    { label: 'Engagement', val: p2.engagementBehaviorScore },
+                  ] as { label: string; val: number }[]).map(({ label, val }) => (
+                    <div key={label} className="flex items-center gap-2 flex-row-reverse">
+                      <span className="text-[8px] font-mono text-zinc-600 uppercase tracking-wider w-[72px] shrink-0 text-right">{label}</span>
+                      <div className="flex-1 h-1 bg-zinc-900 rounded-full overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full bg-gradient-to-r from-cyan-700 to-cyan-400"
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(100, val || 0)}%` }}
+                          transition={{ delay: 0.2, duration: 0.9, ease: 'easeOut' }}
+                        />
+                      </div>
+                      <span className="text-[9px] font-mono text-cyan-400 shrink-0 w-6 text-left">{Math.floor(val || 0)}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="space-y-3">
