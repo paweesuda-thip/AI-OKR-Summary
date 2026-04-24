@@ -214,13 +214,6 @@ export default function Dashboard() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <ClickSpark
-      sparkColor="#fff"
-      sparkSize={10}
-      sparkRadius={15}
-      sparkCount={8}
-      duration={400}
-    >
       <div className="flex flex-col h-svh w-full overflow-hidden bg-black text-white">
         <DashboardTopbar
           activeTab={activeTab}
@@ -315,11 +308,11 @@ export default function Dashboard() {
         </AnimatePresence>
 
         {/* ── Main Content ── */}
-        <main className="relative flex-1 min-w-0 flex flex-col h-full bg-black overflow-y-auto scrollbar-hide">
+        <main className="relative flex-1 min-w-0 flex flex-col h-full overflow-y-auto scrollbar-hide">
           <motion.div
             layout
             transition={{ duration: 0.28, ease: "easeOut" }}
-            className={`bg-transparent relative z-10 flex-1 w-full ${
+            className={`relative z-10 flex-1 w-full ${
               activeTab === "versus"
                 ? "pt-0 px-0 pb-0 max-w-none"
                 : "pt-6 px-4 sm:px-8 pb-12 max-w-[1920px] mx-auto"
@@ -540,6 +533,5 @@ export default function Dashboard() {
             </motion.div>
         </main>
       </div>
-    </ClickSpark>
   );
 }

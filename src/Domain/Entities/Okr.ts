@@ -153,4 +153,10 @@ export interface ParticipantDetailRaw {
   totalMissCheckInAll: number;
   totalMissCheckIn: number;
   avgPercent: number;
+  // Mock fields for new engagement API
+  goalAchievementScore?: number;
+  qualityScore?: number;
+  engagementBehaviorScore?: number;
+  totalScore?: number;
+  trend?: 'up' | 'normal' | 'down';
 }
