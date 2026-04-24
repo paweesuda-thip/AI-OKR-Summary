@@ -32,7 +32,6 @@ import PeriodComparisonSection from "@/src/Interface/Ui/Components/Okr/period-co
 import { CheckInEngagement } from "@/src/Interface/Ui/Components/Okr/check-in-engagement";
 import ClickSpark from "@/src/Interface/Ui/Components/Shared/react-bits/ClickSpark";
 import Image from "next/image";
-import MagicRings from "@/src/Interface/Ui/Components/Shared/react-bits/MagicRings";
 
 import type {
   ParticipantDetailRaw,
@@ -214,7 +213,7 @@ export default function Dashboard() {
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-      <div className="flex flex-col h-svh w-full overflow-hidden bg-black text-white">
+      <div className="flex flex-col h-svh w-full overflow-hidden bg-transparent text-white">
         <DashboardTopbar
           activeTab={activeTab}
           setActiveTab={setActiveTab}
@@ -230,9 +229,9 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, height: "auto" }}
               exit={{ opacity: 0, y: -8, height: 0 }}
               transition={{ duration: 0.24, ease: "easeOut" }}
-              className="w-full z-40 bg-[#050505]/95 backdrop-blur-xl border-b border-white/5 shrink-0 sticky top-0 shadow-2xl px-4 sm:px-8 py-3 overflow-hidden"
+              className="w-full z-40 bg-background/80 backdrop-blur-2xl border-b border-border/50 shrink-0 sticky top-0 px-4 sm:px-8 py-3 overflow-hidden"
             >
-              <div className="flex flex-col xl:flex-row items-center gap-4 justify-between">
+              <div className="flex flex-col xl:flex-row items-center gap-4 justify-between max-w-[1920px] mx-auto">
                 <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto scrollbar-hide shrink-0 pb-2 xl:pb-0">
                   <DashboardSelectors
                     cycleOptions={cycleOptions}
@@ -244,7 +243,7 @@ export default function Dashboard() {
                     disabled={loading}
                     loading={ddlLoading}
                   />
-                  <div className="hidden lg:block w-px h-6 bg-white/10 mx-1" />
+                  <div className="hidden lg:block w-px h-5 bg-border/50 mx-1" />
                   <FilterBar
                     dateRange={dateRange}
                     setDateRange={setDateRange}
@@ -256,39 +255,25 @@ export default function Dashboard() {
                 <div className="shrink-0">
                   <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
                     <DrawerTrigger asChild>
-                      <button className="group relative h-9 px-4 rounded-full cursor-pointer transition-all bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 hover:border-indigo-500/40 flex items-center justify-center gap-2 overflow-hidden shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_20px_rgba(99,102,241,0.2)]">
-                        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/0 via-indigo-500/10 to-indigo-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
-                        <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                        <span className="text-[10px] font-bold tracking-wider uppercase relative z-10 hidden sm:inline">AI Insights</span>
+                      <button className="group relative h-9 px-4 rounded-full cursor-pointer bg-muted/40 text-foreground border border-border/50 hover:bg-muted hover:border-border transition-all flex items-center justify-center gap-2 shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
+                        <span className="text-xs font-semibold tracking-wide relative z-10 hidden sm:inline">AI Insights</span>
                       </button>
                     </DrawerTrigger>
-                    <DrawerContent className="h-[90vh] bg-[#050505]/95 backdrop-blur-3xl border-white/10">
+                    <DrawerContent className="h-[90vh] bg-background/95 backdrop-blur-3xl border-border/50">
                       <div className="mx-auto w-full max-w-7xl h-full flex flex-col p-4">
-                        <DrawerHeader className="shrink-0 text-center sm:text-left border-b border-white/5 pb-6">
-                          <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-3 font-bold tracking-tight text-white">
-                            <div className="p-2 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
-                              <Sparkles className="w-6 h-6 text-indigo-400" />
+                        <DrawerHeader className="shrink-0 text-center sm:text-left border-b border-border/50 pb-6">
+                          <DrawerTitle className="text-2xl flex items-center justify-center sm:justify-start gap-3 font-semibold tracking-tight text-foreground">
+                            <div className="p-2 rounded-xl bg-muted/50 border border-border/50 shadow-sm">
+                              <Sparkles className="w-5 h-5 text-foreground" />
                             </div>
                             Neurometric Analysis
                           </DrawerTitle>
-                          <DrawerDescription className="text-zinc-400 mt-2 text-sm tracking-wide max-w-xl">
+                          <DrawerDescription className="text-muted-foreground mt-2 text-sm max-w-xl">
                             Deep dive into team performance trends, neural insights, and actionable trajectory modifications for your command center.
                           </DrawerDescription>
                         </DrawerHeader>
-                        <div className="flex-1 overflow-y-auto mt-6 pr-2 relative filter-container scrollbar-hide">
-                          <div className="pointer-events-none fixed inset-0 z-0 opacity-20 blur-2xl flex items-center justify-center">
-                            <MagicRings
-                              color="#6366f1"
-                              colorTwo="#22d3ee"
-                              speed={0.2}
-                              ringCount={4}
-                              attenuation={25}
-                              lineThickness={2}
-                              baseRadius={0.4}
-                              opacity={0.4}
-                              followMouse={false}
-                            />
-                          </div>
+                        <div className="flex-1 overflow-y-auto mt-6 pr-2 relative scrollbar-hide">
                           <div className="relative z-10 h-full max-w-4xl mx-auto">
                             <AIScoreSection
                               teamSummary={teamSummary}

@@ -3,7 +3,7 @@ import { motion, useMotionValue, useAnimationFrame, useTransform } from 'motion/
 import './ShinyText.css';
 
 interface ShinyTextProps {
-  text: string;
+  text: React.ReactNode;
   disabled?: boolean;
   speed?: number;
   className?: string;

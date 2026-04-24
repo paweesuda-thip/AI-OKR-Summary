@@ -344,178 +344,165 @@ export default function OverviewCards({ summary, participantDetails = [], object
     return (
         <TooltipProvider delay={120}>
             <div className="w-full">
-                <div className="grid w-full grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
-                    {/* Card 1: Cycle Health */}
-                    <section className="relative overflow-hidden rounded-2xl border border-sky-500/20 bg-gradient-to-br from-sky-500/[0.10] via-background to-background p-3.5">
-                        <div className="pointer-events-none absolute right-0 top-0 h-20 w-20 translate-x-4 -translate-y-4 rounded-full bg-sky-500/10 blur-2xl" />
-                        <div className="relative z-10">
-                            <div className="mb-2 flex items-center justify-between">
-                                <div className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-sky-600 dark:text-sky-300">
-                                    <Gauge className="h-3 w-3" />
-                                    Cycle Health
-                                </div>
-                                <span className="text-[10px] font-medium text-muted-foreground">Live</span>
+                <div className="grid w-full grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
+                    {/* Card 1: Cycle Health (col-span-2) */}
+                    <section className="group relative col-span-1 md:col-span-2 xl:col-span-2 overflow-hidden rounded-2xl border border-border/50 bg-background/40 p-5 backdrop-blur-xl transition-all duration-300 hover:border-sky-500/30 hover:bg-background/60 shadow-sm flex flex-col justify-between">
+                        <div className="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-sky-500/10 blur-2xl pointer-events-none" />
+                        
+                        <div className="relative z-10 flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <Gauge className="h-4 w-4 text-sky-500" />
+                                System Health
                             </div>
-
-                            <div className="mb-2.5">
-                                <div className="text-3xl font-black leading-none tracking-[-0.02em] text-foreground">
-                                    {avgObjectiveProgress.toFixed(1)}%
-                                </div>
-                                <span className="text-[11px] font-medium text-muted-foreground">avg objective progress</span>
+                            <div className="flex items-center gap-1.5 bg-background/50 border border-border/50 px-2 py-0.5 rounded-full">
+                                <span className="relative flex h-1.5 w-1.5">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-sky-500"></span>
+                                </span>
+                                <span className="text-[9px] font-bold text-sky-500/80 uppercase tracking-widest">Live Sync</span>
                             </div>
-
-                            {showStatus && (
-                                <>
-                                    <div className="mb-2 flex flex-wrap gap-1 text-[10px]">
-                                        <div className="inline-flex items-center gap-1 rounded-md border border-emerald-500/25 bg-emerald-500/10 px-1.5 py-0.5">
-                                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">On Track</span>
-                                            <span className="font-bold text-foreground">{onTrackCount}</span>
-                                        </div>
-                                        <div className="inline-flex items-center gap-1 rounded-md border border-amber-500/25 bg-amber-500/10 px-1.5 py-0.5">
-                                            <span className="font-semibold text-amber-600 dark:text-amber-400">At Risk</span>
-                                            <span className="font-bold text-foreground">{atRiskCount}</span>
-                                        </div>
-                                        <div className="inline-flex items-center gap-1 rounded-md border border-rose-500/25 bg-rose-500/10 px-1.5 py-0.5">
-                                            <span className="font-semibold text-rose-600 dark:text-rose-400">Behind</span>
-                                            <span className="font-bold text-foreground">{behindCount}</span>
-                                        </div>
-                                    </div>
-
-                                    <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
-                                        <div className="flex h-full w-full">
-                                            <div className="bg-emerald-500 transition-all duration-700" style={{ width: `${onTrackPercent}%` }} />
-                                            <div className="bg-amber-500 transition-all duration-700" style={{ width: `${atRiskPercent}%` }} />
-                                            <div className="bg-rose-500 transition-all duration-700" style={{ width: `${behindPercent}%` }} />
-                                        </div>
-                                    </div>
-                                </>
-                            )}
                         </div>
+
+                        <div className="relative z-10 flex items-end gap-2 mb-6">
+                            <div className="flex items-baseline gap-1">
+                                <span className="text-4xl sm:text-5xl font-black tracking-tight text-foreground">{avgObjectiveProgress.toFixed(1)}</span>
+                                <span className="text-xl sm:text-2xl font-bold text-sky-500">%</span>
+                            </div>
+                            <span className="text-[10px] font-medium text-muted-foreground mb-1.5 ml-1">Avg Progression</span>
+                        </div>
+
+                        {showStatus && (
+                            <div className="relative z-10 w-full mt-auto">
+                                <div className="flex justify-between items-center mb-2.5 text-[10px] font-semibold uppercase tracking-wider">
+                                    <span className="text-emerald-500/90">{onTrackCount} On Track</span>
+                                    <span className="text-amber-500/90">{atRiskCount} At Risk</span>
+                                    <span className="text-rose-500/90">{behindCount} Behind</span>
+                                </div>
+
+                                <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50 flex">
+                                    <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${onTrackPercent}%` }} />
+                                    <div className="h-full bg-amber-500 transition-all duration-700" style={{ width: `${atRiskPercent}%` }} />
+                                    <div className="h-full bg-rose-500 transition-all duration-700" style={{ width: `${behindPercent}%` }} />
+                                </div>
+                            </div>
+                        )}
                     </section>
 
-                    {/* Card 2: Delivery */}
-                    <section className="relative overflow-hidden rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-500/[0.12] via-background/95 to-background p-3">
-                        <div className="pointer-events-none absolute -right-6 -top-8 h-20 w-20 rounded-full bg-indigo-500/20 blur-2xl" />
-                        <div className="relative z-10 mb-2 flex items-center justify-between">
-                            <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-500/30 bg-indigo-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-indigo-600 dark:text-indigo-300">
-                                <Flag className="h-3 w-3" />
+                    {/* Card 2: Delivery (col-span-1) */}
+                    <section className="group relative col-span-1 overflow-hidden rounded-2xl border border-border/50 bg-background/40 p-5 backdrop-blur-xl transition-all duration-300 hover:border-indigo-500/30 hover:bg-background/60 shadow-sm flex flex-col justify-between">
+                        <div className="absolute top-0 right-0 h-20 w-20 translate-x-4 -translate-y-4 rounded-full bg-indigo-500/10 blur-xl pointer-events-none" />
+                        
+                        <div className="relative z-10 flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <Flag className="h-4 w-4 text-indigo-500" />
                                 Delivery
                             </div>
-                            <Activity className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Activity className="h-4 w-4 text-indigo-500/40" />
                         </div>
-                        <div className="relative z-10 space-y-2">
-                            <div className="rounded-lg border border-indigo-500/20 bg-indigo-500/[0.06] px-2 py-1.5">
-                                <div className="mb-0.5 flex items-center justify-between text-[10px]">
-                                    <span className="font-medium text-indigo-700 dark:text-indigo-300">Objectives</span>
-                                    <span className="font-semibold text-indigo-700 dark:text-indigo-300">{subObjectiveCompletionRate.toFixed(1)}%</span>
+
+                        <div className="relative z-10 space-y-4 mt-auto">
+                            <div>
+                                <div className="flex justify-between items-end mb-1.5">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Milestones</span>
+                                    <span className="text-xs font-bold text-foreground">{completedSubObjectives} <span className="text-[10px] font-medium text-muted-foreground">/ {totalSubObjectives}</span></span>
                                 </div>
-                                <div className="mb-1 text-base font-black tracking-tight text-foreground">
-                                    {completedSubObjectives} <span className="text-xs font-semibold text-muted-foreground">/ {totalSubObjectives}</span>
-                                </div>
-                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-indigo-500/15">
-                                    <div className="h-full rounded-full bg-indigo-500 transition-all duration-700" style={{ width: `${subObjectiveCompletionRate}%` }} />
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                                    <div className="h-full bg-indigo-500 transition-all duration-700" style={{ width: `${subObjectiveCompletionRate}%` }} />
                                 </div>
                             </div>
-                            <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/[0.06] px-2 py-1.5">
-                                <div className="mb-0.5 flex items-center justify-between text-[10px]">
-                                    <span className="font-medium text-emerald-700 dark:text-emerald-300">Key Results</span>
-                                    <span className="font-semibold text-emerald-700 dark:text-emerald-300">{krCompletionRate.toFixed(1)}%</span>
+                            <div>
+                                <div className="flex justify-between items-end mb-1.5">
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Key Results</span>
+                                    <span className="text-xs font-bold text-foreground">{completedKRs} <span className="text-[10px] font-medium text-muted-foreground">/ {totalKRs}</span></span>
                                 </div>
-                                <div className="mb-1 text-base font-black tracking-tight text-foreground">
-                                    {completedKRs} <span className="text-xs font-semibold text-muted-foreground">/ {totalKRs}</span>
-                                </div>
-                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-emerald-500/15">
-                                    <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${krCompletionRate}%` }} />
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
+                                    <div className="h-full bg-fuchsia-500 transition-all duration-700" style={{ width: `${krCompletionRate}%` }} />
                                 </div>
                             </div>
                         </div>
                     </section>
 
-                    {/* Card 3: Check-ins */}
-                    <section className="relative overflow-hidden rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.08] via-background to-background p-3">
-                        <div className="pointer-events-none absolute -left-4 -top-6 h-20 w-20 rounded-full bg-amber-500/15 blur-2xl" />
-                        <div className="relative z-10">
-                            <div className="mb-2 flex items-center justify-between">
-                                <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-amber-600 dark:text-amber-300">
-                                    <Timer className="h-3 w-3" />
-                                    Check-ins
-                                </div>
+                    {/* Card 3: Check-ins (col-span-1) */}
+                    <section className="group relative col-span-1 overflow-hidden rounded-2xl border border-border/50 bg-background/40 p-5 backdrop-blur-xl transition-all duration-300 hover:border-amber-500/30 hover:bg-background/60 shadow-sm flex flex-col justify-between">
+                        <div className="absolute top-0 right-0 h-20 w-20 translate-x-4 -translate-y-4 rounded-full bg-amber-500/10 blur-xl pointer-events-none" />
+                        
+                        <div className="relative z-10 flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <Timer className="h-4 w-4 text-amber-500" />
+                                Check-ins
                             </div>
+                        </div>
 
-                            <div className="mb-2.5">
-                                <div className="text-3xl font-black leading-none tracking-[-0.02em] text-foreground">
-                                    {totalCheckIns}
-                                </div>
-                                <span className="text-[11px] font-medium text-muted-foreground">total check-ins</span>
+                        <div className="relative z-10 flex flex-col items-center justify-center flex-1 py-2">
+                            <div className="text-5xl font-black tracking-tight text-foreground">{totalCheckIns}</div>
+                            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mt-1">Total Logs</span>
+                        </div>
+
+                        <div className="relative z-10 mt-auto w-full pt-2">
+                            <div className="flex justify-between items-center mb-2 text-[10px]">
+                                <span className="font-semibold text-muted-foreground uppercase tracking-wider">Coverage</span>
+                                <span className={`font-bold ${missingCheckInRate > 25 ? 'text-rose-500' : missingCheckInRate > 10 ? 'text-amber-500' : 'text-emerald-500'}`}>
+                                    {(100 - missingCheckInRate).toFixed(0)}%
+                                </span>
                             </div>
-
-                            <div className="mb-2 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
+                            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
                                 <div
-                                    className={`h-full rounded-full transition-all duration-700 ${
-                                        missingCheckInRate > 25 ? "bg-rose-500" : missingCheckInRate > 10 ? "bg-amber-500" : "bg-emerald-500"
-                                    }`}
+                                    className={`h-full transition-all duration-700 ${missingCheckInRate > 25 ? "bg-rose-500" : missingCheckInRate > 10 ? "bg-amber-500" : "bg-emerald-500"}`}
                                     style={{ width: `${Math.min(100, Math.max(0, 100 - missingCheckInRate))}%` }}
                                 />
                             </div>
-
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                <div className="text-[10px] text-muted-foreground">
-                                    Coverage <span className="font-semibold text-foreground">{(100 - missingCheckInRate).toFixed(1)}%</span>
-                                </div>
-                                {missingCheckInEmployees.length === 0 ? (
-                                    <div className="inline-flex items-center gap-1 rounded-md border border-emerald-500/20 bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                                        <CheckCircle2 className="h-3 w-3" />
-                                        All clear
-                                    </div>
-                                ) : (
-                                    <div className="inline-flex items-center gap-1 rounded-md border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-rose-600 dark:text-rose-400">
-                                        <UserX className="h-3 w-3" />
-                                        {missingCheckInEmployees.length} missed
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     </section>
 
-                    {/* Card 4: Team Pulse */}
-                    <section className="relative overflow-hidden rounded-2xl border border-purple-500/20 bg-gradient-to-br from-purple-500/[0.08] via-background to-background p-3">
-                        <div className="pointer-events-none absolute -bottom-4 -right-4 h-16 w-16 rounded-full bg-purple-500/15 blur-2xl" />
-                        <div className="relative z-10">
-                            <div className="mb-2 flex items-center justify-between">
-                                <div className="inline-flex items-center gap-1.5 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-purple-600 dark:text-purple-300">
-                                    <Users className="h-3 w-3" />
-                                    Team Pulse
+                    {/* Card 4: Team Pulse (col-span-2) */}
+                    <section className="group relative col-span-1 md:col-span-3 xl:col-span-2 overflow-hidden rounded-2xl border border-border/50 bg-background/40 p-5 backdrop-blur-xl transition-all duration-300 hover:border-purple-500/30 hover:bg-background/60 shadow-sm flex flex-col justify-between">
+                        <div className="absolute top-0 right-0 h-24 w-24 translate-x-8 -translate-y-8 rounded-full bg-purple-500/10 blur-2xl pointer-events-none" />
+                        
+                        <div className="relative z-10 flex items-center justify-between mb-5">
+                            <div className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                                <Users className="h-4 w-4 text-purple-500" />
+                                Squad Pulse
+                            </div>
+                            <div className="flex items-baseline gap-1.5 bg-muted/40 px-3 py-1 rounded-md border border-border/50">
+                                <span className="text-sm font-bold text-foreground">{teamSize}</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Members</span>
+                            </div>
+                        </div>
+
+                        <div className="relative z-10 flex items-end justify-between mt-auto">
+                            <div className="flex-1">
+                                <div className="flex flex-wrap -space-x-2.5">
+                                    {participantDetails.slice(0, 7).map((member, i) => (
+                                        <div key={member.employeeId || `${member.fullName || "member"}-${i}`} className="relative hover:z-20 transition-transform duration-300 hover:-translate-y-1">
+                                            <AvatarInfoTooltip
+                                                fullName={member.fullName}
+                                                pictureURL={member.pictureMediumURL || member.pictureURL}
+                                                avatarClassName="h-10 w-10 border-2 border-background ring-1 ring-border/50 hover:ring-purple-500/30 transition-all"
+                                                fallbackClassName="bg-purple-100 text-xs font-bold text-purple-700 dark:bg-purple-900 dark:text-purple-300"
+                                            />
+                                        </div>
+                                    ))}
+                                    {participantDetails.length > 7 && (
+                                        <div className="relative z-10 hover:z-20 transition-transform duration-300 hover:-translate-y-1">
+                                            <AvatarOverflowTooltip
+                                                members={participantDetails.map(member => ({
+                                                    fullName: member.fullName,
+                                                    pictureURL: member.pictureMediumURL || member.pictureURL,
+                                                }))}
+                                                hiddenCount={participantDetails.length - 7}
+                                                label="Squad members"
+                                                triggerClassName="flex h-10 w-10 cursor-help items-center justify-center rounded-full border-2 border-background bg-purple-500/10 text-[10px] font-bold text-purple-600 ring-1 ring-border/50 hover:bg-purple-500/20 transition-colors"
+                                            />
+                                        </div>
+                                    )}
                                 </div>
-                                <span className="text-lg font-black tracking-tight text-foreground">{teamSize}</span>
                             </div>
-
-                            <div className="mb-2 flex flex-wrap -space-x-1.5">
-                                {participantDetails.slice(0, 6).map((member, i) => (
-                                    <AvatarInfoTooltip
-                                        key={member.employeeId || `${member.fullName || "member"}-${i}`}
-                                        fullName={member.fullName}
-                                        pictureURL={member.pictureMediumURL || member.pictureURL}
-                                        avatarClassName="h-7 w-7 border-2 border-background shadow-sm hover:z-10 transition-transform hover:scale-110"
-                                        fallbackClassName="bg-purple-100 text-[9px] font-semibold text-purple-700 dark:bg-purple-900 dark:text-purple-300"
-                                    />
-                                ))}
-                                {participantDetails.length > 6 && (
-                                    <AvatarOverflowTooltip
-                                        members={participantDetails.map(member => ({
-                                            fullName: member.fullName,
-                                            pictureURL: member.pictureMediumURL || member.pictureURL,
-                                        }))}
-                                        hiddenCount={participantDetails.length - 6}
-                                        label="Team members"
-                                        triggerClassName="z-10 flex h-7 w-7 cursor-help items-center justify-center rounded-full border-2 border-background bg-purple-100 text-[9px] font-bold text-purple-700 shadow-sm dark:bg-purple-900 dark:text-purple-300"
-                                    />
-                                )}
-                            </div>
-
-                            <div className="rounded-lg border border-purple-500/15 bg-purple-500/[0.04] px-2 py-1.5">
-                                <div className="flex items-center justify-between text-[10px]">
-                                    <span className="font-medium text-muted-foreground">Missing check-ins</span>
-                                    <span className="font-bold text-foreground">{missingCheckInEmployees.length} <span className="font-normal text-muted-foreground">/ {teamSize}</span></span>
+                            
+                            <div className="flex flex-col items-end text-right ml-4">
+                                <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">Missing Logs</span>
+                                <div className={`flex items-baseline gap-1.5 ${missingCheckInEmployees.length > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                                    <span className="text-2xl font-black">{missingCheckInEmployees.length}</span>
+                                    {missingCheckInEmployees.length > 0 && <span className="text-[10px] font-bold uppercase tracking-wider opacity-80">Racers</span>}
                                 </div>
                             </div>
                         </div>
