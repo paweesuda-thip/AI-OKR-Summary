@@ -606,8 +606,8 @@ export default function VersusMode({
                     )}
                   </div>
                   {/* Stats */}
-                  <div className="flex flex-col gap-5 flex-1 min-w-0 items-end">
-                    <div>
+                  <div className="flex flex-col gap-5 flex-1 min-w-0">
+                    <div className="w-full text-right">
                       <div className="text-cyan-400/80 font-bold tracking-[0.25em] text-[10px] mb-2 flex items-center gap-2 justify-end">
                         SUBJECT B <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                       </div>
@@ -619,7 +619,7 @@ export default function VersusMode({
                         <span className="text-cyan-400 font-bold">{Math.floor(p2.totalScore)}</span>
                       </div>
                     </div>
-                    <div className="flex items-center flex-row-reverse gap-5">
+                    <div className="flex items-center flex-row-reverse gap-5 w-full">
                       <div className="w-28 h-28 lg:w-32 lg:h-32 shrink-0 relative">
                         <ResponsiveContainer width="100%" height="100%">
                           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
