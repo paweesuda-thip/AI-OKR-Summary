@@ -98,6 +98,48 @@ function mergeParticipantDetails(
   });
 }
 
+/** Shared A/Q/E bars — matches Check-in Engagement “multi-dimensional” UI (see docs/engagement-ranking-concept.md). */
+const EngagementMetricBar = ({
+  label,
+  value,
+  color,
+  isRight,
+}: {
+  label: string;
+  value: number;
+  color: "rose" | "cyan";
+  isRight?: boolean;
+}) => (
+  <div className="space-y-1.5 w-full">
+    <div className={`flex justify-between items-end ${isRight ? "flex-row-reverse" : ""}`}>
+      <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">{label}</span>
+      <span
+        className={`text-[10px] font-mono font-bold ${
+          color === "rose" ? "text-rose-400" : "text-cyan-400"
+        }`}
+      >
+        {Math.floor(value)}
+      </span>
+    </div>
+    <div
+      className={`w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex ${
+        isRight ? "justify-end" : "justify-start"
+      }`}
+    >
+      <motion.div
+        initial={{ width: 0 }}
+        animate={{ width: `${value}%` }}
+        transition={{ delay: 0.2, duration: 1, ease: "easeOut" }}
+        className={`h-full rounded-full ${
+          color === "rose"
+            ? "bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+            : "bg-gradient-to-l from-cyan-400 to-cyan-600 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+        }`}
+      />
+    </div>
+  </div>
+);
+
 // -------------------------------------------------------------
 // HELPER COMPONENT: Typewriter Text Effect (FIXED FOR THAI GLYPHS / STRICT MODE)
 // -------------------------------------------------------------
@@ -268,7 +310,15 @@ const buildPlayerPool = (
           ? topObjs.reduce((s, o) => s + o.personProgress, 0) / topObjs.length
           : c.avgObjectiveProgress;
 
-      return { ...c, avgObjectiveProgress, topObjectives: topObjs };
+      return {
+        ...c,
+        avgObjectiveProgress,
+        topObjectives: topObjs,
+        totalScore: 0,
+        goalAchievementScore: 0,
+        qualityScore: 0,
+        engagementBehaviorScore: 0,
+      };
     });
 };
 
@@ -464,21 +514,6 @@ export default function VersusMode({
   // SELECT SCREEN
   // -----------------------------------
   const SelectScreen = () => {
-    // Helper for rendering detailed progress bars
-    const MetricBar = ({ label, value, color, isRight }: { label: string, value: number, color: 'rose' | 'cyan', isRight?: boolean }) => (
-      <div className="space-y-1.5 w-full">
-        <div className={`flex justify-between items-end ${isRight ? 'flex-row-reverse' : ''}`}>
-          <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">{label}</span>
-          <span className={`text-[10px] font-mono font-bold ${color === 'rose' ? 'text-rose-400' : 'text-cyan-400'}`}>{Math.floor(value)}</span>
-        </div>
-        <div className={`w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex ${isRight ? 'justify-end' : 'justify-start'}`}>
-          <motion.div initial={{ width: 0 }} animate={{ width: `${value}%` }} transition={{ delay: 0.2, duration: 1, ease: "easeOut" }} 
-            className={`h-full rounded-full ${color === 'rose' ? 'bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.5)]' : 'bg-gradient-to-l from-cyan-400 to-cyan-600 shadow-[0_0_8px_rgba(34,211,238,0.5)]'}`} 
-          />
-        </div>
-      </div>
-    );
-
     return (
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -488,33 +523,13 @@ export default function VersusMode({
         <div className="absolute top-0 left-[20%] w-[40vw] h-[40vw] bg-rose-500/[0.04] rounded-full blur-[130px] pointer-events-none mix-blend-screen -translate-y-1/2 -translate-x-1/2" />
         <div className="absolute top-0 right-[20%] w-[40vw] h-[40vw] bg-cyan-400/[0.04] rounded-full blur-[130px] pointer-events-none mix-blend-screen -translate-y-1/2 translate-x-1/2" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.5)_95%)] pointer-events-none" />
-
-        {/* Header */}
-        <div className="relative z-10 flex items-center justify-between px-6 lg:px-10 py-5 border-b border-white/[0.06]">
-          <div>
-            <div className="text-[10px] font-mono tracking-[0.3em] uppercase text-zinc-500">contributor benchmark</div>
-            <h2 className="text-white text-base lg:text-lg font-bold mt-1 tracking-tight">Head-to-Head Comparison</h2>
-          </div>
-          <div className="hidden md:flex items-center gap-5 text-[10px] font-mono tracking-[0.2em] uppercase text-zinc-500">
-            <div className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full transition-all ${p1 ? 'bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.7)]' : 'bg-white/10'}`} />
-              <span className={p1 ? 'text-rose-300/80' : ''}>Subject A</span>
-            </div>
-            <span className="text-zinc-700">·</span>
-            <div className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full transition-all ${p2 ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)]' : 'bg-white/10'}`} />
-              <span className={p2 ? 'text-cyan-300/80' : ''}>Subject B</span>
-            </div>
-          </div>
-        </div>
-
         {/* Showcase area */}
         <div className="flex-1 relative flex items-center justify-between px-8 lg:px-14 overflow-hidden py-8">
 
            {/* P1 Showcase */}
-           <div className="w-1/2 h-full flex items-center justify-start relative z-10">
+           <div className="w-1/2 h-full flex items-center justify-start relative z-10 pr-3 sm:pr-5 lg:pr-12 xl:pr-16 min-w-0">
               {p1 ? (
-                <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-6 lg:gap-8 w-full">
+                <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-6 lg:gap-8 w-full min-w-0">
                   {/* Portrait */}
                   <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] shrink-0">
                     <div className="absolute inset-0 bg-rose-500/10 blur-3xl rounded-full" />
@@ -531,11 +546,17 @@ export default function VersusMode({
                         <div className="w-1.5 h-1.5 rounded-full bg-rose-400" /> SUBJECT A
                       </div>
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
-                      <div className="mt-2 flex items-center gap-2 text-[11px] font-mono text-zinc-500">
-                        <span className="text-rose-400 font-bold">{Math.floor(p1.totalScore)}</span>
-                        <span className="text-zinc-700">pts</span>
-                        <span className="text-zinc-800">·</span>
-                        <span>{p1.checkInCount} check-ins</span>
+                      <div className="mt-2 space-y-2">
+                        <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
+                          <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
+                          <div className="flex items-baseline gap-2 mt-0.5">
+                            <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
+                              {Math.floor(p1.totalScore)}
+                            </span>
+                            <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                          </div>
+                        </div>
+                        <div className="text-[11px] font-mono text-zinc-500">{p1.checkInCount} check-ins</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-5">
@@ -556,9 +577,9 @@ export default function VersusMode({
                         </ResponsiveContainer>
                       </div>
                       <div className="flex-1 space-y-3 max-w-[180px]">
-                        <MetricBar label="Achievement" value={p1.goalAchievementScore} color="rose" />
-                        <MetricBar label="Quality" value={p1.qualityScore} color="rose" />
-                        <MetricBar label="Engagement" value={p1.engagementBehaviorScore} color="rose" />
+                        <EngagementMetricBar label="Achievement" value={p1.goalAchievementScore} color="rose" />
+                        <EngagementMetricBar label="Quality" value={p1.qualityScore} color="rose" />
+                        <EngagementMetricBar label="Engagement" value={p1.engagementBehaviorScore} color="rose" />
                       </div>
                     </div>
                   </div>
@@ -593,9 +614,9 @@ export default function VersusMode({
            </div>
 
            {/* P2 Showcase */}
-           <div className="w-1/2 h-full flex items-center justify-end relative z-10 flex-row-reverse">
+           <div className="w-1/2 h-full flex items-center justify-end relative z-10 flex-row-reverse pl-3 sm:pl-5 lg:pl-12 xl:pl-16 min-w-0">
               {p2 ? (
-                <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-6 lg:gap-8 w-full flex-row-reverse text-right">
+                <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-6 lg:gap-8 w-full flex-row-reverse text-right min-w-0">
                   {/* Portrait */}
                   <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] shrink-0">
                     <div className="absolute inset-0 bg-cyan-400/10 blur-3xl rounded-full" />
@@ -612,11 +633,17 @@ export default function VersusMode({
                         SUBJECT B <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
                       </div>
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
-                      <div className="mt-2 flex items-center gap-2 text-[11px] font-mono text-zinc-500 justify-end">
-                        <span>{p2.checkInCount} check-ins</span>
-                        <span className="text-zinc-800">·</span>
-                        <span className="text-zinc-700">pts</span>
-                        <span className="text-cyan-400 font-bold">{Math.floor(p2.totalScore)}</span>
+                      <div className="mt-2 space-y-2">
+                        <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
+                          <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
+                          <div className="flex items-baseline gap-2 mt-0.5 justify-end">
+                            <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
+                              {Math.floor(p2.totalScore)}
+                            </span>
+                            <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                          </div>
+                        </div>
+                        <div className="text-[11px] font-mono text-zinc-500 flex justify-end">{p2.checkInCount} check-ins</div>
                       </div>
                     </div>
                     <div className="flex items-center flex-row-reverse gap-5 w-full">
@@ -637,9 +664,9 @@ export default function VersusMode({
                         </ResponsiveContainer>
                       </div>
                       <div className="flex-1 space-y-3 max-w-[180px]">
-                        <MetricBar label="Achievement" value={p2.goalAchievementScore} color="cyan" isRight />
-                        <MetricBar label="Quality" value={p2.qualityScore} color="cyan" isRight />
-                        <MetricBar label="Engagement" value={p2.engagementBehaviorScore} color="cyan" isRight />
+                        <EngagementMetricBar label="Achievement" value={p2.goalAchievementScore} color="cyan" isRight />
+                        <EngagementMetricBar label="Quality" value={p2.qualityScore} color="cyan" isRight />
+                        <EngagementMetricBar label="Engagement" value={p2.engagementBehaviorScore} color="cyan" isRight />
                       </div>
                     </div>
                   </div>
@@ -751,8 +778,13 @@ export default function VersusMode({
                        ) : (
                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xl font-black text-white/50">{c.fullName[0]}</div>
                        )}
-                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-6">
-                         <div className="text-[10px] font-bold text-white truncate text-center uppercase tracking-wider">{c.fullName.split(' ')[0]}</div>
+                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-1.5 pb-1.5 pt-5">
+                         <div className="text-[9px] font-mono font-bold text-rose-300/95 tabular-nums text-center leading-none">
+                           {Math.floor(c.totalScore)}
+                         </div>
+                         <div className="text-[9px] font-bold text-white truncate text-center uppercase tracking-wider mt-0.5">
+                           {c.fullName.split(" ")[0]}
+                         </div>
                        </div>
                      </button>
                    )
@@ -806,8 +838,13 @@ export default function VersusMode({
                        ) : (
                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xl font-black text-white/50">{c.fullName[0]}</div>
                        )}
-                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent p-2 pt-6">
-                         <div className="text-[10px] font-bold text-white truncate text-center uppercase tracking-wider">{c.fullName.split(' ')[0]}</div>
+                       <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-1.5 pb-1.5 pt-5">
+                         <div className="text-[9px] font-mono font-bold text-cyan-300/95 tabular-nums text-center leading-none">
+                           {Math.floor(c.totalScore)}
+                         </div>
+                         <div className="text-[9px] font-bold text-white truncate text-center uppercase tracking-wider mt-0.5">
+                           {c.fullName.split(" ")[0]}
+                         </div>
                        </div>
                      </button>
                    )
@@ -939,187 +976,288 @@ export default function VersusMode({
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.35 }}
-        className="w-full flex flex-col font-mono min-h-[85vh] pt-4 pb-20 px-4 sm:px-6"
+        className="w-full min-h-[85vh] flex flex-col overflow-hidden relative font-sans"
       >
-        <div className="flex items-center gap-4 mb-6 max-w-7xl mx-auto w-full border-b border-zinc-800/50 pb-4">
-          <button
-            type="button"
-            onClick={() => setStep("select")}
-            className="inline-flex items-center gap-2 cursor-pointer text-[10px] uppercase tracking-widest text-zinc-500 hover:text-zinc-300 transition-colors font-mono"
-          >
-            <ArrowLeft className="w-4 h-4" /> roster
-          </button>
-          <div className="h-4 w-px bg-zinc-800" />
-          <div>
-            <div className="text-[8px] text-zinc-600 tracking-[0.3em] uppercase font-mono">verify okr payload · then run eval</div>
-            <h2 className="text-base sm:text-lg font-black italic uppercase tracking-[0.1em] text-white leading-tight">Objective manifest</h2>
-          </div>
-        </div>
+        <div className="absolute top-0 left-[20%] w-[40vw] h-[40vw] bg-rose-500/[0.04] rounded-full blur-[130px] pointer-events-none mix-blend-screen -translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-0 right-[20%] w-[40vw] h-[40vw] bg-cyan-400/[0.04] rounded-full blur-[130px] pointer-events-none mix-blend-screen -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.5)_95%)] pointer-events-none" />
 
-        {isComparing && (
-          <div className="max-w-7xl mx-auto w-full mb-4 text-[9px] font-mono text-emerald-500/90 tracking-widest uppercase flex items-center gap-2">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            POST /api/compare · streaming verdict…
-          </div>
-        )}
-
-        {compareError && (
-          <div
-            role="alert"
-            className="max-w-7xl mx-auto w-full mb-4 rounded-xl border border-red-500/35 bg-red-950/25 px-4 py-3 text-sm text-red-100/95 font-sans leading-relaxed"
-          >
-            {compareError}
-          </div>
-        )}
-
-        <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-8 lg:gap-8 pb-28">
-          <div className="flex flex-col gap-4">
-            <div className="pb-5 border-b border-rose-900/30 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-black border border-rose-500/30 shrink-0 shadow-[0_0_20px_rgba(244,63,94,0.1)]">
-                  {p1.pictureURL ? <Image src={p1.pictureURL} alt="" fill className="object-cover" unoptimized sizes="56px" /> : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p1.fullName[0]}</div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[9px] text-rose-500/80 tracking-[0.3em] uppercase font-bold">alpha</div>
-                  <div className="text-white font-sans font-bold text-lg leading-tight truncate">{p1.fullName}</div>
-                  <div className="text-[10px] font-mono mt-1 flex items-center gap-1.5">
-                    <span className="text-rose-400 font-bold">{Math.floor(p1.totalScore)}</span>
-                    <span className="text-zinc-600">pts</span>
-                    <span className="text-zinc-700 mx-0.5">·</span>
-                    <span className="text-zinc-500">{p1.checkInCount} check-ins</span>
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-stretch gap-3 bg-[#080810] border border-zinc-800/50 rounded-xl p-3">
-                <div className="w-28 h-28 shrink-0 pointer-events-none">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="62%" data={[
-                      { subject: 'Achieve', value: p1.goalAchievementScore, fullMark: 100 },
-                      { subject: 'Quality', value: p1.qualityScore, fullMark: 100 },
-                      { subject: 'Engage', value: p1.engagementBehaviorScore, fullMark: 100 }
-                    ]}>
-                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(244,63,94,0.15)" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 7, fill: '#52525b', fontFamily: 'monospace' }} />
-                      <Radar dataKey="value" stroke="#fb7185" fill="#f43f5e" fillOpacity={0.4} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 flex flex-col justify-center gap-2.5">
-                  {([
-                    { label: 'Achievement', val: p1.goalAchievementScore },
-                    { label: 'Quality', val: p1.qualityScore },
-                    { label: 'Engagement', val: p1.engagementBehaviorScore },
-                  ] as { label: string; val: number }[]).map(({ label, val }) => (
-                    <div key={label} className="flex items-center gap-2">
-                      <span className="text-[8px] font-mono text-zinc-600 uppercase tracking-wider w-[72px] shrink-0">{label}</span>
-                      <div className="flex-1 h-1 bg-zinc-900 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full rounded-full bg-gradient-to-r from-rose-700 to-rose-400"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(100, val || 0)}%` }}
-                          transition={{ delay: 0.2, duration: 0.9, ease: 'easeOut' }}
-                        />
-                      </div>
-                      <span className="text-[9px] font-mono text-rose-400 shrink-0 w-6 text-right">{Math.floor(val || 0)}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="space-y-3">
-              {Array.from({ length: maxObj }).map((_, i) => (
-                <PreviewObjectiveCard key={`pv1-${i}`} obj={p1.topObjectives[i]} isLeft={true} index={i} />
-              ))}
-            </div>
-          </div>
-
-          <div className="hidden lg:flex items-start justify-center pt-2">
+        <div className="relative z-10 flex flex-col flex-1 pt-4 pb-24 sm:pb-20 px-4 sm:px-8">
+          <div className="flex items-center gap-4 mb-4 max-w-7xl mx-auto w-full border-b border-white/10 pb-4">
             <button
               type="button"
-              disabled={isComparing}
-              onClick={runAiComparison}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl cursor-pointer disabled:cursor-not-allowed bg-[#080810] border border-emerald-900/50 hover:border-emerald-600/60 text-[10px] font-black italic uppercase tracking-[0.2em] text-emerald-400/80 hover:text-emerald-300 disabled:opacity-40 disabled:pointer-events-none transition-all duration-200 shadow-[inset_0_0_20px_rgba(16,185,129,0.03)] hover:shadow-[0_0_20px_rgba(16,185,129,0.12)] whitespace-nowrap font-mono"
+              onClick={() => setStep("select")}
+              className="inline-flex items-center gap-2 cursor-pointer text-[10px] uppercase tracking-widest text-zinc-400 hover:text-white transition-colors"
             >
-              {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4" />}
-              {isComparing ? "evaluating…" : "RUN AI EVAL"}
+              <ArrowLeft className="w-4 h-4" />
+              Back to roster
             </button>
+            <div className="h-4 w-px bg-zinc-700" />
+            <div>
+              <p className="text-[10px] text-zinc-500 font-medium tracking-wide">Verify objectives · run AI eval</p>
+              <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">Objective manifest</h2>
+            </div>
           </div>
 
-          <div className="flex flex-col gap-4">
-            <div className="pb-5 border-b border-cyan-900/30 space-y-3">
-              <div className="flex items-center gap-3 flex-row-reverse">
-                <div className="relative w-14 h-16 rounded-xl overflow-hidden bg-black border border-cyan-400/30 shrink-0 shadow-[0_0_20px_rgba(34,211,238,0.1)]">
-                  {p2.pictureURL ? <Image src={p2.pictureURL} alt="" fill className="object-cover" unoptimized sizes="56px" /> : (
-                    <div className="w-full h-full flex items-center justify-center text-zinc-600 text-sm font-bold">{p2.fullName[0]}</div>
-                  )}
+          {isComparing && (
+            <div className="max-w-7xl mx-auto w-full mb-3 text-[10px] font-mono text-emerald-500/90 tracking-wide uppercase flex items-center gap-2">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              POST /api/compare · streaming…
+            </div>
+          )}
+
+          {compareError && (
+            <div
+              role="alert"
+              className="max-w-7xl mx-auto w-full mb-4 rounded-xl border border-red-500/35 bg-red-950/25 px-4 py-3 text-sm text-red-100/95 leading-relaxed"
+            >
+              {compareError}
+            </div>
+          )}
+
+          <div className="flex-1 w-full max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] gap-6 lg:gap-8 xl:gap-12 pb-28">
+            <div className="flex flex-col gap-4 min-w-0 lg:pr-2 xl:pr-6">
+              <div className="rounded-2xl border border-white/10 bg-zinc-950/50 backdrop-blur-sm p-4 sm:p-5 space-y-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                <div className="flex items-start gap-4">
+                  <div className="relative w-[100px] h-[120px] sm:w-[110px] sm:h-[135px] shrink-0">
+                    <div className="absolute inset-0 bg-rose-500/10 blur-3xl rounded-full" />
+                    {p1.pictureURL ? (
+                      <Image
+                        src={p1.pictureURL}
+                        alt=""
+                        fill
+                        className="object-cover rounded-2xl border border-rose-500/25 shadow-[0_0_24px_rgba(244,63,94,0.1)]"
+                        unoptimized
+                        sizes="120px"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-900 rounded-2xl border border-rose-500/25 flex items-center justify-center text-3xl text-white/20 font-bold">
+                        {p1.fullName[0]}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-rose-400/80 font-bold tracking-[0.25em] text-[10px] mb-1.5 flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />
+                      SUBJECT A
+                    </div>
+                    <h3 className="text-xl font-bold text-white leading-tight truncate">{p1.fullName}</h3>
+                    <div className="mt-2 space-y-2">
+                      <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
+                        <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
+                        <div className="flex items-baseline gap-2 mt-0.5">
+                          <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
+                            {Math.floor(p1.totalScore)}
+                          </span>
+                          <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] font-mono text-zinc-500">{p1.checkInCount} check-ins</div>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0 text-right">
-                  <div className="text-[9px] text-cyan-400/80 tracking-[0.3em] uppercase font-bold">omega</div>
-                  <div className="text-white font-sans font-bold text-lg leading-tight truncate">{p2.fullName}</div>
-                  <div className="text-[10px] font-mono mt-1 flex items-center gap-1.5 justify-end">
-                    <span className="text-cyan-400 font-bold">{Math.floor(p2.totalScore)}</span>
-                    <span className="text-zinc-600">pts</span>
-                    <span className="text-zinc-700 mx-0.5">·</span>
-                    <span className="text-zinc-500">{p2.checkInCount} check-ins</span>
+                <div className="flex items-center gap-4 pt-2 border-t border-white/5">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 pointer-events-none">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart
+                        cx="50%"
+                        cy="50%"
+                        outerRadius="70%"
+                        data={[
+                          { subject: "A", value: p1.goalAchievementScore, fullMark: 100 },
+                          { subject: "Q", value: p1.qualityScore, fullMark: 100 },
+                          { subject: "E", value: p1.engagementBehaviorScore, fullMark: 100 },
+                        ]}
+                      >
+                        <PolarGrid
+                          gridType="polygon"
+                          radialLines
+                          stroke="rgba(255,255,255,0.08)"
+                          strokeWidth={1}
+                        />
+                        <PolarAngleAxis
+                          dataKey="subject"
+                          tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 9, fontWeight: 700 }}
+                        />
+                        <Radar
+                          isAnimationActive
+                          animationDuration={800}
+                          dataKey="value"
+                          stroke="rgba(244,63,94,0.85)"
+                          strokeWidth={1.5}
+                          fill="url(#colorRosePreview)"
+                          fillOpacity={1}
+                        />
+                        <defs>
+                          <linearGradient id="colorRosePreview" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0} />
+                          </linearGradient>
+                        </defs>
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex-1 space-y-3 min-w-0 max-w-[200px]">
+                    <EngagementMetricBar label="Achievement" value={p1.goalAchievementScore} color="rose" />
+                    <EngagementMetricBar label="Quality" value={p1.qualityScore} color="rose" />
+                    <EngagementMetricBar label="Engagement" value={p1.engagementBehaviorScore} color="rose" />
                   </div>
                 </div>
               </div>
-              <div className="flex items-stretch gap-3 bg-[#080810] border border-zinc-800/50 rounded-xl p-3 flex-row-reverse">
-                <div className="w-28 h-28 shrink-0 pointer-events-none">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="62%" data={[
-                      { subject: 'Achieve', value: p2.goalAchievementScore, fullMark: 100 },
-                      { subject: 'Quality', value: p2.qualityScore, fullMark: 100 },
-                      { subject: 'Engage', value: p2.engagementBehaviorScore, fullMark: 100 }
-                    ]}>
-                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(34,211,238,0.15)" />
-                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 7, fill: '#52525b', fontFamily: 'monospace' }} />
-                      <Radar dataKey="value" stroke="#22d3ee" fill="#06b6d4" fillOpacity={0.4} />
-                    </RadarChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 flex flex-col justify-center gap-2.5">
-                  {([
-                    { label: 'Achievement', val: p2.goalAchievementScore },
-                    { label: 'Quality', val: p2.qualityScore },
-                    { label: 'Engagement', val: p2.engagementBehaviorScore },
-                  ] as { label: string; val: number }[]).map(({ label, val }) => (
-                    <div key={label} className="flex items-center gap-2 flex-row-reverse">
-                      <span className="text-[8px] font-mono text-zinc-600 uppercase tracking-wider w-[72px] shrink-0 text-right">{label}</span>
-                      <div className="flex-1 h-1 bg-zinc-900 rounded-full overflow-hidden">
-                        <motion.div
-                          className="h-full rounded-full bg-gradient-to-r from-cyan-700 to-cyan-400"
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(100, val || 0)}%` }}
-                          transition={{ delay: 0.2, duration: 0.9, ease: 'easeOut' }}
-                        />
-                      </div>
-                      <span className="text-[9px] font-mono text-cyan-400 shrink-0 w-6 text-left">{Math.floor(val || 0)}</span>
-                    </div>
-                  ))}
-                </div>
+              <div className="space-y-3">
+                {Array.from({ length: maxObj }).map((_, i) => (
+                  <PreviewObjectiveCard key={`pv1-${i}`} obj={p1.topObjectives[i]} isLeft index={i} />
+                ))}
               </div>
             </div>
-            <div className="space-y-3">
-              {Array.from({ length: maxObj }).map((_, i) => (
-                <PreviewObjectiveCard key={`pv2-${i}`} obj={p2.topObjectives[i]} isLeft={false} index={i} />
-              ))}
+
+            <div className="hidden lg:flex items-start justify-center pt-3 shrink-0 px-1">
+              <motion.button
+                type="button"
+                disabled={isComparing}
+                onClick={runAiComparison}
+                whileHover={isComparing ? undefined : { scale: 1.04 }}
+                whileTap={isComparing ? undefined : { scale: 0.97 }}
+                className="p-0 border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none"
+              >
+                <BorderGlow
+                  borderRadius={14}
+                  backgroundColor="#07070e"
+                  glowColor="160 70 45"
+                  colors={["#34d399", "#22d3ee", "#6ee7b7"]}
+                  glowIntensity={1.25}
+                  glowRadius={22}
+                  fillOpacity={0.24}
+                >
+                  <div className="flex items-center justify-center gap-2 px-5 py-2.5 font-semibold uppercase tracking-[0.18em] text-[10px] text-emerald-200/95 select-none pointer-events-none">
+                    {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4 shrink-0" />}
+                    {isComparing ? "Evaluating…" : "Run AI eval"}
+                  </div>
+                </BorderGlow>
+              </motion.button>
+            </div>
+
+            <div className="flex flex-col gap-4 min-w-0 lg:pl-2 xl:pl-6">
+              <div className="rounded-2xl border border-white/10 bg-zinc-950/50 backdrop-blur-sm p-4 sm:p-5 space-y-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                <div className="flex items-start gap-4 flex-row-reverse">
+                  <div className="relative w-[100px] h-[120px] sm:w-[110px] sm:h-[135px] shrink-0">
+                    <div className="absolute inset-0 bg-cyan-400/10 blur-3xl rounded-full" />
+                    {p2.pictureURL ? (
+                      <Image
+                        src={p2.pictureURL}
+                        alt=""
+                        fill
+                        className="object-cover rounded-2xl border border-cyan-400/25 shadow-[0_0_24px_rgba(34,211,238,0.1)]"
+                        unoptimized
+                        sizes="120px"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-zinc-900 rounded-2xl border border-cyan-400/25 flex items-center justify-center text-3xl text-white/20 font-bold">
+                        {p2.fullName[0]}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0 text-right">
+                    <div className="text-cyan-400/80 font-bold tracking-[0.25em] text-[10px] mb-1.5 flex items-center gap-2 justify-end">
+                      SUBJECT B
+                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                    </div>
+                    <h3 className="text-xl font-bold text-white leading-tight truncate">{p2.fullName}</h3>
+                    <div className="mt-2 space-y-2">
+                      <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
+                        <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
+                        <div className="flex items-baseline gap-2 mt-0.5 justify-end">
+                          <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
+                            {Math.floor(p2.totalScore)}
+                          </span>
+                          <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                        </div>
+                      </div>
+                      <div className="text-[11px] font-mono text-zinc-500 flex justify-end">{p2.checkInCount} check-ins</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 pt-2 border-t border-white/5 flex-row-reverse">
+                  <div className="w-28 h-28 sm:w-32 sm:h-32 shrink-0 pointer-events-none">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <RadarChart
+                        cx="50%"
+                        cy="50%"
+                        outerRadius="70%"
+                        data={[
+                          { subject: "A", value: p2.goalAchievementScore, fullMark: 100 },
+                          { subject: "Q", value: p2.qualityScore, fullMark: 100 },
+                          { subject: "E", value: p2.engagementBehaviorScore, fullMark: 100 },
+                        ]}
+                      >
+                        <PolarGrid
+                          gridType="polygon"
+                          radialLines
+                          stroke="rgba(255,255,255,0.08)"
+                          strokeWidth={1}
+                        />
+                        <PolarAngleAxis
+                          dataKey="subject"
+                          tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 9, fontWeight: 700 }}
+                        />
+                        <Radar
+                          isAnimationActive
+                          animationDuration={800}
+                          dataKey="value"
+                          stroke="rgba(34,211,238,0.85)"
+                          strokeWidth={1.5}
+                          fill="url(#colorCyanPreview)"
+                          fillOpacity={1}
+                        />
+                        <defs>
+                          <linearGradient id="colorCyanPreview" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.4} />
+                            <stop offset="95%" stopColor="#22d3ee" stopOpacity={0.0} />
+                          </linearGradient>
+                        </defs>
+                      </RadarChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex-1 space-y-3 min-w-0 max-w-[200px]">
+                    <EngagementMetricBar label="Achievement" value={p2.goalAchievementScore} color="cyan" isRight />
+                    <EngagementMetricBar label="Quality" value={p2.qualityScore} color="cyan" isRight />
+                    <EngagementMetricBar label="Engagement" value={p2.engagementBehaviorScore} color="cyan" isRight />
+                  </div>
+                </div>
+              </div>
+              <div className="space-y-3">
+                {Array.from({ length: maxObj }).map((_, i) => (
+                  <PreviewObjectiveCard key={`pv2-${i}`} obj={p2.topObjectives[i]} isLeft={false} index={i} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black via-black/95 to-transparent z-40 border-t border-zinc-900/80">
-          <button
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 p-4 z-40 border-t border-white/10 bg-gradient-to-t from-black via-black/95 to-transparent">
+          <motion.button
             type="button"
             disabled={isComparing}
             onClick={runAiComparison}
-            className="w-full py-3 rounded-xl cursor-pointer disabled:cursor-not-allowed bg-[#0c0c0f] border border-zinc-700 text-[10px] font-bold uppercase tracking-[0.25em] text-white flex items-center justify-center gap-2 disabled:opacity-50"
+            whileTap={isComparing ? undefined : { scale: 0.98 }}
+            className="w-full p-0 border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none"
           >
-            {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4" />}
-            {isComparing ? "tuning…" : "run AI eval"}
-          </button>
+            <BorderGlow
+              className="w-full"
+              borderRadius={14}
+              backgroundColor="#07070e"
+              glowColor="160 70 45"
+              colors={["#34d399", "#22d3ee", "#6ee7b7"]}
+              glowIntensity={1.15}
+              glowRadius={20}
+              fillOpacity={0.22}
+            >
+              <div className="w-full flex items-center justify-center gap-2 py-3 font-semibold uppercase tracking-[0.2em] text-[10px] text-emerald-200/95 pointer-events-none">
+                {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4 shrink-0" />}
+                {isComparing ? "Evaluating…" : "Run AI eval"}
+              </div>
+            </BorderGlow>
+          </motion.button>
         </div>
       </motion.div>
     );
