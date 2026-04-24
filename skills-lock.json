@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "clean-architect": {
+      "source": "gravito-framework/gravito",
+      "sourceType": "github",
+      "computedHash": "f31942f116f59991919fc75b3648334d432877c65e8d70c329d71fb81651cfb7"
+    },
+    "nextjs-best-practices": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "3c40a7ea604cdbee772bd7b3efe59aafd6fedf62252a76d43b9f835a6adc92cd"
+    }
+  }
+}

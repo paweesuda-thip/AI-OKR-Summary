@@ -172,10 +172,6 @@
   scrollbar-width: none;
 }
 
-/* Smooth transitions — exclude sidebar which has its own transitions */
-*:not([data-slot^="sidebar"]):not([data-sidebar]):not([data-panel="sidebar"]):not([data-panel="sidebar"] *) {
-  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-}
 
 /* Base button interaction */
 button:active {

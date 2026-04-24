@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Providers } from "@/components/providers";
-import Aurora from "@/components/react-bits/Aurora";
+import { Providers } from "@/src/Interface/Ui/Components/Shared/providers";
+import Aurora from "@/src/Interface/Ui/Components/Shared/react-bits/Aurora";
 
 export const metadata: Metadata = {
   title: "Statio OKR",
