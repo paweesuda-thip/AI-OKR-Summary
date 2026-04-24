@@ -52,9 +52,12 @@ interface CheckInEngagementProps {
   queryParams?: DashboardQueryParams;
 }
 
+/** Client table row: API shape + 1-based rank by total score (not from backend). */
+type ParticipantWithDisplayRank = ParticipantDetailRaw & { displayRank: number };
+
 export function CheckInEngagement({ participantDetails, showStatus = true, queryParams }: CheckInEngagementProps) {
   const [objectiveModalOpen, setObjectiveModalOpen] = useState(false);
-  const [objectiveModalPerson, setObjectiveModalPerson] = useState<ParticipantDetailRaw | null>(null);
+  const [objectiveModalPerson, setObjectiveModalPerson] = useState<ParticipantWithDisplayRank | null>(null);
   const [employeeObjectives, setEmployeeObjectives] = useState<Objective[]>([]);
   const [objectivesLoading, setObjectivesLoading] = useState(false);
   const [objectivesError, setObjectivesError] = useState<string | null>(null);
@@ -136,7 +139,7 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
 
   if (!participantDetails || participantDetails.length === 0) return null;
 
-  const openDetails = (person: ParticipantDetailRaw) => {
+  const openDetails = (person: ParticipantWithDisplayRank) => {
     if (!queryParams) return;
     setObjectiveModalPerson(person);
     setObjectiveModalOpen(true);
