@@ -482,56 +482,80 @@ export default function VersusMode({
     return (
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-        className="w-full h-[85vh] flex flex-col bg-[#050505] rounded-[32px] overflow-hidden relative shadow-2xl border border-white/5 font-sans"
+        className="w-full min-h-[85vh] flex flex-col overflow-hidden relative shadow-2xl font-sans"
       >
-        {/* Background Ambience */}
-        <div className="absolute top-0 left-1/4 w-[50vw] h-[50vw] bg-rose-500/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen -translate-y-1/2 -translate-x-1/2" />
-        <div className="absolute top-0 right-1/4 w-[50vw] h-[50vw] bg-cyan-400/10 rounded-full blur-[120px] pointer-events-none mix-blend-screen -translate-y-1/2 translate-x-1/2" />
-        
-        {/* TOP ARENA SHOWCASE */}
-        <div className="flex-1 relative flex items-center justify-between px-8 lg:px-16 overflow-hidden">
-           {/* BIG VS TEXT */}
-           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 font-black text-[12rem] lg:text-[16rem] italic text-white/[0.02] select-none pointer-events-none">VS</div>
+        {/* Ambient background — subtle, enterprise-feel */}
+        <div className="absolute top-0 left-[20%] w-[40vw] h-[40vw] bg-rose-500/[0.04] rounded-full blur-[130px] pointer-events-none mix-blend-screen -translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-0 right-[20%] w-[40vw] h-[40vw] bg-cyan-400/[0.04] rounded-full blur-[130px] pointer-events-none mix-blend-screen -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_0%,rgba(0,0,0,0.5)_95%)] pointer-events-none" />
+
+        {/* Header */}
+        <div className="relative z-10 flex items-center justify-between px-6 lg:px-10 py-5 border-b border-white/[0.06]">
+          <div>
+            <div className="text-[10px] font-mono tracking-[0.3em] uppercase text-zinc-500">contributor benchmark</div>
+            <h2 className="text-white text-base lg:text-lg font-bold mt-1 tracking-tight">Head-to-Head Comparison</h2>
+          </div>
+          <div className="hidden md:flex items-center gap-5 text-[10px] font-mono tracking-[0.2em] uppercase text-zinc-500">
+            <div className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full transition-all ${p1 ? 'bg-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.7)]' : 'bg-white/10'}`} />
+              <span className={p1 ? 'text-rose-300/80' : ''}>Subject A</span>
+            </div>
+            <span className="text-zinc-700">·</span>
+            <div className="flex items-center gap-2">
+              <span className={`w-1.5 h-1.5 rounded-full transition-all ${p2 ? 'bg-cyan-400 shadow-[0_0_8px_rgba(34,211,238,0.7)]' : 'bg-white/10'}`} />
+              <span className={p2 ? 'text-cyan-300/80' : ''}>Subject B</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Showcase area */}
+        <div className="flex-1 relative flex items-center justify-between px-8 lg:px-14 overflow-hidden py-8">
 
            {/* P1 Showcase */}
            <div className="w-1/2 h-full flex items-center justify-start relative z-10">
               {p1 ? (
-                <motion.div initial={{ opacity: 0, x: -50 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-8 lg:gap-12 w-full">
+                <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-6 lg:gap-8 w-full">
                   {/* Portrait */}
-                  <div className="relative w-[200px] h-[280px] lg:w-[280px] lg:h-[380px] shrink-0">
-                    <div className="absolute inset-0 bg-rose-500/20 blur-3xl rounded-full" />
+                  <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] shrink-0">
+                    <div className="absolute inset-0 bg-rose-500/10 blur-3xl rounded-full" />
                     {p1.pictureURL ? (
-                      <Image src={p1.pictureURL} alt={p1.fullName} fill className="object-cover rounded-2xl border border-rose-500/20 shadow-[0_0_50px_rgba(244,63,94,0.15)]" unoptimized />
+                      <Image src={p1.pictureURL} alt={p1.fullName} fill className="object-cover rounded-2xl border border-rose-500/25 shadow-[0_0_36px_rgba(244,63,94,0.12)]" unoptimized />
                     ) : (
-                      <div className="w-full h-full bg-zinc-900 rounded-2xl border border-rose-500/20 flex items-center justify-center text-6xl text-white/10 font-black shadow-[0_0_50px_rgba(244,63,94,0.15)]">{p1.fullName[0]}</div>
+                      <div className="w-full h-full bg-zinc-900 rounded-2xl border border-rose-500/25 flex items-center justify-center text-5xl text-white/15 font-bold shadow-[0_0_36px_rgba(244,63,94,0.12)]">{p1.fullName[0]}</div>
                     )}
-                    <div className="absolute -left-10 top-1/2 -translate-y-1/2 -rotate-90 text-[10px] font-bold tracking-[0.5em] text-rose-500/50 uppercase">Subject Alpha</div>
                   </div>
                   {/* Stats */}
-                  <div className="flex flex-col gap-6 flex-1 min-w-0">
+                  <div className="flex flex-col gap-5 flex-1 min-w-0">
                     <div>
-                      <div className="text-rose-500 font-bold tracking-[0.2em] text-[10px] mb-2 flex items-center gap-2"><div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" /> ALPHA SQUAD</div>
-                      <h1 className="text-4xl lg:text-5xl font-black uppercase italic text-white leading-none tracking-tight truncate">{p1.fullName.split(' ')[0]}</h1>
-                      <h2 className="text-xl lg:text-2xl font-bold uppercase italic text-white/50 leading-none truncate mt-1">{p1.fullName.split(' ').slice(1).join(' ')}</h2>
+                      <div className="text-rose-400/80 font-bold tracking-[0.25em] text-[10px] mb-2 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-rose-400" /> SUBJECT A
+                      </div>
+                      <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
+                      <div className="mt-2 flex items-center gap-2 text-[11px] font-mono text-zinc-500">
+                        <span className="text-rose-400 font-bold">{Math.floor(p1.totalScore)}</span>
+                        <span className="text-zinc-700">pts</span>
+                        <span className="text-zinc-800">·</span>
+                        <span>{p1.checkInCount} check-ins</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-6">
-                      <div className="w-32 h-32 lg:w-40 lg:h-40 shrink-0 relative -ml-4">
+                    <div className="flex items-center gap-5">
+                      <div className="w-28 h-28 lg:w-32 lg:h-32 shrink-0 relative">
                         <ResponsiveContainer width="100%" height="100%">
                           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
                             { subject: 'A', value: p1.goalAchievementScore, fullMark: 100 },
                             { subject: 'Q', value: p1.qualityScore, fullMark: 100 },
                             { subject: 'E', value: p1.engagementBehaviorScore, fullMark: 100 }
                           ]}>
-                            <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700 }} />
-                            <Radar isAnimationActive={true} animationDuration={1000} dataKey="value" stroke="rgba(244,63,94,0.9)" strokeWidth={2} fill="url(#colorRoseBg)" fillOpacity={1} />
+                            <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: 700 }} />
+                            <Radar isAnimationActive={true} animationDuration={800} dataKey="value" stroke="rgba(244,63,94,0.85)" strokeWidth={1.5} fill="url(#colorRoseBg)" fillOpacity={1} />
                             <defs>
-                              <linearGradient id="colorRoseBg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f43f5e" stopOpacity={0.5}/><stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0}/></linearGradient>
+                              <linearGradient id="colorRoseBg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4}/><stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0}/></linearGradient>
                             </defs>
                           </RadarChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className="flex-1 space-y-4 max-w-[180px]">
+                      <div className="flex-1 space-y-3 max-w-[180px]">
                         <MetricBar label="Achievement" value={p1.goalAchievementScore} color="rose" />
                         <MetricBar label="Quality" value={p1.qualityScore} color="rose" />
                         <MetricBar label="Engagement" value={p1.engagementBehaviorScore} color="rose" />
@@ -540,9 +564,30 @@ export default function VersusMode({
                   </div>
                 </motion.div>
               ) : (
-                <div className="w-full flex flex-col items-center justify-center opacity-20">
-                  <div className="text-6xl lg:text-8xl font-black italic uppercase tracking-widest text-transparent" style={{ WebkitTextStroke: '2px white' }}>ALPHA</div>
-                  <div className="mt-4 text-xs font-bold tracking-[0.3em] uppercase">Awaiting Selection</div>
+                <div className="w-full flex items-center gap-6">
+                  <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] rounded-2xl border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-center shrink-0">
+                    <Users className="w-10 h-10 lg:w-12 lg:h-12 text-white/12" strokeWidth={1.2} />
+                    <div className="absolute inset-x-2 bottom-2 text-center text-[9px] font-mono text-white/20 uppercase tracking-[0.25em]">subject A</div>
+                  </div>
+                  <div className="flex-1 space-y-4 max-w-[220px]">
+                    <div>
+                      <div className="text-[10px] tracking-[0.25em] uppercase text-rose-400/60 font-bold mb-1.5 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-white/15" /> Slot Open
+                      </div>
+                      <div className="text-sm text-white/55 font-medium leading-snug">Pick a contributor from the Alpha roster below.</div>
+                    </div>
+                    <div className="space-y-3">
+                      {['Achievement', 'Quality', 'Engagement'].map(l => (
+                        <div key={l} className="space-y-1.5">
+                          <div className="flex justify-between items-end">
+                            <span className="text-[9px] text-white/25 uppercase tracking-widest font-semibold">{l}</span>
+                            <span className="text-[10px] font-mono text-white/15">—</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-white/[0.03] rounded-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
            </div>
@@ -550,42 +595,48 @@ export default function VersusMode({
            {/* P2 Showcase */}
            <div className="w-1/2 h-full flex items-center justify-end relative z-10 flex-row-reverse">
               {p2 ? (
-                <motion.div initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-8 lg:gap-12 w-full flex-row-reverse text-right">
+                <motion.div initial={{ opacity: 0, x: 30 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-6 lg:gap-8 w-full flex-row-reverse text-right">
                   {/* Portrait */}
-                  <div className="relative w-[200px] h-[280px] lg:w-[280px] lg:h-[380px] shrink-0">
-                    <div className="absolute inset-0 bg-cyan-400/20 blur-3xl rounded-full" />
+                  <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] shrink-0">
+                    <div className="absolute inset-0 bg-cyan-400/10 blur-3xl rounded-full" />
                     {p2.pictureURL ? (
-                      <Image src={p2.pictureURL} alt={p2.fullName} fill className="object-cover rounded-2xl border border-cyan-400/20 shadow-[0_0_50px_rgba(34,211,238,0.15)]" unoptimized />
+                      <Image src={p2.pictureURL} alt={p2.fullName} fill className="object-cover rounded-2xl border border-cyan-400/25 shadow-[0_0_36px_rgba(34,211,238,0.12)]" unoptimized />
                     ) : (
-                      <div className="w-full h-full bg-zinc-900 rounded-2xl border border-cyan-400/20 flex items-center justify-center text-6xl text-white/10 font-black shadow-[0_0_50px_rgba(34,211,238,0.15)]">{p2.fullName[0]}</div>
+                      <div className="w-full h-full bg-zinc-900 rounded-2xl border border-cyan-400/25 flex items-center justify-center text-5xl text-white/15 font-bold shadow-[0_0_36px_rgba(34,211,238,0.12)]">{p2.fullName[0]}</div>
                     )}
-                    <div className="absolute -right-10 top-1/2 -translate-y-1/2 rotate-90 text-[10px] font-bold tracking-[0.5em] text-cyan-400/50 uppercase">Subject Omega</div>
                   </div>
                   {/* Stats */}
-                  <div className="flex flex-col gap-6 flex-1 min-w-0 items-end">
+                  <div className="flex flex-col gap-5 flex-1 min-w-0 items-end">
                     <div>
-                      <div className="text-cyan-400 font-bold tracking-[0.2em] text-[10px] mb-2 flex items-center gap-2 justify-end">OMEGA SQUAD <div className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" /></div>
-                      <h1 className="text-4xl lg:text-5xl font-black uppercase italic text-white leading-none tracking-tight truncate">{p2.fullName.split(' ')[0]}</h1>
-                      <h2 className="text-xl lg:text-2xl font-bold uppercase italic text-white/50 leading-none truncate mt-1">{p2.fullName.split(' ').slice(1).join(' ')}</h2>
+                      <div className="text-cyan-400/80 font-bold tracking-[0.25em] text-[10px] mb-2 flex items-center gap-2 justify-end">
+                        SUBJECT B <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+                      </div>
+                      <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
+                      <div className="mt-2 flex items-center gap-2 text-[11px] font-mono text-zinc-500 justify-end">
+                        <span>{p2.checkInCount} check-ins</span>
+                        <span className="text-zinc-800">·</span>
+                        <span className="text-zinc-700">pts</span>
+                        <span className="text-cyan-400 font-bold">{Math.floor(p2.totalScore)}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center flex-row-reverse gap-6">
-                      <div className="w-32 h-32 lg:w-40 lg:h-40 shrink-0 relative -mr-4">
+                    <div className="flex items-center flex-row-reverse gap-5">
+                      <div className="w-28 h-28 lg:w-32 lg:h-32 shrink-0 relative">
                         <ResponsiveContainer width="100%" height="100%">
                           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
                             { subject: 'A', value: p2.goalAchievementScore, fullMark: 100 },
                             { subject: 'Q', value: p2.qualityScore, fullMark: 100 },
                             { subject: 'E', value: p2.engagementBehaviorScore, fullMark: 100 }
                           ]}>
-                            <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.1)" strokeWidth={1} />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10, fontWeight: 700 }} />
-                            <Radar isAnimationActive={true} animationDuration={1000} dataKey="value" stroke="rgba(34,211,238,0.9)" strokeWidth={2} fill="url(#colorCyanBg)" fillOpacity={1} />
+                            <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
+                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: 700 }} />
+                            <Radar isAnimationActive={true} animationDuration={800} dataKey="value" stroke="rgba(34,211,238,0.85)" strokeWidth={1.5} fill="url(#colorCyanBg)" fillOpacity={1} />
                             <defs>
-                              <linearGradient id="colorCyanBg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#22d3ee" stopOpacity={0.5}/><stop offset="95%" stopColor="#22d3ee" stopOpacity={0.0}/></linearGradient>
+                              <linearGradient id="colorCyanBg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#22d3ee" stopOpacity={0.4}/><stop offset="95%" stopColor="#22d3ee" stopOpacity={0.0}/></linearGradient>
                             </defs>
                           </RadarChart>
                         </ResponsiveContainer>
                       </div>
-                      <div className="flex-1 space-y-4 max-w-[180px]">
+                      <div className="flex-1 space-y-3 max-w-[180px]">
                         <MetricBar label="Achievement" value={p2.goalAchievementScore} color="cyan" isRight />
                         <MetricBar label="Quality" value={p2.qualityScore} color="cyan" isRight />
                         <MetricBar label="Engagement" value={p2.engagementBehaviorScore} color="cyan" isRight />
@@ -594,9 +645,30 @@ export default function VersusMode({
                   </div>
                 </motion.div>
               ) : (
-                <div className="w-full flex flex-col items-center justify-center opacity-20 text-right">
-                  <div className="text-6xl lg:text-8xl font-black italic uppercase tracking-widest text-transparent" style={{ WebkitTextStroke: '2px white' }}>OMEGA</div>
-                  <div className="mt-4 text-xs font-bold tracking-[0.3em] uppercase">Awaiting Selection</div>
+                <div className="w-full flex items-center gap-6 flex-row-reverse">
+                  <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] rounded-2xl border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-center shrink-0">
+                    <Users className="w-10 h-10 lg:w-12 lg:h-12 text-white/12" strokeWidth={1.2} />
+                    <div className="absolute inset-x-2 bottom-2 text-center text-[9px] font-mono text-white/20 uppercase tracking-[0.25em]">subject B</div>
+                  </div>
+                  <div className="flex-1 space-y-4 max-w-[220px] text-right">
+                    <div>
+                      <div className="text-[10px] tracking-[0.25em] uppercase text-cyan-400/60 font-bold mb-1.5 flex items-center gap-2 justify-end">
+                        Slot Open <div className="w-1.5 h-1.5 rounded-full bg-white/15" />
+                      </div>
+                      <div className="text-sm text-white/55 font-medium leading-snug">Pick a contributor from the Omega roster below.</div>
+                    </div>
+                    <div className="space-y-3">
+                      {['Achievement', 'Quality', 'Engagement'].map(l => (
+                        <div key={l} className="space-y-1.5">
+                          <div className="flex justify-between items-end flex-row-reverse">
+                            <span className="text-[9px] text-white/25 uppercase tracking-widest font-semibold">{l}</span>
+                            <span className="text-[10px] font-mono text-white/15">—</span>
+                          </div>
+                          <div className="w-full h-1.5 bg-white/[0.03] rounded-full" />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
            </div>
@@ -1283,7 +1355,7 @@ export default function VersusMode({
                 />
               )}
               {isFinalResult && (
-                <h2 className="text-base md:text-xl lg:text-2xl font-sans text-white font-medium drop-shadow-xl leading-relaxed px-2 whitespace-pre-line text-left w-full max-w-3xl">
+                <h2 className="text-sm md:text-base lg:text-lg font-sans text-white/90 font-medium drop-shadow-xl leading-relaxed px-2 whitespace-pre-line text-center w-full max-w-2xl">
                   <TypewriterText text={result.conclusion} speed={15} delay={100} />
                 </h2>
               )}
@@ -1326,15 +1398,16 @@ export default function VersusMode({
                 </AnimatePresence>
               </div>
               {isFinalResult && (
-                <div className="absolute right-0 top-0 w-32 h-32 opacity-20 pointer-events-none mix-blend-screen transition-opacity duration-1000">
+                <div className="absolute right-2 top-2 w-40 h-40 opacity-70 pointer-events-none transition-opacity duration-1000">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                      { subject: 'A', value: p1.goalAchievementScore, fullMark: 100 },
-                      { subject: 'Q', value: p1.qualityScore, fullMark: 100 },
-                      { subject: 'E', value: p1.engagementBehaviorScore, fullMark: 100 }
+                    <RadarChart cx="50%" cy="50%" outerRadius="58%" data={[
+                      { subject: `Goal ${Math.floor(p1.goalAchievementScore || 0)}`, value: p1.goalAchievementScore, fullMark: 100 },
+                      { subject: `Quality ${Math.floor(p1.qualityScore || 0)}`, value: p1.qualityScore, fullMark: 100 },
+                      { subject: `Engage ${Math.floor(p1.engagementBehaviorScore || 0)}`, value: p1.engagementBehaviorScore, fullMark: 100 }
                     ]}>
-                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(244,63,94,0.5)" />
-                      <Radar dataKey="value" stroke="#fb7185" fill="#f43f5e" fillOpacity={0.5} />
+                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(244,63,94,0.35)" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8, fill: 'rgba(251,113,133,0.85)', fontWeight: 700, fontFamily: 'monospace' }} />
+                      <Radar dataKey="value" stroke="#fb7185" strokeWidth={1.5} fill="#f43f5e" fillOpacity={0.35} />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>
@@ -1440,15 +1513,16 @@ export default function VersusMode({
                 </AnimatePresence>
               </div>
               {isFinalResult && (
-                <div className="absolute left-0 top-0 w-32 h-32 opacity-20 pointer-events-none mix-blend-screen transition-opacity duration-1000">
+                <div className="absolute left-2 top-2 w-40 h-40 opacity-70 pointer-events-none transition-opacity duration-1000">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart cx="50%" cy="50%" outerRadius="80%" data={[
-                      { subject: 'A', value: p2.goalAchievementScore, fullMark: 100 },
-                      { subject: 'Q', value: p2.qualityScore, fullMark: 100 },
-                      { subject: 'E', value: p2.engagementBehaviorScore, fullMark: 100 }
+                    <RadarChart cx="50%" cy="50%" outerRadius="58%" data={[
+                      { subject: `Goal ${Math.floor(p2.goalAchievementScore || 0)}`, value: p2.goalAchievementScore, fullMark: 100 },
+                      { subject: `Quality ${Math.floor(p2.qualityScore || 0)}`, value: p2.qualityScore, fullMark: 100 },
+                      { subject: `Engage ${Math.floor(p2.engagementBehaviorScore || 0)}`, value: p2.engagementBehaviorScore, fullMark: 100 }
                     ]}>
-                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(34,211,238,0.5)" />
-                      <Radar dataKey="value" stroke="#22d3ee" fill="#06b6d4" fillOpacity={0.5} />
+                      <PolarGrid gridType="polygon" radialLines={false} stroke="rgba(34,211,238,0.35)" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8, fill: 'rgba(34,211,238,0.85)', fontWeight: 700, fontFamily: 'monospace' }} />
+                      <Radar dataKey="value" stroke="#22d3ee" strokeWidth={1.5} fill="#06b6d4" fillOpacity={0.35} />
                     </RadarChart>
                   </ResponsiveContainer>
                 </div>

@@ -344,23 +344,22 @@ Return ONLY raw JSON, no code fences, no extra text.`;
 - playerA_strengths_weaknesses is for ${dataA.name}.
 - playerB_strengths_weaknesses is for ${dataB.name}.`;
 
-      const strengthsSkeleton = `playerA_strengths_weaknesses and playerB_strengths_weaknesses: exactly 4 bullets each, no section headings.
-  Bullet 1: key strength with OKR evidence
-  Bullet 2: second strength or notable behaviour
-  Bullet 3: one area to develop
-  Bullet 4: why they scored at this level (check-ins, progress breadth, KR clarity)`;
+      const strengthsSkeleton = `playerA_strengths_weaknesses and playerB_strengths_weaknesses use EXACTLY these Thai headings in order:
+  "จุดแข็ง"
+  then EXACTLY 2 bullets (evidence-based, tied to OKR data — no generic praise)
+  blank line
+  "จุดที่ควรพัฒนา"
+  then EXACTLY 2 bullets (actionable improvement with rationale)
+
+Keep each bullet to ONE short sentence. No third section.`;
 
       const conclusionSkeleton = isSelfComparison
-        ? `conclusion: exactly 4 bullets, no section headings.
-  "สรุป: …" (one sentence comparing ${labelA} vs ${labelB})
-  "- เหตุผล: …" (why one cycle scored higher)
-  "- สิ่งที่ควรรักษาไว้: …"
-  "- สิ่งที่ควรปรับปรุง: …"`
-        : `conclusion: exactly 4 bullets, no section headings.
-  "สรุป: …" (one sentence winner summary)
-  "- เหตุผล: …" (why winner scored higher, evidence-based)
-  "- ${dataA.name}: …" (one actionable recommendation)
-  "- ${dataB.name}: …" (one actionable recommendation)`;
+        ? `conclusion: keep VERY BRIEF, max 2 lines total.
+  Line 1: "สรุป: รอบ …(labelA|labelB) เหนือกว่าในมิติ …" (one sentence)
+  Line 2: "- เหตุผล: …" (one short evidence bullet)`
+        : `conclusion: keep VERY BRIEF, max 2 lines total.
+  Line 1: "สรุป: ${dataA.name} / ${dataB.name} เหนือกว่าในมิติ …" (one sentence winner headline)
+  Line 2: "- เหตุผล: …" (one short evidence bullet)`;
 
       const introSkeleton = isSelfComparison
         ? `intro_hype: short, max ~2 sentences OR up to 3 bullet lines under heading "บทนำ" with "- " bullets. Neutral self-review tone, not hype. Max one emoji total.`
