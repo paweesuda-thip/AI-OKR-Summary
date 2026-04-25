@@ -542,9 +542,6 @@ export default function VersusMode({
                   {/* Stats */}
                   <div className="flex flex-col gap-5 flex-1 min-w-0">
                     <div>
-                      <div className="text-rose-400/80 font-bold tracking-[0.25em] text-[10px] mb-2 flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-rose-400" /> SUBJECT A
-                      </div>
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
                       <div className="mt-2 space-y-2">
                         <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
@@ -568,7 +565,6 @@ export default function VersusMode({
                             { subject: 'E', value: p1.engagementBehaviorScore, fullMark: 100 }
                           ]}>
                             <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: 700 }} />
                             <Radar isAnimationActive={true} animationDuration={800} dataKey="value" stroke="rgba(244,63,94,0.85)" strokeWidth={1.5} fill="url(#colorRoseBg)" fillOpacity={1} />
                             <defs>
                               <linearGradient id="colorRoseBg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#f43f5e" stopOpacity={0.4}/><stop offset="95%" stopColor="#f43f5e" stopOpacity={0.0}/></linearGradient>
@@ -588,7 +584,6 @@ export default function VersusMode({
                 <div className="w-full flex items-center gap-6">
                   <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] rounded-2xl border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-center shrink-0">
                     <Users className="w-10 h-10 lg:w-12 lg:h-12 text-white/12" strokeWidth={1.2} />
-                    <div className="absolute inset-x-2 bottom-2 text-center text-[9px] font-mono text-white/20 uppercase tracking-[0.25em]">subject A</div>
                   </div>
                   <div className="flex-1 space-y-4 max-w-[220px]">
                     <div>
@@ -629,9 +624,6 @@ export default function VersusMode({
                   {/* Stats */}
                   <div className="flex flex-col gap-5 flex-1 min-w-0">
                     <div className="w-full text-right">
-                      <div className="text-cyan-400/80 font-bold tracking-[0.25em] text-[10px] mb-2 flex items-center gap-2 justify-end">
-                        SUBJECT B <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                      </div>
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
                       <div className="mt-2 space-y-2">
                         <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
@@ -655,7 +647,6 @@ export default function VersusMode({
                             { subject: 'E', value: p2.engagementBehaviorScore, fullMark: 100 }
                           ]}>
                             <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
-                            <PolarAngleAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 9, fontWeight: 700 }} />
                             <Radar isAnimationActive={true} animationDuration={800} dataKey="value" stroke="rgba(34,211,238,0.85)" strokeWidth={1.5} fill="url(#colorCyanBg)" fillOpacity={1} />
                             <defs>
                               <linearGradient id="colorCyanBg" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#22d3ee" stopOpacity={0.4}/><stop offset="95%" stopColor="#22d3ee" stopOpacity={0.0}/></linearGradient>
@@ -675,7 +666,6 @@ export default function VersusMode({
                 <div className="w-full flex items-center gap-6 flex-row-reverse">
                   <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] rounded-2xl border border-dashed border-white/10 bg-white/[0.02] flex items-center justify-center shrink-0">
                     <Users className="w-10 h-10 lg:w-12 lg:h-12 text-white/12" strokeWidth={1.2} />
-                    <div className="absolute inset-x-2 bottom-2 text-center text-[9px] font-mono text-white/20 uppercase tracking-[0.25em]">subject B</div>
                   </div>
                   <div className="flex-1 space-y-4 max-w-[220px] text-right">
                     <div>
@@ -1037,10 +1027,6 @@ export default function VersusMode({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-rose-400/80 font-bold tracking-[0.25em] text-[10px] mb-1.5 flex items-center gap-2">
-                      <div className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      SUBJECT A
-                    </div>
                     <h3 className="text-xl font-bold text-white leading-tight truncate">{p1.fullName}</h3>
                     <div className="mt-2 space-y-2">
                       <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
@@ -1074,10 +1060,6 @@ export default function VersusMode({
                           radialLines
                           stroke="rgba(255,255,255,0.08)"
                           strokeWidth={1}
-                        />
-                        <PolarAngleAxis
-                          dataKey="subject"
-                          tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 9, fontWeight: 700 }}
                         />
                         <Radar
                           isAnimationActive
@@ -1158,10 +1140,6 @@ export default function VersusMode({
                     )}
                   </div>
                   <div className="flex-1 min-w-0 text-right">
-                    <div className="text-cyan-400/80 font-bold tracking-[0.25em] text-[10px] mb-1.5 flex items-center gap-2 justify-end">
-                      SUBJECT B
-                      <div className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
-                    </div>
                     <h3 className="text-xl font-bold text-white leading-tight truncate">{p2.fullName}</h3>
                     <div className="mt-2 space-y-2">
                       <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
@@ -1195,10 +1173,6 @@ export default function VersusMode({
                           radialLines
                           stroke="rgba(255,255,255,0.08)"
                           strokeWidth={1}
-                        />
-                        <PolarAngleAxis
-                          dataKey="subject"
-                          tick={{ fill: "rgba(255,255,255,0.4)", fontSize: 9, fontWeight: 700 }}
                         />
                         <Radar
                           isAnimationActive
