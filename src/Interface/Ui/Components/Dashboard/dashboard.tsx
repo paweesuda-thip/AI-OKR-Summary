@@ -5,12 +5,22 @@ import {
   AlertCircle,
   X,
   TrendingUp,
+  TrendingDown,
+  Activity,
   Trophy,
   Crown,
   Medal,
   Swords,
   Sparkles,
 } from "lucide-react";
+import {
+  Radar,
+  RadarChart,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  ResponsiveContainer,
+} from "recharts";
 import { Button } from "@/src/Interface/Ui/Primitives/button";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -411,33 +421,126 @@ export default function Dashboard() {
                                 )}
 
                                 {/* Cinematic gradient overlay */}
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10 group-hover:opacity-0 transition-opacity duration-500" />
 
                                 {/* Rank pill — top left */}
-                                <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md ${config.accentBg} ${config.ring} ring-1`}>
+                                <div className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full backdrop-blur-md ${config.accentBg} ${config.ring} ring-1 z-20 group-hover:opacity-0 transition-opacity duration-500`}>
                                   <RankIcon className={`w-3 h-3 ${config.accent}`} />
                                   <span className={`text-[11px] font-bold ${config.accent}`}>#{origIndex + 1}</span>
                                 </div>
 
                                 {/* Name overlay — bottom of photo */}
-                                <div className="absolute inset-x-0 bottom-0 px-4 pb-4">
+                                <div className="absolute inset-x-0 bottom-0 px-4 pb-4 z-20 group-hover:opacity-0 group-hover:translate-y-2 transition-all duration-500">
                                   <h4 className={`${isFirst ? 'text-xl' : 'text-lg'} font-semibold text-white tracking-tight leading-tight drop-shadow-sm`}>
                                     {p.fullName}
                                   </h4>
                                 </div>
+
+                                {/* ── HOVER OVERLAY: Enterprise Detail Panel ── */}
+                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 flex flex-col" style={{ background: 'linear-gradient(160deg, rgba(10,12,18,0.97) 0%, rgba(16,20,30,0.97) 100%)' }}>
+                                  {/* Header strip */}
+                                  <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
+                                    <p className="text-[9px] font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-0.5">Performance Review</p>
+                                    <h5 className="text-sm font-bold text-white leading-tight truncate">{p.fullName}</h5>
+                                  </div>
+
+                                  {/* Radar + Score side-by-side */}
+                                  <div className="flex items-center gap-1 px-3 pt-3 pb-1">
+                                    <div className="w-[100px] h-[90px] shrink-0">
+                                      <ResponsiveContainer width="100%" height="100%">
+                                        <RadarChart cx="50%" cy="50%" outerRadius="62%"
+                                          data={[
+                                            { s: 'Goal', v: p.goalAchievementScore ?? 0, fullMark: 100 },
+                                            { s: 'Qly',  v: p.qualityScore ?? 0,           fullMark: 100 },
+                                            { s: 'Eng',  v: p.engagementBehaviorScore ?? 0, fullMark: 100 },
+                                          ]}
+                                        >
+                                          <PolarGrid stroke="rgba(255,255,255,0.06)" />
+                                          <PolarAngleAxis dataKey="s" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 8, fontWeight: 600 }} />
+                                          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                          <Radar dataKey="v" stroke={config.accent.replace('text-', '#').includes('amber') ? '#f59e0b' : config.accent.includes('zinc') ? '#71717a' : '#f97316'} strokeWidth={1.5} fill="rgba(255,255,255,0.07)" fillOpacity={1} />
+                                          <defs />
+                                        </RadarChart>
+                                      </ResponsiveContainer>
+                                    </div>
+                                    {/* Total score block */}
+                                    <div className="flex-1 flex flex-col items-center justify-center">
+                                      <span className="text-[8px] font-semibold tracking-[0.18em] uppercase text-zinc-500">Total Score</span>
+                                      <span className="text-3xl font-black text-white font-mono leading-none mt-0.5 tabular-nums">
+                                        {Math.round(p.totalScore ?? p.avgPercent)}
+                                      </span>
+                                      {(() => {
+                                        const trend = p.trend ?? 'normal';
+                                        const cfg2 = trend === 'up'
+                                          ? { Icon: TrendingUp,   color: 'text-emerald-400', label: 'Improving' }
+                                          : trend === 'down'
+                                          ? { Icon: TrendingDown, color: 'text-rose-400',    label: 'Declining' }
+                                          : { Icon: Activity,     color: 'text-zinc-400',    label: 'Stable' };
+                                        return (
+                                          <div className={`flex items-center gap-1 mt-1.5 ${cfg2.color}`}>
+                                            <cfg2.Icon className="w-3 h-3" strokeWidth={2.5} />
+                                            <span className="text-[9px] font-bold uppercase tracking-wider">{cfg2.label}</span>
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  </div>
+
+                                  {/* Metric bars */}
+                                  <div className="flex flex-col gap-2 px-4 py-2">
+                                    {[
+                                      { label: 'Goal Achievement', val: p.goalAchievementScore ?? 0,     color: '#10b981' },
+                                      { label: 'Quality of Work',  val: p.qualityScore ?? 0,             color: '#f59e0b' },
+                                      { label: 'Engagement',       val: p.engagementBehaviorScore ?? 0,  color: '#a78bfa' },
+                                    ].map(({ label, val, color }) => (
+                                      <div key={label}>
+                                        <div className="flex items-center justify-between mb-0.5">
+                                          <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
+                                          <span className="text-[10px] font-bold font-mono text-white">{Math.round(val)}</span>
+                                        </div>
+                                        <div className="h-[3px] w-full bg-white/[0.06] rounded-full overflow-hidden">
+                                          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(val, 100)}%`, backgroundColor: color }} />
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+
+                                  {/* Footer: check-in ratio */}
+                                  <div className="mt-auto px-4 pb-3 pt-2 border-t border-white/[0.06] flex items-center justify-between">
+                                    <span className="text-[9px] text-zinc-500 uppercase tracking-wider">Check-ins</span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-xs font-bold font-mono text-white">{p.totalCheckIn}<span className="text-zinc-600">/{p.totalCheckInAll}</span></span>
+                                      {p.totalMissCheckIn > 0 && (
+                                        <span className="text-[9px] font-semibold text-rose-400">−{p.totalMissCheckIn} missed</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
                               </div>
 
-                              {/* Stats row */}
-                              <div className="px-4 py-3 flex items-center justify-between">
+                              {/* Bottom stats row — Total Score + Trend */}
+                              <div className="px-4 py-3 flex items-center justify-between bg-background/50 dark:bg-zinc-900/50 border-t border-border/20 dark:border-white/5">
                                 <div className="flex flex-col">
-                                  <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">Progress</span>
-                                  <span className={`text-sm font-semibold tabular-nums ${config.accent}`}>{p.avgPercent.toFixed(1)}%</span>
+                                  <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">Total Score</span>
+                                  <span className="text-lg font-bold font-mono text-white tabular-nums leading-none mt-0.5">
+                                    {p.totalScore?.toFixed(0) ?? p.avgPercent.toFixed(1)}
+                                  </span>
                                 </div>
-                                <div className="w-px h-7 bg-border/30 dark:bg-white/6" />
-                                <div className="flex flex-col items-end">
-                                  <span className="text-[10px] font-medium text-muted-foreground/70 uppercase tracking-wider">Check-ins</span>
-                                  <span className="text-sm font-semibold text-foreground tabular-nums">{p.totalCheckIn}</span>
-                                </div>
+                                {(() => {
+                                  const trend = p.trend ?? 'normal';
+                                  const cfg = trend === 'up'
+                                    ? { Icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: 'Up' }
+                                    : trend === 'down'
+                                    ? { Icon: TrendingDown, color: 'text-rose-400', bg: 'bg-rose-500/10', border: 'border-rose-500/20', label: 'Down' }
+                                    : { Icon: Activity, color: 'text-zinc-400', bg: 'bg-zinc-500/10', border: 'border-zinc-500/20', label: 'Stable' };
+                                  const { Icon, color, bg, border, label } = cfg;
+                                  return (
+                                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${bg} ${border}`}>
+                                      <Icon className={`w-3.5 h-3.5 ${color}`} strokeWidth={2.5} />
+                                      <span className={`text-[10px] font-bold uppercase tracking-wider ${color}`}>{label}</span>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             </div>
                           </div>
