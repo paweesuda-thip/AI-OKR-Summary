@@ -215,3 +215,55 @@ button:active {
 @keyframes ai-comet-spin {
   to { --ai-angle: 360deg; }
 }
+
+/* AI Insights — richer pastel rainbow comet (full spectrum, still soft) */
+@property --ai-insights-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+.ai-comet-border-insights {
+  padding: 1.5px;
+  background:
+    conic-gradient(
+      from var(--ai-insights-angle),
+      transparent 0deg,
+      transparent 198deg,
+      rgba(255, 130, 175, 0.48) 218deg,
+      rgba(255, 175, 120, 0.52) 236deg,
+      rgba(255, 225, 130, 0.45) 254deg,
+      rgba(165, 235, 155, 0.48) 272deg,
+      rgba(110, 225, 235, 0.52) 290deg,
+      rgba(130, 185, 255, 0.55) 306deg,
+      rgba(195, 165, 255, 0.52) 322deg,
+      rgba(255, 210, 235, 0.58) 336deg,
+      rgba(140, 235, 215, 0.42) 350deg,
+      transparent 360deg
+    );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+          mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  animation: ai-insights-comet-spin 3.6s linear infinite;
+  filter: drop-shadow(0 0 8px rgba(255, 160, 190, 0.5))
+          drop-shadow(0 0 12px rgba(255, 210, 140, 0.35))
+          drop-shadow(0 0 14px rgba(120, 200, 255, 0.4))
+          drop-shadow(0 0 16px rgba(200, 170, 255, 0.32));
+}
+
+@keyframes ai-insights-comet-spin {
+  to {
+    --ai-insights-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-comet-border-insights {
+    animation: none;
+  }
+}
