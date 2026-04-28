@@ -239,7 +239,7 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, height: "auto" }}
               exit={{ opacity: 0, y: -8, height: 0 }}
               transition={{ duration: 0.24, ease: "easeOut" }}
-              className="w-full z-40 bg-background/80 backdrop-blur-2xl border-b border-border/50 shrink-0 sticky top-0 px-4 sm:px-8 py-3 overflow-hidden"
+              className="w-full z-40 bg-background/80 backdrop-blur-2xl border-b border-border/50 shrink-0 sticky top-0 px-4 sm:px-8 py-3 overflow-x-hidden overflow-y-visible"
             >
               <div className="flex flex-col xl:flex-row items-center gap-4 justify-between max-w-[1920px] mx-auto">
                 <div className="flex flex-col lg:flex-row items-center gap-3 w-full xl:w-auto overflow-x-auto scrollbar-hide shrink-0 pb-2 xl:pb-0">
@@ -262,12 +262,48 @@ export default function Dashboard() {
                   />
                 </div>
 
-                <div className="shrink-0">
+                <div className="shrink-0 flex items-center py-0.5">
                   <Drawer open={aiDrawerOpen} onOpenChange={setAiDrawerOpen}>
                     <DrawerTrigger asChild>
-                      <button className="group relative h-9 px-4 rounded-full cursor-pointer bg-muted/40 text-foreground border border-border/50 hover:bg-muted hover:border-border transition-all flex items-center justify-center gap-2 shadow-sm">
-                        <Sparkles className="w-3.5 h-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
-                        <span className="text-xs font-semibold tracking-wide relative z-10 hidden sm:inline">AI Insights</span>
+                      <button
+                        type="button"
+                        aria-label="Open AI Insights"
+                        className="group relative isolate h-8 shrink-0 overflow-visible rounded-full px-2.5 sm:px-3.5 outline-none transition-[transform,box-shadow] hover:scale-[1.015] hover:shadow-[0_10px_32px_-10px_rgba(255,170,200,0.35)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-[0_6px_26px_-10px_rgba(160,130,220,0.4)]"
+                      >
+                        <span className="absolute inset-0 rounded-full bg-[#0f0b14]" aria-hidden />
+                        <span
+                          className="absolute inset-0 rounded-full opacity-[0.88]"
+                          style={{
+                            background:
+                              "linear-gradient(122deg, rgba(255,135,185,0.32) 0%, rgba(255,175,125,0.24) 14%, rgba(255,230,140,0.2) 29%, rgba(150,235,165,0.24) 43%, rgba(95,215,235,0.26) 57%, rgba(130,175,255,0.28) 71%, rgba(205,165,255,0.3) 85%, rgba(255,175,205,0.26) 100%)",
+                          }}
+                          aria-hidden
+                        />
+                        <span
+                          aria-hidden
+                          className="pointer-events-none absolute -inset-[1.5px] rounded-full ai-comet-border-insights"
+                        />
+                        <span
+                          className="pointer-events-none absolute -inset-px rounded-full opacity-[0.95] blur-[11px]"
+                          style={{
+                            background:
+                              "radial-gradient(ellipse 85% 70% at 45% -18%, rgba(255,200,130,0.38), transparent 50%), radial-gradient(ellipse 75% 60% at 88% 8%, rgba(130,195,255,0.36), transparent 50%), radial-gradient(ellipse 65% 55% at 12% 95%, rgba(255,150,195,0.28), transparent 48%)",
+                          }}
+                          aria-hidden
+                        />
+                        <span
+                          className="pointer-events-none absolute inset-0 rounded-full border border-white/18 shadow-[inset_0_1px_rgba(255,255,255,0.14)]"
+                          aria-hidden
+                        />
+                        <span className="relative z-10 flex items-center justify-center gap-1.5">
+                          <Sparkles
+                            className="h-3.5 w-3.5 shrink-0 text-[#fff8fc] drop-shadow-[0_0_7px_rgba(255,160,200,0.75)] drop-shadow-[0_0_12px_rgba(130,210,255,0.55)] transition-transform duration-300 group-hover:scale-105"
+                            strokeWidth={2}
+                          />
+                          <span className="hidden text-[11px] font-semibold tracking-wide text-[#faf6ff] drop-shadow-[0_0_8px_rgba(240,170,220,0.45)] drop-shadow-[0_0_12px_rgba(170,200,255,0.35)] sm:inline">
+                            AI Insights
+                          </span>
+                        </span>
                       </button>
                     </DrawerTrigger>
                     <DrawerContent className="h-[90vh] bg-background/95 backdrop-blur-3xl border-border/50">

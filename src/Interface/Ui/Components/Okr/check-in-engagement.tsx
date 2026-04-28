@@ -194,7 +194,7 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
   };
 
   return (
-    <TooltipProvider delay={150}>
+    <TooltipProvider delay={220}>
       <div className="w-full relative z-10 pt-8">
         
         {/* Full Table/List View */}
@@ -240,17 +240,26 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                     <option value="rank-asc">Rank (Asc)</option>
                     <option value="rank-desc">Rank (Desc)</option>
                     <option value="name-asc">Name (A-Z)</option>
-                    <option value="progress-desc">Progress (Highest)</option>
-                    <option value="progress-asc">Progress (Lowest)</option>
-                    <option value="checkins-desc">Check-ins (Highest)</option>
-                    <option value="missed-desc">Missed (Highest)</option>
+                    <option value="name-desc">Name (Z-A)</option>
+                    <option value="score-desc">Total score (High)</option>
+                    <option value="score-asc">Total score (Low)</option>
+                    <option value="checkins-desc">Check-in rate (High)</option>
+                    <option value="checkins-asc">Check-in rate (Low)</option>
+                    <option value="missed-desc">Missed (High)</option>
+                    <option value="missed-asc">Missed (Low)</option>
+                    <option value="engagement-desc">Engagement behavior (High)</option>
+                    <option value="engagement-asc">Engagement behavior (Low)</option>
+                    <option value="goal-desc">Goal (High)</option>
+                    <option value="goal-asc">Goal (Low)</option>
+                    <option value="quality-desc">Quality (High)</option>
+                    <option value="quality-asc">Quality (Low)</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Header row for Desktop */}
-            <div className="hidden lg:grid grid-cols-[60px_2.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.8fr_1fr] gap-4 px-4 py-2 border-b border-white/5 mb-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10">
+            {/* Header row — Engage column header is behavior score only (subset metrics stay in cells) */}
+            <div className="hidden lg:grid grid-cols-[60px_minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,1fr)] gap-3 lg:gap-4 px-4 py-2 border-b border-white/5 mb-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10 [&>*]:min-w-0">
               <div 
                 className="text-center flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none"
                 onClick={() => handleSort('rank')}
@@ -266,17 +275,14 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
               <div className="text-center flex items-center justify-center gap-1 select-none">
                 Status
               </div>
-              <div 
-                className="text-center flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none"
-                onClick={() => handleSort('checkins')}
-              >
-                Check-in {getSortIcon('checkins')}
-              </div>
-              <div 
-                className="text-center flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none"
-                onClick={() => handleSort('missed')}
-              >
-                Missed {getSortIcon('missed')}
+              <div className="flex items-center justify-center min-w-0 text-center">
+                <button
+                  type="button"
+                  className="flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none text-muted-foreground"
+                  onClick={(e) => { e.stopPropagation(); handleSort('engagement'); }}
+                >
+                  Engage {getSortIcon('engagement')}
+                </button>
               </div>
               <div 
                 className="flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none"
@@ -289,12 +295,6 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                 onClick={() => handleSort('quality')}
               >
                 Quality {getSortIcon('quality')}
-              </div>
-              <div 
-                className="flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none"
-                onClick={() => handleSort('engagement')}
-              >
-                Engage {getSortIcon('engagement')}
               </div>
               <div 
                 className="flex items-center justify-end gap-1 flex-1 pr-2 cursor-pointer hover:text-white transition-colors group select-none"
@@ -314,7 +314,7 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                   <div 
                     key={person.employeeId} 
                     onClick={() => openDetails(person)}
-                    className="relative grid grid-cols-1 lg:grid-cols-[60px_2.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.8fr_1fr] gap-4 lg:gap-4 items-center p-5 lg:p-3 rounded-2xl border bg-black/40 border-white/10 hover:bg-black/60 hover:border-white/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-500 cursor-pointer overflow-hidden group/row"
+                    className="relative grid grid-cols-1 lg:grid-cols-[60px_minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,1fr)] gap-3 lg:gap-4 items-center p-5 lg:p-3 rounded-2xl border bg-black/40 border-white/10 hover:bg-black/60 hover:border-white/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-500 cursor-pointer overflow-hidden group/row [&>*]:min-w-0"
                   >
                     <div className="absolute inset-0 bg-linear-to-r from-transparent via-blue-500/5 to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-700 pointer-events-none" />
                     
@@ -363,34 +363,105 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                       </div>
                     </div>
 
-                    {/* Check-ins Desktop+Mobile */}
-                    <div className="grid grid-cols-2 gap-4 lg:contents w-full mt-2 lg:mt-0 pt-2 lg:pt-0 border-t border-white/5 lg:border-0">
-                      {/* Check-ins */}
-                      <div className="flex flex-col lg:items-center justify-center">
-                        <span className="lg:hidden text-[9px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">Check-ins</span>
-                        <div className="flex items-baseline gap-1 bg-black/20 lg:bg-transparent px-3 py-1.5 lg:p-0 rounded-lg lg:rounded-none">
-                          <CheckCircle2 className="w-3 h-3 text-emerald-500 lg:hidden mr-1" />
-                          <span className="text-xl font-black text-emerald-400 font-mono">{person.totalCheckIn}</span>
-                          <span className="text-xs text-muted-foreground font-semibold">/{person.totalCheckInAll}</span>
-                        </div>
-                      </div>
-
-                      {/* Missed Check-ins */}
-                      <div className="flex flex-col lg:items-center justify-center border-l border-white/5 pl-4 lg:border-0 lg:pl-0">
-                        <span className="lg:hidden text-[9px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">Missed</span>
-                        <div className="flex items-baseline gap-1 bg-black/20 lg:bg-transparent px-3 py-1.5 lg:p-0 rounded-lg lg:rounded-none">
-                          <XCircle className={`w-3 h-3 lg:hidden mr-1 ${person.totalMissCheckIn > 0 ? 'text-rose-500' : 'text-zinc-500'}`} />
-                          <span className={`text-xl font-black font-mono ${person.totalMissCheckIn > 0 ? 'text-rose-500 drop-shadow-[0_0_8px_rgba(244,63,94,0.3)]' : 'text-zinc-500'}`}>
-                            {person.totalMissCheckIn}
-                          </span>
-                          <span className="text-xs text-muted-foreground font-semibold">/{person.totalMissCheckInAll}</span>
-                        </div>
-                      </div>
+                    {/* Engage: score + two stacked rows (Check-ins / Missed) — avoids awkward mid-line wraps */}
+                    <div className="w-full min-w-0 mt-2 lg:mt-0 pt-2 lg:pt-0 border-t border-white/5 lg:border-0 flex flex-col items-center justify-center gap-1">
+                      <span className="lg:hidden text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">Engage</span>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <div className="flex w-full min-w-0 max-w-[13.5rem] lg:max-w-none flex-col items-center gap-1 rounded-lg px-1.5 py-1.5 sm:px-2 cursor-help outline-none hover:bg-white/[0.06] transition-colors">
+                            <div className="flex items-baseline gap-1 justify-center shrink-0">
+                              <Flame className="w-4 h-4 text-purple-500 shrink-0 opacity-90" aria-hidden />
+                              <span className="text-xl lg:text-lg font-black text-purple-400 font-mono tabular-nums leading-none">
+                                {(person.engagementBehaviorScore ?? 0).toFixed(0)}
+                              </span>
+                            </div>
+                            <div className="w-full min-w-0 flex flex-col gap-1 text-[11px] sm:text-[12px] leading-tight tabular-nums">
+                              <div className="flex w-full min-w-0 items-baseline justify-between gap-2">
+                                <span className="font-medium text-emerald-400/95 shrink-0">Check-ins</span>
+                                <span className="text-foreground/80 text-right tabular-nums truncate">
+                                  {person.totalCheckIn}
+                                </span>
+                              </div>
+                              {person.totalMissCheckIn > 0 && (
+                                <div className="flex w-full min-w-0 items-baseline justify-between gap-2">
+                                  <span className="font-medium text-rose-400/95 shrink-0">Missed</span>
+                                  <span className="text-right tabular-nums truncate text-rose-300">
+                                    {person.totalMissCheckIn}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          align="center"
+                          arrowClassName="!bg-zinc-950 !fill-zinc-950"
+                          className="!max-w-[min(92vw,18rem)] !rounded-xl !border !border-white/12 !bg-zinc-950/96 !p-0 !text-zinc-100 !shadow-[0_22px_56px_-14px_rgba(0,0,0,0.72)] !backdrop-blur-xl !inline-flex !flex-col !items-stretch !gap-0 text-[13px] leading-snug"
+                        >
+                          <div className="border-b border-white/10 px-3.5 pb-2.5 pt-3">
+                            <div className="flex items-center gap-2.5">
+                              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-purple-500/12 ring-1 ring-purple-400/20">
+                                <Flame className="h-4 w-4 text-purple-300" aria-hidden />
+                              </span>
+                              <p className="text-sm font-semibold leading-tight tracking-tight text-zinc-50">
+                                Engagement detail
+                              </p>
+                            </div>
+                          </div>
+                          <dl className="space-y-2 px-3 pb-3 pt-2.5">
+                            <div className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 py-2">
+                              <dt className="text-[10px] font-semibold uppercase tracking-wide text-purple-200/95">
+                                Behavior score
+                              </dt>
+                              <dd className="mt-1 flex items-end justify-between gap-3">
+                                <span className="text-[11px] leading-relaxed text-zinc-400">
+                                  Participation signal in the composite.
+                                </span>
+                                <span className="shrink-0 font-mono text-lg font-bold tabular-nums text-purple-100">
+                                  {(person.engagementBehaviorScore ?? 0).toFixed(0)}
+                                </span>
+                              </dd>
+                            </div>
+                            <div className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 py-2">
+                              <dt className="text-[10px] font-semibold uppercase tracking-wide text-emerald-300/95">
+                                Check-ins
+                              </dt>
+                              <dd className="mt-1 flex items-end justify-between gap-3">
+                                <span className="text-[11px] leading-relaxed text-zinc-400">
+                                  Completed vs expected (period).
+                                </span>
+                                <span className="shrink-0 font-mono text-base font-semibold tabular-nums text-emerald-100">
+                                  {person.totalCheckIn}
+                                  <span className="text-zinc-500">/</span>
+                                  {person.totalCheckInAll}
+                                </span>
+                              </dd>
+                            </div>
+                            {person.totalMissCheckIn > 0 && (
+                              <div className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 py-2">
+                                <dt className="text-[10px] font-semibold uppercase tracking-wide text-rose-300/95">
+                                  Missed
+                                </dt>
+                                <dd className="mt-1 flex items-end justify-between gap-3">
+                                  <span className="text-[11px] leading-relaxed text-zinc-400">
+                                    Instances vs tracked slots.
+                                  </span>
+                                  <span className="shrink-0 font-mono text-base font-semibold tabular-nums text-rose-200">
+                                    {person.totalMissCheckIn}
+                                    <span className="text-zinc-500">/</span>
+                                    {person.totalMissCheckInAll}
+                                  </span>
+                                </dd>
+                              </div>
+                            )}
+                          </dl>
+                        </TooltipContent>
+                      </Tooltip>
                     </div>
 
-                    {/* Metrics Container Desktop & Mobile */}
-                    <div className="grid grid-cols-3 lg:contents w-full mt-2 lg:mt-0 pt-2 lg:pt-0 border-t border-white/5 lg:border-0 gap-2">
-                       {/* Goal */}
+                    {/* Goal + Quality */}
+                    <div className="grid grid-cols-2 lg:contents w-full mt-2 lg:mt-0 pt-2 lg:pt-0 border-t border-white/5 lg:border-0 gap-2">
                        <div className="flex flex-col items-center justify-center bg-black/20 lg:bg-transparent rounded-lg p-2 lg:p-0">
                          <div className="flex items-center gap-1.5 mb-1 lg:hidden">
                            <Target className="w-3 h-3 text-emerald-500" />
@@ -404,7 +475,6 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                          </div>
                        </div>
                        
-                       {/* Quality */}
                        <div className="flex flex-col items-center justify-center bg-black/20 lg:bg-transparent rounded-lg p-2 lg:p-0">
                          <div className="flex items-center gap-1.5 mb-1 lg:hidden">
                            <Star className="w-3 h-3 text-amber-500" />
@@ -414,20 +484,6 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                            <Star className="w-3.5 h-3.5 text-amber-500 hidden lg:block mr-1 opacity-70" />
                            <span className="text-lg font-black text-amber-400 font-mono">
                              {(person.qualityScore ?? 0).toFixed(0)}
-                           </span>
-                         </div>
-                       </div>
-
-                       {/* Engagement */}
-                       <div className="flex flex-col items-center justify-center bg-black/20 lg:bg-transparent rounded-lg p-2 lg:p-0">
-                         <div className="flex items-center gap-1.5 mb-1 lg:hidden">
-                           <Flame className="w-3 h-3 text-purple-500" />
-                           <span className="text-[9px] text-muted-foreground font-semibold uppercase">Engage</span>
-                         </div>
-                         <div className="flex items-baseline gap-1">
-                           <Flame className="w-3.5 h-3.5 text-purple-500 hidden lg:block mr-1 opacity-70" />
-                           <span className="text-lg font-black text-purple-400 font-mono">
-                             {(person.engagementBehaviorScore ?? 0).toFixed(0)}
                            </span>
                          </div>
                        </div>
