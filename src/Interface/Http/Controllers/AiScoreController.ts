@@ -176,7 +176,7 @@ ${JSON.stringify(trimmedData)}
 Return ONLY raw JSON, no code fences.`;
 
       const { text } = await generateText({
-        model: anthropic('claude-3-haiku-20240307'),
+        model: anthropic('claude-haiku-4-5'),
         prompt,
       });
 
