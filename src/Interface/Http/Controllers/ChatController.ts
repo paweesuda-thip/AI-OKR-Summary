@@ -52,7 +52,7 @@ Use Thai language.
       const lastMessage = messages[messages.length - 1];
 
       const { text } = await generateText({
-        model: anthropic('claude-3-haiku-20240307'),
+        model: anthropic('claude-haiku-4-5'),
         system: systemPrompt,
         prompt: lastMessage.content,
       });
