@@ -268,7 +268,7 @@ export default function Dashboard() {
                       <button
                         type="button"
                         aria-label="Open AI Insights"
-                        className="group relative isolate h-8 shrink-0 overflow-visible rounded-full px-2.5 sm:px-3.5 outline-none transition-[transform,box-shadow] hover:scale-[1.015] hover:shadow-[0_10px_32px_-10px_rgba(255,170,200,0.35)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-[0_6px_26px_-10px_rgba(160,130,220,0.4)]"
+                        className="group relative isolate h-8 shrink-0 cursor-pointer overflow-visible rounded-full px-2.5 sm:px-3.5 outline-none transition-[transform,box-shadow] hover:scale-[1.015] hover:shadow-[0_10px_32px_-10px_rgba(255,170,200,0.35)] active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background shadow-[0_6px_26px_-10px_rgba(160,130,220,0.4)]"
                       >
                         <span className="absolute inset-0 rounded-full bg-[#0f0b14]" aria-hidden />
                         <span

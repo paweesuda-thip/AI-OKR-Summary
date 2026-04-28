@@ -531,7 +531,12 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
 
       {/* ── Employee Objective Drawer ── */}
       <Sheet open={objectiveModalOpen} onOpenChange={(open) => { if (!open) closeObjectiveModal(); }}>
-        <SheetContent side="right" showCloseButton={false} className="w-full !max-w-full sm:!max-w-xl lg:!max-w-[1000px] xl:!max-w-[1200px] bg-[#040406]/95 backdrop-blur-3xl border-l border-white/10 p-0 overflow-hidden shadow-[-40px_0_100px_rgba(0,0,0,0.8)]">
+        <SheetContent
+          side="bottom"
+          bottomSheetCenter
+          showCloseButton={false}
+          className="max-h-[min(92dvh,100%)] w-full rounded-t-2xl border-x border-t border-white/10 bg-[#040406]/95 p-0 shadow-[0_-28px_90px_rgba(0,0,0,0.72)] backdrop-blur-3xl overflow-hidden"
+        >
           <SheetTitle className="sr-only">
             {objectiveModalPerson?.fullName} Objectives
           </SheetTitle>
@@ -539,6 +544,15 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
           {objectiveModalPerson && (() => {
             const displayScore = objectiveModalPerson.totalScore ?? objectiveModalPerson.avgPercent;
             const heroStatus = getStatusData(displayScore);
+            const heroTrend = objectiveModalPerson.trend ?? 'normal';
+            const TrendHeroMiniIcon =
+              heroTrend === 'up' ? TrendingUp : heroTrend === 'down' ? TrendingDown : Activity;
+            const trendHeroIconClass =
+              heroTrend === 'up'
+                ? 'text-emerald-200 drop-shadow-[0_0_10px_rgba(52,211,153,0.55)]'
+                : heroTrend === 'down'
+                  ? 'text-rose-200 drop-shadow-[0_0_10px_rgba(251,113,133,0.5)]'
+                  : 'text-zinc-100 drop-shadow-[0_0_8px_rgba(228,228,231,0.28)]';
             const ringDash = Math.min(displayScore, 100);
             const ringColorHex = showStatus
               ? (heroStatus.color.includes('emerald') ? '#34d399'
@@ -618,12 +632,47 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                       </p>
                     </div>
 
-                    {/* Big progress number */}
-                    <div className="shrink-0 w-full sm:w-auto pt-4 sm:pt-2 sm:mr-12 flex flex-col items-center sm:items-end">
-                      <p className="text-[10px] font-bold text-zinc-400 uppercase tracking-[0.2em] mb-1.5">Total Score</p>
-                      <p className={`text-6xl font-black font-mono leading-none ${showStatus ? heroStatus.color : 'text-indigo-300'} drop-shadow-[0_0_20px_rgba(255,255,255,0.15)]`}>
-                        {displayScore.toFixed(0)}
+                    {/* Total score + minimal trend glyph (icon only) */}
+                    <div className="shrink-0 w-full sm:w-auto pt-4 sm:pt-2 sm:mr-12 flex flex-col items-center sm:items-end gap-2">
+                      <p className="text-[10px] font-medium text-zinc-500 uppercase tracking-[0.22em] self-center sm:self-end">
+                        Total Score
                       </p>
+                      <div className="flex items-baseline justify-center sm:justify-end gap-3 sm:gap-3.5">
+                        <p
+                          className={`text-6xl font-black font-mono tabular-nums leading-none tracking-tight ${showStatus ? heroStatus.color : 'text-indigo-300/95'}`}
+                        >
+                          {displayScore.toFixed(0)}
+                        </p>
+                        <Tooltip>
+                          <TooltipTrigger
+                            className="group/trmini -translate-y-[0.04em] inline-flex shrink-0 items-center justify-center rounded-sm p-0.5 outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-white/35 focus-visible:ring-offset-2 focus-visible:ring-offset-[#040406]"
+                            aria-label={
+                              heroTrend === 'up'
+                                ? 'Trend: improving'
+                                : heroTrend === 'down'
+                                  ? 'Trend: declining'
+                                  : 'Trend: stable'
+                            }
+                          >
+                            <TrendHeroMiniIcon
+                              className={`h-6 w-6 sm:h-7 sm:w-7 ${trendHeroIconClass}`}
+                              strokeWidth={2}
+                              aria-hidden
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent
+                            side="bottom"
+                            align="end"
+                            className="border-white/10 bg-zinc-950/95 px-3 py-2 text-[11px] font-medium text-zinc-200"
+                          >
+                            {heroTrend === 'up'
+                              ? 'Trajectory is up vs prior period.'
+                              : heroTrend === 'down'
+                                ? 'Trajectory is down vs prior period.'
+                                : 'Flat vs prior period.'}
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
                       {showStatus && (
                         <div className="flex justify-center sm:justify-end mt-2">
                           <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${heroStatus.bg} ${heroStatus.border} ${heroStatus.color} shadow-inner`}>
