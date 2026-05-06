@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { ScrollArea } from "@/src/Interface/Ui/Primitives/scroll-area";
 
 const statusConfig: Record<string, { color: string; bg: string; dot: string; barColor: string; hoverBorder: string; badgeBg: string }> = {
+    'Beyond':   { color: 'text-violet-500', bg: 'bg-violet-500/5', dot: 'bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.8)]', barColor: 'bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.6)]', hoverBorder: 'hover:border-violet-500/50', badgeBg: 'bg-violet-500/10 text-violet-500 border-violet-500/20' },
     'On Track': { color: 'text-emerald-500', bg: 'bg-emerald-500/5', dot: 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]', barColor: 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.6)]', hoverBorder: 'hover:border-emerald-500/50', badgeBg: 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20' },
     'At Risk':  { color: 'text-amber-500',   bg: 'bg-amber-500/5',     dot: 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.8)]',   barColor: 'bg-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.6)]',   hoverBorder: 'hover:border-amber-500/50', badgeBg: 'bg-amber-500/10 text-amber-500 border-amber-500/20'   },
     'Behind':   { color: 'text-rose-500',    bg: 'bg-rose-500/5',       dot: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.8)]',    barColor: 'bg-rose-500 shadow-[0_0_12px_rgba(244,63,94,0.6)]',    hoverBorder: 'hover:border-rose-500/50', badgeBg: 'bg-rose-500/10 text-rose-500 border-rose-500/20'    },
@@ -301,7 +302,7 @@ export default function ObjectivesSection({ objectives = [], showStatus = true }
 
     const [filter, setFilter] = useState('All');
     const [showAll, setShowAll] = useState(false);
-    const filters = showStatus ? ['All', 'On Track', 'At Risk', 'Behind'] : ['All'];
+    const filters = showStatus ? ['All', 'Beyond', 'On Track', 'At Risk', 'Behind'] : ['All'];
 
     const handleFilter = (f: string) => { setFilter(f); setShowAll(false); };
 
@@ -312,6 +313,7 @@ export default function ObjectivesSection({ objectives = [], showStatus = true }
     const hiddenCount = filtered.length - INITIAL_SHOW;
 
     const counts: Record<string, number> = {
+        'Beyond':   displayObjectives.filter(o => o.status === 'Beyond').length,
         'On Track': displayObjectives.filter(o => o.status === 'On Track').length,
         'At Risk':  displayObjectives.filter(o => o.status === 'At Risk').length,
         'Behind':   displayObjectives.filter(o => o.status === 'Behind').length,
@@ -354,6 +356,10 @@ export default function ObjectivesSection({ objectives = [], showStatus = true }
 
             {showStatus && (
                 <div className="flex flex-wrap items-center gap-6 px-4 py-2 bg-muted/20 rounded-2xl border border-border/30 backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.8)]" />
+                        <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">Beyond: <span className="text-violet-500">{counts['Beyond']}</span></span>
+                    </div>
                     <div className="flex items-center gap-2">
                         <span className="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.8)]" />
                         <span className="text-sm font-bold text-muted-foreground uppercase tracking-widest">On Track: <span className="text-emerald-500">{counts['On Track']}</span></span>

@@ -28,8 +28,9 @@ export class Progress {
    *   >= 40 → At Risk
    *   else  → Behind
    */
-  get status(): 'On Track' | 'At Risk' | 'Behind' {
-    if (this.value >= 70) return 'On Track';
+  get status(): 'Beyond' | 'On Track' | 'At Risk' | 'Behind' {
+    if (this.value >= 80) return 'Beyond';
+    if (this.value >= 60) return 'On Track';
     if (this.value >= 40) return 'At Risk';
     return 'Behind';
   }

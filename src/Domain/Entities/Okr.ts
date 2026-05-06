@@ -59,7 +59,7 @@ export interface SubObjective {
   title_EN: string;
   progress: number;
   progressUpdate: number; // For date-filtered progress
-  status: 'On Track' | 'At Risk' | 'Behind';
+  status: 'Beyond' | 'On Track' | 'At Risk' | 'Behind';
   details: KrDetail[];
 }
 
@@ -72,7 +72,7 @@ export interface Objective {
   objectiveName_EN: string;
   ownerTeam: string;
   progress: number;
-  status: 'On Track' | 'At Risk' | 'Behind';
+  status: 'Beyond' | 'On Track' | 'At Risk' | 'Behind';
   impactLevel?: 'high' | 'medium' | 'low';
   subObjectives: SubObjective[];
   details: KrDetail[]; // Flattened from all subObjectives for backwards compatibility if needed
@@ -104,7 +104,7 @@ export interface ContributorSumObj {
     objectiveId: number;
     objectiveName: string;
     progress: number;
-    status: 'On Track' | 'At Risk' | 'Behind';
+    status: 'Beyond' | 'On Track' | 'At Risk' | 'Behind';
 }
 
 export interface ContributorSum {
@@ -127,6 +127,7 @@ export interface TeamSummary {
     totalContributors: number;
     objectiveCompletionRate: number;
     krCompletionRate: number;
+    beyondCount: number;
     onTrackCount: number;
     atRiskCount: number;
     behindCount: number;
@@ -159,4 +160,5 @@ export interface ParticipantDetailRaw {
   engagementBehaviorScore?: number;
   totalScore?: number;
   trend?: 'up' | 'normal' | 'down';
+  aiScoreReason?: string;
 }

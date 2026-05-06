@@ -86,8 +86,9 @@ const TopObjectiveCard = ({ obj, rank, showStatus = true }: { obj: TopObjective,
                                     <div 
                                         className={`h-full rounded-full transition-all duration-700 ${
                                             obj.progress >= 100 ? 'bg-emerald-500' : 
-                                            obj.progress >= 70 ? 'bg-foreground' : 
-                                            obj.progress >= 30 ? 'bg-muted-foreground' : 'bg-muted-foreground/50'
+                                            obj.progress >= 80 ? 'bg-violet-500' : 
+                                            obj.progress >= 60 ? 'bg-foreground' : 
+                                            obj.progress >= 40 ? 'bg-muted-foreground' : 'bg-muted-foreground/50'
                                         }`}
                                         style={{ width: `${Math.min(100, Math.max(0, obj.progress || 0))}%` }}
                                     />
@@ -147,8 +148,9 @@ const TopObjectiveCard = ({ obj, rank, showStatus = true }: { obj: TopObjective,
                                     <div 
                                         className={`h-full rounded-full transition-all duration-1000 ${
                                             obj.progress >= 100 ? 'bg-emerald-500' : 
-                                            obj.progress >= 70 ? 'bg-foreground' : 
-                                            obj.progress >= 30 ? 'bg-muted-foreground' : 'bg-muted-foreground/50'
+                                            obj.progress >= 80 ? 'bg-violet-500' : 
+                                            obj.progress >= 60 ? 'bg-foreground' : 
+                                            obj.progress >= 40 ? 'bg-muted-foreground' : 'bg-muted-foreground/50'
                                         }`}
                                         style={{ width: `${Math.min(100, Math.max(0, obj.progress || 0))}%` }}
                                     />
@@ -206,7 +208,7 @@ const TopObjectiveCard = ({ obj, rank, showStatus = true }: { obj: TopObjective,
                                                 <div className="text-sm font-medium text-foreground leading-snug">{sub.title}</div>
                                                 {showStatus && (
                                                     <div className="flex items-center gap-2 mt-2">
-                                                        <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'On Track' ? 'bg-emerald-500' : sub.status === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                                                        <span className={`w-1.5 h-1.5 rounded-full ${sub.status === 'Beyond' ? 'bg-violet-500' : sub.status === 'On Track' ? 'bg-emerald-500' : sub.status === 'At Risk' ? 'bg-amber-500' : 'bg-rose-500'}`} />
                                                         <span className="text-xs text-muted-foreground font-medium">{sub.status}</span>
                                                     </div>
                                                 )}
@@ -331,12 +333,14 @@ export default function OverviewCards({ summary, participantDetails = [], object
     const completedKRs = summary?.completedKRs || 0;
     const krCompletionRate = summary?.krCompletionRate || 0;
     const avgObjectiveProgress = summary?.avgObjectiveProgress || 0;
+    const beyondCount = summary?.beyondCount || 0;
     const onTrackCount = summary?.onTrackCount || 0;
     const totalObjectives = summary?.totalObjectives || 0;
     const atRiskCount = summary?.atRiskCount || 0;
     const behindCount = summary?.behindCount || 0;
     const teamSize = participantDetails.length;
     const missingCheckInRate = teamSize > 0 ? (missingCheckInEmployees.length / teamSize) * 100 : 0;
+    const beyondPercent = totalObjectives > 0 ? (beyondCount / totalObjectives) * 100 : 0;
     const onTrackPercent = totalObjectives > 0 ? (onTrackCount / totalObjectives) * 100 : 0;
     const atRiskPercent = totalObjectives > 0 ? (atRiskCount / totalObjectives) * 100 : 0;
     const behindPercent = totalObjectives > 0 ? (behindCount / totalObjectives) * 100 : 0;
@@ -374,12 +378,14 @@ export default function OverviewCards({ summary, participantDetails = [], object
                         {showStatus && (
                             <div className="relative z-10 w-full mt-auto">
                                 <div className="flex justify-between items-center mb-2.5 text-[10px] font-semibold uppercase tracking-wider">
+                                    <span className="text-violet-500/90">{beyondCount} Beyond</span>
                                     <span className="text-emerald-500/90">{onTrackCount} On Track</span>
                                     <span className="text-amber-500/90">{atRiskCount} At Risk</span>
                                     <span className="text-rose-500/90">{behindCount} Behind</span>
                                 </div>
 
                                 <div className="h-2 w-full overflow-hidden rounded-full bg-muted/50 flex">
+                                    <div className="h-full bg-violet-500 transition-all duration-700" style={{ width: `${beyondPercent}%` }} />
                                     <div className="h-full bg-emerald-500 transition-all duration-700" style={{ width: `${onTrackPercent}%` }} />
                                     <div className="h-full bg-amber-500 transition-all duration-700" style={{ width: `${atRiskPercent}%` }} />
                                     <div className="h-full bg-rose-500 transition-all duration-700" style={{ width: `${behindPercent}%` }} />

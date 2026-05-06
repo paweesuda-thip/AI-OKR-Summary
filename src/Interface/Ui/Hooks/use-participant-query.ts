@@ -41,6 +41,37 @@ function mockPerformanceScores(list: ParticipantDetailRaw[]): ParticipantDetailR
       const r2 = rand();
       return r2 < 0.35 ? 'up' : r2 < 0.70 ? 'normal' : 'down';
     })();
+    const goalAchievementRounded = Math.round(goalAchievementScore);
+    const qualityRounded = Math.round(qualityScore);
+    const engagementRounded = Math.round(engagementClamped);
+    const totalRounded = Math.round(totalScore);
+    
+    // Generate contextual feedback based on scores
+    const goalFeedback = goalAchievementRounded >= 70 
+      ? 'บรรลุเป้าหมายได้ตามที่ตั้งไว้ โดยเฉพาะ OKR ด้านการพัฒนาสินค้าและการขายที่ทำได้เกินเป้า'
+      : goalAchievementRounded >= 50 
+      ? 'มีความก้าวหน้าในระดับที่น่าพอใจ แต่ยังมีช่องว่างใน OKR ด้านการตลาดที่ต้องเร่งรัด'
+      : 'ต้องการการปรับปรุงในการติดตามเป้าหมาย โดยเฉพาะ OKR ด้านลูกค้าที่ยังทำได้ไม่เต็มที่';
+    
+    const qualityFeedback = qualityRounded >= 70
+      ? 'ส่งมอบงานได้คุณภาพสูง มีการ review code และ testing ที่ครบถ้วน'
+      : qualityRounded >= 50
+      ? 'คุณภาพงานอยู่ในระดับที่ยอมรับได้ แต่มี feedback เรื่อง bug เล็กน้อยที่ควรแก้ไข'
+      : 'มีรายงานปัญหาคุณภาพงานที่ต้องเร่งแก้ไข เพื่อให้ตรงตามมาตรฐานทีม';
+    
+    const engagementFeedback = engagementRounded >= 70
+      ? 'เข้าร่วม check-in ครบทุกครั้ง มีการ update progress สม่ำเสมอและช่วยเหลือทีมเสมอ'
+      : engagementRounded >= 50
+      ? 'มีการเข้าร่วมที่ดี แต่พลาด check-in ไปบางครั้ง ควรปรับปรุงความสม่ำเสมอ'
+      : 'ขาดการเข้าร่วม check-in บ่อยครั้ง ต้องส่งเสริมการมีส่วนร่วมในกิจกรรมทีม';
+
+    const aiScoreReason = p.aiScoreReason ?? 
+      `คะแนนรวม ${totalRounded} คะแนน จากการประเมิน 3 ด้านหลัก: ` +
+      `1) ผลงาน (${goalAchievementRounded} คะแนน) - ${goalFeedback}. ` +
+      `2) คุณภาพ (${qualityRounded} คะแนน) - ${qualityFeedback}. ` +
+      `3) ความตั้งใจ (${engagementRounded} คะแนน) - ${engagementFeedback}. ` +
+      `${trendRoll === 'up' ? 'แนวโน้มดีขึ้น' : trendRoll === 'down' ? 'แนวโน้มลดลง' : 'ทรงตัว'} ` +
+      `เมื่อเทียบกับรอบก่อน โดยรวม ${totalRounded >= 70 ? 'เป็นผลงานที่โดดเด่น ควรรักษามาตรฐานนี้ต่อไป' : totalRounded >= 50 ? 'อยู่ในระดับที่ดี มีศักยภาพพัฒนาได้อีก' : 'ต้องปรับปรุงอย่างเร่งด่วน แนะนำให้คุยกับหัวหน้างาน'}`;
 
     return {
       ...p,
@@ -49,6 +80,7 @@ function mockPerformanceScores(list: ParticipantDetailRaw[]): ParticipantDetailR
       engagementBehaviorScore: engagementClamped,
       totalScore,
       trend: trendRoll as 'up' | 'normal' | 'down',
+      aiScoreReason,
     };
   });
 
