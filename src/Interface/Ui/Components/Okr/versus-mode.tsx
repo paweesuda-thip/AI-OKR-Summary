@@ -347,6 +347,33 @@ export default function VersusMode({
   const [isComparing, setIsComparing] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
 
+  const getStatusData = (percent: number) => {
+    if (percent >= 80) return { 
+      label: 'Beyond', 
+      color: 'text-violet-400', 
+      bg: 'bg-violet-500/10', 
+      border: 'border-violet-500/20', 
+    };
+    if (percent >= 60) return { 
+      label: 'On Track', 
+      color: 'text-emerald-400', 
+      bg: 'bg-emerald-500/10', 
+      border: 'border-emerald-500/20', 
+    };
+    if (percent >= 40) return { 
+      label: 'At Risk', 
+      color: 'text-amber-400', 
+      bg: 'bg-amber-500/10', 
+      border: 'border-amber-500/20', 
+    };
+    return { 
+      label: 'Behind', 
+      color: 'text-rose-400', 
+      bg: 'bg-rose-500/10', 
+      border: 'border-rose-500/20', 
+    };
+  };
+
   const sortedCycles = useMemo(() => {
     return [...cycleOptions].sort((a, b) => {
       if (a.isCurrentCycle && !b.isCurrentCycle) return -1;
@@ -544,6 +571,11 @@ export default function VersusMode({
                     <div>
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
                       <div className="mt-2 space-y-2">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p1.totalScore).bg} ${getStatusData(p1.totalScore).border} ${getStatusData(p1.totalScore).color}`}>
+                            {getStatusData(p1.totalScore).label}
+                          </div>
+                        </div>
                         <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
                           <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
                           <div className="flex items-baseline gap-2 mt-0.5">
@@ -625,7 +657,12 @@ export default function VersusMode({
                   <div className="flex flex-col gap-5 flex-1 min-w-0">
                     <div className="w-full text-right">
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
-                      <div className="mt-2 space-y-2">
+                      <div className="mt-2 space-y-2 flex flex-col items-end">
+                        <div className="flex items-center gap-2 mb-2 justify-end">
+                          <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p2.totalScore).bg} ${getStatusData(p2.totalScore).border} ${getStatusData(p2.totalScore).color}`}>
+                            {getStatusData(p2.totalScore).label}
+                          </div>
+                        </div>
                         <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
                           <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
                           <div className="flex items-baseline gap-2 mt-0.5 justify-end">
@@ -1027,8 +1064,13 @@ export default function VersusMode({
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold text-white leading-tight truncate">{p1.fullName}</h3>
+                    <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
                     <div className="mt-2 space-y-2">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p1.totalScore).bg} ${getStatusData(p1.totalScore).border} ${getStatusData(p1.totalScore).color}`}>
+                          {getStatusData(p1.totalScore).label}
+                        </div>
+                      </div>
                       <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
                         <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
                         <div className="flex items-baseline gap-2 mt-0.5">
@@ -1140,8 +1182,13 @@ export default function VersusMode({
                     )}
                   </div>
                   <div className="flex-1 min-w-0 text-right">
-                    <h3 className="text-xl font-bold text-white leading-tight truncate">{p2.fullName}</h3>
-                    <div className="mt-2 space-y-2">
+                    <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
+                    <div className="mt-2 space-y-2 flex flex-col items-end">
+                      <div className="flex items-center gap-2 mb-2 justify-end">
+                        <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p2.totalScore).bg} ${getStatusData(p2.totalScore).border} ${getStatusData(p2.totalScore).color}`}>
+                          {getStatusData(p2.totalScore).label}
+                        </div>
+                      </div>
                       <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
                         <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
                         <div className="flex items-baseline gap-2 mt-0.5 justify-end">

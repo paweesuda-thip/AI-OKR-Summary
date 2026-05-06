@@ -55,6 +55,7 @@ import FilterBar from "./filter-bar";
 import { useDashboardQuery } from "@/src/Interface/Ui/Hooks/use-dashboard-query";
 import { useParticipantQuery } from "@/src/Interface/Ui/Hooks/use-participant-query";
 import { useDdlOptions, useOrgNodeQuery } from "@/src/Interface/Ui/Hooks/use-ddl-query";
+import { ParticipantObjectiveDrawer } from "../Okr/ParticipantObjectiveDrawer";
 
 export default function Dashboard() {
   const FALLBACK_CYCLE_ID = 185467;
@@ -99,6 +100,7 @@ export default function Dashboard() {
   const [aiScoreResult, setAiScoreResult] = useState<AIScoreResult | null>(null);
   const [aiDrawerOpen, setAiDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'versus'>('overview');
+  const [hallOfFamePersonId, setHallOfFamePersonId] = useState<number | null>(null);
 
   const resolvedAssessmentSetId = useMemo(() => {
     const exists = cycleOptions.some((cycle) => cycle.setId === assessmentSetId);
@@ -441,7 +443,7 @@ export default function Dashboard() {
                             <div className={`relative overflow-hidden rounded-2xl bg-background/50 dark:bg-zinc-900/50 border border-border/30 dark:border-white/6 transition-all duration-500 hover:border-border/50 dark:hover:border-white/12 ${isFirst ? 'shadow-xl' : 'shadow-lg'} ${config.glow}`}>
                               {/* Portrait Photo */}
                               <div className={`relative w-full ${isFirst ? 'aspect-[3/4]' : 'aspect-[4/5]'} overflow-hidden bg-muted/30`}>
-                                {(p.pictureMediumURL || p.pictureURL) ? (
+                                {p.pictureMediumURL || p.pictureURL ? (
                                   <Image
                                     src={p.pictureMediumURL || p.pictureURL}
                                     alt={p.fullName}
@@ -473,81 +475,88 @@ export default function Dashboard() {
                                 </div>
 
                                 {/* ── HOVER OVERLAY: Enterprise Detail Panel ── */}
-                                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-30 flex flex-col" style={{ background: 'linear-gradient(160deg, rgba(10,12,18,0.97) 0%, rgba(16,20,30,0.97) 100%)' }}>
-                                  {/* Header strip */}
-                                  <div className="px-4 pt-4 pb-3 border-b border-white/[0.06]">
-                                    <p className="text-[9px] font-semibold tracking-[0.2em] uppercase text-zinc-500 mb-0.5">Performance Review</p>
-                                    <h5 className="text-sm font-bold text-white leading-tight truncate">{p.fullName}</h5>
+                                <div 
+                                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-all duration-300 z-30 flex flex-col cursor-pointer"
+                                  style={{ background: 'linear-gradient(145deg, #0d0f14 0%, #151820 50%, #0d0f14 100%)' }}
+                                  onClick={() => setHallOfFamePersonId(p.employeeId)}
+                                >
+                                  {/* Enterprise Header with Rank Badge */}
+                                  <div className="px-5 pt-5 pb-3">
+                                    <div className="flex items-start justify-between mb-3">
+                                      <div>
+                                        <span className="text-[10px] font-semibold tracking-[0.2em] uppercase text-zinc-500">Performance Review</span>
+                                        <h5 className="text-base font-semibold text-white leading-tight tracking-tight mt-0.5">{p.fullName}</h5>
+                                      </div>
+                                      <div className={`flex items-center justify-center w-8 h-8 rounded-lg ${isFirst ? 'bg-amber-500/15 text-amber-400' : origIndex === 1 ? 'bg-zinc-500/15 text-zinc-400' : 'bg-orange-500/15 text-orange-400'} border border-white/5`}>
+                                        <span className="text-xs font-bold">#{origIndex + 1}</span>
+                                      </div>
+                                    </div>
                                   </div>
 
-                                  {/* Radar + Score side-by-side */}
-                                  <div className="flex items-center gap-1 px-3 pt-3 pb-1">
-                                    <div className="w-[100px] h-[90px] shrink-0">
-                                      <ResponsiveContainer width="100%" height="100%">
-                                        <RadarChart cx="50%" cy="50%" outerRadius="62%"
-                                          data={[
-                                            { s: 'Goal', v: p.goalAchievementScore ?? 0, fullMark: 100 },
-                                            { s: 'Qly',  v: p.qualityScore ?? 0,           fullMark: 100 },
-                                            { s: 'Eng',  v: p.engagementBehaviorScore ?? 0, fullMark: 100 },
-                                          ]}
-                                        >
-                                          <PolarGrid stroke="rgba(255,255,255,0.06)" />
-                                          <PolarAngleAxis dataKey="s" tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 8, fontWeight: 600 }} />
-                                          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
-                                          <Radar dataKey="v" stroke={config.accent.replace('text-', '#').includes('amber') ? '#f59e0b' : config.accent.includes('zinc') ? '#71717a' : '#f97316'} strokeWidth={1.5} fill="rgba(255,255,255,0.07)" fillOpacity={1} />
-                                          <defs />
-                                        </RadarChart>
-                                      </ResponsiveContainer>
-                                    </div>
-                                    {/* Total score block */}
-                                    <div className="flex-1 flex flex-col items-center justify-center">
-                                      <span className="text-[8px] font-semibold tracking-[0.18em] uppercase text-zinc-500">Total Score</span>
-                                      <span className="text-3xl font-black text-white font-mono leading-none mt-0.5 tabular-nums">
-                                        {Math.round(p.totalScore ?? p.avgPercent)}
-                                      </span>
+                                  {/* Score Section with Divider */}
+                                  <div className="px-5 pb-4 border-b border-zinc-800/60">
+                                    <div className="flex items-end justify-between">
+                                      <div>
+                                        <span className="text-[10px] font-medium tracking-[0.18em] uppercase text-zinc-500">Total Score</span>
+                                        <div className="flex items-baseline gap-2 mt-1">
+                                          <span className="text-3xl font-semibold text-white tracking-tight">
+                                            {Math.round(p.totalScore ?? p.avgPercent)}
+                                          </span>
+                                          <span className="text-xs text-zinc-500">/100</span>
+                                        </div>
+                                      </div>
                                       {(() => {
                                         const trend = p.trend ?? 'normal';
                                         const cfg2 = trend === 'up'
-                                          ? { Icon: TrendingUp,   color: 'text-emerald-400', label: 'Improving' }
+                                          ? { Icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10', label: 'Improving' }
                                           : trend === 'down'
-                                          ? { Icon: TrendingDown, color: 'text-rose-400',    label: 'Declining' }
-                                          : { Icon: Activity,     color: 'text-zinc-400',    label: 'Stable' };
+                                          ? { Icon: TrendingDown, color: 'text-rose-400', bg: 'bg-rose-500/10', label: 'Declining' }
+                                          : { Icon: Activity, color: 'text-zinc-400', bg: 'bg-zinc-500/10', label: 'Stable' };
                                         return (
-                                          <div className={`flex items-center gap-1 mt-1.5 ${cfg2.color}`}>
-                                            <cfg2.Icon className="w-3 h-3" strokeWidth={2.5} />
-                                            <span className="text-[9px] font-bold uppercase tracking-wider">{cfg2.label}</span>
+                                          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md ${cfg2.bg}`}>
+                                            <cfg2.Icon className={`w-3.5 h-3.5 ${cfg2.color}`} strokeWidth={2} />
+                                            <span className={`text-[10px] font-semibold uppercase tracking-wider ${cfg2.color}`}>{cfg2.label}</span>
                                           </div>
                                         );
                                       })()}
                                     </div>
                                   </div>
 
-                                  {/* Metric bars */}
-                                  <div className="flex flex-col gap-2 px-4 py-2">
-                                    {[
-                                      { label: 'Goal Achievement', val: p.goalAchievementScore ?? 0,     color: '#10b981' },
-                                      { label: 'Quality of Work',  val: p.qualityScore ?? 0,             color: '#f59e0b' },
-                                      { label: 'Engagement',       val: p.engagementBehaviorScore ?? 0,  color: '#a78bfa' },
-                                    ].map(({ label, val, color }) => (
-                                      <div key={label}>
-                                        <div className="flex items-center justify-between mb-0.5">
-                                          <span className="text-[9px] font-semibold text-zinc-400 uppercase tracking-wider">{label}</span>
-                                          <span className="text-[10px] font-bold font-mono text-white">{Math.round(val)}</span>
+                                  {/* Metrics Grid */}
+                                  <div className="flex-1 px-5 py-4">
+                                    <div className="space-y-4">
+                                      {[
+                                        { label: 'Goal Achievement', val: p.goalAchievementScore ?? 0, color: '#10b981' },
+                                        { label: 'Quality of Work', val: p.qualityScore ?? 0, color: '#f59e0b' },
+                                        { label: 'Engagement', val: p.engagementBehaviorScore ?? 0, color: '#8b5cf6' },
+                                      ].map(({ label, val, color }) => (
+                                        <div key={label}>
+                                          <div className="flex items-center justify-between mb-2">
+                                            <span className="text-[11px] font-medium text-zinc-400">{label}</span>
+                                            <div className="flex items-center gap-2">
+                                              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: color }} />
+                                              <span className="text-[12px] font-semibold text-white tabular-nums">{Math.round(val)}</span>
+                                            </div>
+                                          </div>
+                                          <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(val, 100)}%`, backgroundColor: color }} />
+                                          </div>
                                         </div>
-                                        <div className="h-[3px] w-full bg-white/[0.06] rounded-full overflow-hidden">
-                                          <div className="h-full rounded-full transition-all duration-700" style={{ width: `${Math.min(val, 100)}%`, backgroundColor: color }} />
-                                        </div>
-                                      </div>
-                                    ))}
+                                      ))}
+                                    </div>
                                   </div>
 
-                                  {/* Footer: check-in ratio */}
-                                  <div className="mt-auto px-4 pb-3 pt-2 border-t border-white/[0.06] flex items-center justify-between">
-                                    <span className="text-[9px] text-zinc-500 uppercase tracking-wider">Check-ins</span>
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs font-bold font-mono text-white">{p.totalCheckIn}<span className="text-zinc-600">/{p.totalCheckInAll}</span></span>
-                                      {p.totalMissCheckIn > 0 && (
-                                        <span className="text-[9px] font-semibold text-rose-400">−{p.totalMissCheckIn} missed</span>
+                                  {/* Enterprise Footer */}
+                                  <div className="mt-auto px-5 py-3.5 bg-zinc-900/30 border-t border-zinc-800/60">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-[10px] font-medium text-zinc-500 uppercase tracking-wider">Check-ins</span>
+                                        <span className="text-[11px] font-semibold text-white">{p.totalCheckIn}<span className="text-zinc-600">/{p.totalCheckInAll}</span></span>
+                                      </div>
+                                      {p.totalMissCheckIn > 0 ? (
+                                        <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-rose-500/10 text-rose-400">{p.totalMissCheckIn} missed</span>
+                                      ) : (
+                                        <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Complete</span>
                                       )}
                                     </div>
                                   </div>
@@ -651,6 +660,24 @@ export default function Dashboard() {
 
           {/* ── Floating AI Chat ── */}
           <FloatingAiChat dashboardData={dashboardData} />
+          
+          {/* ── Hall of Fame Objective Drawer ── */}
+          {hallOfFamePersonId && (
+            <ParticipantObjectiveDrawer
+              open={true}
+              onOpenChange={(open) => {
+                if (!open) setHallOfFamePersonId(null);
+              }}
+              person={{
+                ...participantDetails.find(p => p.employeeId === hallOfFamePersonId)!,
+                displayRank: participantDetails.findIndex(p => p.employeeId === hallOfFamePersonId) + 1
+              }}
+              objectives={objectives}
+              loading={dashLoading}
+              error={dashError ? dashError.message : null}
+              showStatus={showStatus}
+            />
+          )}
                 </motion.div>
               )}
             </AnimatePresence>

@@ -50,11 +50,13 @@ export function mapObjective(item: OkrDataRaw): Objective {
         progress: subProgress,
         progressUpdate: sub.progressUpdate ?? 0,
         status:
-          subProgress >= 70
-            ? 'On Track'
-            : subProgress >= 40
-              ? 'At Risk'
-              : 'Behind',
+          subProgress >= 80
+            ? 'Beyond'
+            : subProgress >= 60
+              ? 'On Track'
+              : subProgress >= 40
+                ? 'At Risk'
+                : 'Behind',
         details,
       };
     },
@@ -72,7 +74,7 @@ export function mapObjective(item: OkrDataRaw): Objective {
     ownerTeam: item.ownerTeam ?? '',
     progress,
     status:
-      progress >= 70 ? 'On Track' : progress >= 40 ? 'At Risk' : 'Behind',
+      progress >= 80 ? 'Beyond' : progress >= 60 ? 'On Track' : progress >= 40 ? 'At Risk' : 'Behind',
     impactLevel:
       progress >= 80 ? 'high' : progress >= 60 ? 'medium' : 'low',
     subObjectives,
@@ -113,6 +115,7 @@ export function calculateSummary(objectives: Objective[]): TeamSummary {
     onTrackCount: objectives.filter((o) => o.status === 'On Track').length,
     atRiskCount: objectives.filter((o) => o.status === 'At Risk').length,
     behindCount: objectives.filter((o) => o.status === 'Behind').length,
+    beyondCount: objectives.filter((o) => o.status === 'Beyond').length,
   };
 }
 
