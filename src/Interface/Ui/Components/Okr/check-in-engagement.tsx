@@ -564,6 +564,7 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
         loading={objectivesLoading}
         error={objectivesError}
         showStatus={showStatus}
+        showAiReason={!queryParams?.dateStart && !queryParams?.dateEnd}
       />
     </TooltipProvider>
   );

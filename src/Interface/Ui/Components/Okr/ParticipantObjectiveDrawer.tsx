@@ -45,6 +45,7 @@ interface ParticipantObjectiveDrawerProps {
     loading: boolean;
     error: string | null;
     showStatus?: boolean;
+    showAiReason?: boolean;
 }
 
 export function ParticipantObjectiveDrawer({ 
@@ -54,7 +55,8 @@ export function ParticipantObjectiveDrawer({
     objectives, 
     loading, 
     error, 
-    showStatus = true 
+    showStatus = true,
+    showAiReason = false
 }: ParticipantObjectiveDrawerProps) {
   const [expandedObjectiveId, setExpandedObjectiveId] = React.useState<number | null>(null);
 
@@ -147,7 +149,7 @@ export function ParticipantObjectiveDrawer({
             .filter((o): o is PersonObjective => o !== null);
 
           return (
-            <div className="relative h-full overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+            <div className="relative h-full overflow-y-auto overflow-x-hidden scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
               {/* Decorative ambient glow matching status */}
               <div
                 className="pointer-events-none absolute -top-40 -right-40 w-[500px] h-[500px] rounded-full blur-[150px] opacity-30 mix-blend-screen"
@@ -325,17 +327,15 @@ export function ParticipantObjectiveDrawer({
               </div>
 
               {/* ─── AI REASON SECTION ─── */}
-              {person.aiScoreReason && (
-                <div className="mx-8 mt-6 mb-4">
-                  <div className="rounded-xl bg-gradient-to-br from-blue-500/5 to-zinc-900/30 border border-blue-500/10 overflow-hidden">
-                    <div className="px-4 py-2.5 bg-blue-500/5 border-b border-blue-500/10">
-                      <span className="text-[11px] font-bold uppercase tracking-wider text-blue-400">AI Reason</span>
-                    </div>
-                    <div className="p-4">
-                      <p className="text-sm text-zinc-300 leading-relaxed">
-                        {person.aiScoreReason}
-                      </p>
-                    </div>
+              {showAiReason && person.aiScoreReason && (
+                <div className="w-full mt-6 border-t border-white/5">
+                  <div className="px-8 py-3 bg-white/[0.02] border-b border-white/5 flex items-center justify-between shadow-sm">
+                    <span className="text-xs font-bold text-zinc-400 uppercase tracking-widest">AI Reason</span>
+                  </div>
+                  <div className="px-8 py-5">
+                    <p className="text-sm text-zinc-300 leading-relaxed">
+                      {person.aiScoreReason}
+                    </p>
                   </div>
                 </div>
               )}

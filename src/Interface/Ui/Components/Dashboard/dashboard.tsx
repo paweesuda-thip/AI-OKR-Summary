@@ -676,6 +676,7 @@ export default function Dashboard() {
               loading={dashLoading}
               error={dashError ? dashError.message : null}
               showStatus={showStatus}
+              showAiReason={true}
             />
           )}
                 </motion.div>
