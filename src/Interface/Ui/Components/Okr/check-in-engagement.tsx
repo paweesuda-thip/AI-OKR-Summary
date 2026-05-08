@@ -237,19 +237,19 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                     <option value="checkins-asc">Check-in rate (Low)</option>
                     <option value="missed-desc">Missed (High)</option>
                     <option value="missed-asc">Missed (Low)</option>
-                    <option value="engagement-desc">Engagement behavior (High)</option>
-                    <option value="engagement-asc">Engagement behavior (Low)</option>
-                    <option value="goal-desc">Goal (High)</option>
-                    <option value="goal-asc">Goal (Low)</option>
-                    <option value="quality-desc">Quality (High)</option>
-                    <option value="quality-asc">Quality (Low)</option>
+                    <option value="quality-desc">Quality ×0.5 (High)</option>
+                    <option value="quality-asc">Quality ×0.5 (Low)</option>
+                    <option value="goal-desc">Goal ×0.4 (High)</option>
+                    <option value="goal-asc">Goal ×0.4 (Low)</option>
+                    <option value="engagement-desc">Engage ×0.1 (High)</option>
+                    <option value="engagement-asc">Engage ×0.1 (Low)</option>
                   </select>
                 </div>
               </div>
             </div>
 
             {/* Header row — Engage column header is behavior score only (subset metrics stay in cells) */}
-            <div className="hidden lg:grid grid-cols-[60px_minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,1fr)] gap-3 lg:gap-4 px-4 py-2 border-b border-white/5 mb-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10 [&>*]:min-w-0">
+            <div className="hidden lg:grid grid-cols-[60px_minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(0,1fr)] gap-3 lg:gap-4 px-4 py-2 border-b border-white/5 mb-3 text-[10px] font-bold text-muted-foreground uppercase tracking-wider z-10 [&>*]:min-w-0">
               <div 
                 className="text-center flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none"
                 onClick={() => handleSort('rank')}
@@ -265,26 +265,32 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
               <div className="text-center flex items-center justify-center gap-1 select-none">
                 Status
               </div>
+              <div
+                className="flex items-center justify-center gap-1.5 cursor-pointer hover:text-white transition-colors group select-none"
+                onClick={() => handleSort('quality')}
+              >
+                <span>Quality</span>
+                <span className="px-1.5 py-px rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[8px] font-black tracking-wider tabular-nums shadow-inner">×0.5</span>
+                {getSortIcon('quality')}
+              </div>
+              <div
+                className="flex items-center justify-center gap-1.5 cursor-pointer hover:text-white transition-colors group select-none"
+                onClick={() => handleSort('goal')}
+              >
+                <span>Goal</span>
+                <span className="px-1.5 py-px rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-[8px] font-black tracking-wider tabular-nums shadow-inner">×0.4</span>
+                {getSortIcon('goal')}
+              </div>
               <div className="flex items-center justify-center min-w-0 text-center">
                 <button
                   type="button"
-                  className="flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none text-muted-foreground"
+                  className="flex items-center justify-center gap-1.5 cursor-pointer hover:text-white transition-colors group select-none text-muted-foreground"
                   onClick={(e) => { e.stopPropagation(); handleSort('engagement'); }}
                 >
-                  Engage {getSortIcon('engagement')}
+                  <span>Engage</span>
+                  <span className="px-1.5 py-px rounded-full bg-purple-500/15 border border-purple-400/30 text-purple-300 text-[8px] font-black tracking-wider tabular-nums shadow-inner">×0.1</span>
+                  {getSortIcon('engagement')}
                 </button>
-              </div>
-              <div 
-                className="flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none"
-                onClick={() => handleSort('goal')}
-              >
-                Goal {getSortIcon('goal')}
-              </div>
-              <div 
-                className="flex items-center justify-center gap-1 cursor-pointer hover:text-white transition-colors group select-none"
-                onClick={() => handleSort('quality')}
-              >
-                Quality {getSortIcon('quality')}
               </div>
               <div 
                 className="flex items-center justify-end gap-1 flex-1 pr-2 cursor-pointer hover:text-white transition-colors group select-none"
@@ -303,7 +309,7 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                   <div 
                     key={person.employeeId} 
                     onClick={() => openDetails(person)}
-                    className="relative grid grid-cols-1 lg:grid-cols-[60px_minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1.05fr)_minmax(0,0.85fr)_minmax(0,0.85fr)_minmax(0,1fr)] gap-3 lg:gap-4 items-center p-5 lg:p-3 rounded-2xl border bg-black/40 border-white/10 hover:bg-black/60 hover:border-white/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-500 cursor-pointer overflow-hidden group/row [&>*]:min-w-0"
+                    className="relative grid grid-cols-1 lg:grid-cols-[60px_minmax(0,2.5fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.95fr)_minmax(0,0.85fr)_minmax(0,1fr)] gap-3 lg:gap-4 items-center p-5 lg:p-3 rounded-2xl border bg-black/40 border-white/10 hover:bg-black/60 hover:border-white/30 hover:shadow-[0_0_30px_rgba(59,130,246,0.15)] transition-all duration-500 cursor-pointer overflow-hidden group/row [&>*]:min-w-0"
                   >
                     <div className="absolute inset-0 bg-linear-to-r from-transparent via-blue-500/5 to-transparent opacity-0 group-hover/row:opacity-100 transition-opacity duration-700 pointer-events-none" />
                     
@@ -352,9 +358,12 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                       </div>
                     </div>
 
-                    {/* Engage: score + two stacked rows (Check-ins / Missed) — avoids awkward mid-line wraps */}
-                    <div className="w-full min-w-0 mt-2 lg:mt-0 pt-2 lg:pt-0 border-t border-white/5 lg:border-0 flex flex-col items-center justify-center gap-1">
-                      <span className="lg:hidden text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">Engage</span>
+                    {/* Engage (×0.1) — display order col 6 (after Quality, Goal) */}
+                    <div className="w-full min-w-0 mt-2 lg:mt-0 pt-2 lg:pt-0 border-t border-white/5 lg:border-0 flex flex-col items-center justify-center gap-1 order-3">
+                      <span className="lg:hidden text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                        Engage
+                        <span className="px-1.5 py-px rounded-full bg-purple-500/15 border border-purple-400/30 text-purple-300 text-[8px] font-black tabular-nums">×0.1</span>
+                      </span>
                       <Tooltip>
                         <TooltipTrigger>
                           <div className="flex w-full min-w-0 max-w-[13.5rem] lg:max-w-none flex-col items-center gap-1 rounded-lg px-1.5 py-1.5 sm:px-2 cursor-pointer outline-none hover:bg-white/[0.06] transition-colors">
@@ -405,7 +414,9 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                               </dt>
                               <dd className="mt-1 flex items-end justify-between gap-3">
                                 <span className="text-[11px] leading-relaxed text-zinc-400">
-                                  Participation signal in the composite.
+                                  {person.engageDetail?.trim()
+                                    ? person.engageDetail
+                                    : 'Participation signal in the composite.'}
                                 </span>
                                 <span className="shrink-0 font-mono text-lg font-bold tabular-nums text-purple-100">
                                   {(person.engagementBehaviorScore ?? 0).toFixed(0)}
@@ -449,37 +460,111 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                       </Tooltip>
                     </div>
 
-                    {/* Goal + Quality */}
+                    {/* Quality (×0.5) + Goal (×0.4) — Quality leads, highest weight */}
                     <div className="grid grid-cols-2 lg:contents w-full mt-2 lg:mt-0 pt-2 lg:pt-0 border-t border-white/5 lg:border-0 gap-2">
-                       <div className="flex flex-col items-center justify-center bg-black/20 lg:bg-transparent rounded-lg p-2 lg:p-0">
-                         <div className="flex items-center gap-1.5 mb-1 lg:hidden">
-                           <Target className="w-3 h-3 text-emerald-500" />
-                           <span className="text-[9px] text-muted-foreground font-semibold uppercase">Goal</span>
-                         </div>
-                         <div className="flex items-baseline gap-1">
-                           <Target className="w-3.5 h-3.5 text-emerald-500 hidden lg:block mr-1 opacity-70" />
-                           <span className="text-lg font-black text-emerald-400 font-mono">
-                             {(person.goalAchievementScore ?? 0).toFixed(0)}
-                           </span>
-                         </div>
-                       </div>
-                       
-                       <div className="flex flex-col items-center justify-center bg-black/20 lg:bg-transparent rounded-lg p-2 lg:p-0">
-                         <div className="flex items-center gap-1.5 mb-1 lg:hidden">
-                           <Star className="w-3 h-3 text-amber-500" />
-                           <span className="text-[9px] text-muted-foreground font-semibold uppercase">Quality</span>
-                         </div>
-                         <div className="flex items-baseline gap-1">
-                           <Star className="w-3.5 h-3.5 text-amber-500 hidden lg:block mr-1 opacity-70" />
-                           <span className="text-lg font-black text-amber-400 font-mono">
-                             {(person.qualityScore ?? 0).toFixed(0)}
-                           </span>
-                         </div>
-                       </div>
+                       <Tooltip>
+                         <TooltipTrigger className="order-2 lg:order-2">
+                           <div className="flex flex-col items-center justify-center bg-black/20 lg:bg-transparent rounded-lg p-2 lg:p-0 cursor-pointer hover:bg-white/[0.06] transition-colors outline-none">
+                             <div className="flex items-center gap-1.5 mb-1 lg:hidden">
+                               <Target className="w-3 h-3 text-emerald-500" />
+                               <span className="text-[9px] text-muted-foreground font-semibold uppercase">Goal</span>
+                               <span className="px-1.5 py-px rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-300 text-[8px] font-black tabular-nums">×0.4</span>
+                             </div>
+                             <div className="flex items-baseline gap-1">
+                               <Target className="w-3.5 h-3.5 text-emerald-500 hidden lg:block mr-1 opacity-70" />
+                               <span className="text-lg font-black text-emerald-400 font-mono">
+                                 {(person.goalAchievementScore ?? 0).toFixed(0)}
+                               </span>
+                             </div>
+                           </div>
+                         </TooltipTrigger>
+                         <TooltipContent
+                           side="top"
+                           align="center"
+                           arrowClassName="!bg-zinc-950 !fill-zinc-950"
+                           className="!max-w-[min(92vw,18rem)] !rounded-xl !border !border-white/12 !bg-zinc-950/96 !p-0 !text-zinc-100 !shadow-[0_22px_56px_-14px_rgba(0,0,0,0.72)] !backdrop-blur-xl !inline-flex !flex-col !items-stretch !gap-0 text-[13px] leading-snug"
+                         >
+                           <div className="border-b border-white/10 px-3.5 pb-2.5 pt-3">
+                             <div className="flex items-center gap-2.5">
+                               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500/12 ring-1 ring-emerald-400/20">
+                                 <Target className="h-4 w-4 text-emerald-300" aria-hidden />
+                               </span>
+                               <p className="text-sm font-semibold leading-tight tracking-tight text-zinc-50">
+                                 Goal achievement
+                               </p>
+                             </div>
+                           </div>
+                           <div className="space-y-2 px-3 pb-3 pt-2.5">
+                             <div className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 py-2">
+                               <div className="flex items-end justify-between gap-3">
+                                 <span className="text-[10px] font-semibold uppercase tracking-wide text-emerald-200/95">Score</span>
+                                 <span className="shrink-0 font-mono text-lg font-bold tabular-nums text-emerald-100">
+                                   {(person.goalAchievementScore ?? 0).toFixed(0)}
+                                 </span>
+                               </div>
+                               <p className="mt-2 text-[11px] leading-relaxed text-zinc-300">
+                                 {person.goalDetail?.trim()
+                                   ? person.goalDetail
+                                   : 'ยังไม่มีคำอธิบายจาก AI สำหรับ OKR ของบุคคลนี้'}
+                               </p>
+                             </div>
+                           </div>
+                         </TooltipContent>
+                       </Tooltip>
+
+                       <Tooltip>
+                         <TooltipTrigger className="order-1 lg:order-1">
+                           <div className="flex flex-col items-center justify-center bg-black/20 lg:bg-transparent rounded-lg p-2 lg:p-0 cursor-pointer hover:bg-white/[0.06] transition-colors outline-none">
+                             <div className="flex items-center gap-1.5 mb-1 lg:hidden">
+                               <Star className="w-3 h-3 text-amber-500" />
+                               <span className="text-[9px] text-muted-foreground font-semibold uppercase">Quality</span>
+                               <span className="px-1.5 py-px rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-300 text-[8px] font-black tabular-nums">×0.5</span>
+                             </div>
+                             <div className="flex items-baseline gap-1">
+                               <Star className="w-3.5 h-3.5 text-amber-500 hidden lg:block mr-1 opacity-70" />
+                               <span className="text-lg font-black text-amber-400 font-mono">
+                                 {(person.qualityScore ?? 0).toFixed(0)}
+                               </span>
+                             </div>
+                           </div>
+                         </TooltipTrigger>
+                         <TooltipContent
+                           side="top"
+                           align="center"
+                           arrowClassName="!bg-zinc-950 !fill-zinc-950"
+                           className="!max-w-[min(92vw,18rem)] !rounded-xl !border !border-white/12 !bg-zinc-950/96 !p-0 !text-zinc-100 !shadow-[0_22px_56px_-14px_rgba(0,0,0,0.72)] !backdrop-blur-xl !inline-flex !flex-col !items-stretch !gap-0 text-[13px] leading-snug"
+                         >
+                           <div className="border-b border-white/10 px-3.5 pb-2.5 pt-3">
+                             <div className="flex items-center gap-2.5">
+                               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-amber-500/12 ring-1 ring-amber-400/20">
+                                 <Star className="h-4 w-4 text-amber-300" aria-hidden />
+                               </span>
+                               <p className="text-sm font-semibold leading-tight tracking-tight text-zinc-50">
+                                 Quality of work
+                               </p>
+                             </div>
+                           </div>
+                           <div className="space-y-2 px-3 pb-3 pt-2.5">
+                             <div className="rounded-lg border border-white/[0.07] bg-white/[0.04] px-2.5 py-2">
+                               <div className="flex items-end justify-between gap-3">
+                                 <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-200/95">Score</span>
+                                 <span className="shrink-0 font-mono text-lg font-bold tabular-nums text-amber-100">
+                                   {(person.qualityScore ?? 0).toFixed(0)}
+                                 </span>
+                               </div>
+                               <p className="mt-2 text-[11px] leading-relaxed text-zinc-300">
+                                 {person.qualityDetail?.trim()
+                                   ? person.qualityDetail
+                                   : 'ยังไม่มีคำอธิบายจาก AI สำหรับคุณภาพงาน'}
+                               </p>
+                             </div>
+                           </div>
+                         </TooltipContent>
+                       </Tooltip>
                     </div>
 
                     {/* Total Score with Icon */}
-                    <div className="flex items-center justify-between lg:justify-end mt-3 lg:mt-0 pt-3 lg:pt-0 border-t border-white/5 lg:border-0 grow lg:grow-0">
+                    <div className="flex items-center justify-between lg:justify-end mt-3 lg:mt-0 pt-3 lg:pt-0 border-t border-white/5 lg:border-0 grow lg:grow-0 order-4">
                       <div className="lg:hidden flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/30">
                         <Award className={`w-3.5 h-3.5 text-blue-400`} />
                         <span className={`text-[9px] font-bold uppercase tracking-widest text-blue-400`}>Total Score</span>
@@ -527,15 +612,24 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                               <div className="mt-3 pt-3 border-t border-zinc-800">
                                 <div className="grid grid-cols-3 gap-2">
                                   <div className="text-center">
-                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Goal</div>
-                                    <div className="text-sm font-bold text-emerald-400">{Math.round(person.goalAchievementScore ?? 0)}</div>
-                                  </div>
-                                  <div className="text-center border-x border-zinc-800">
-                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Quality</div>
+                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                                      <span>Quality</span>
+                                      <span className="text-[8px] text-amber-300/80 font-black tabular-nums">×0.5</span>
+                                    </div>
                                     <div className="text-sm font-bold text-amber-400">{Math.round(person.qualityScore ?? 0)}</div>
                                   </div>
+                                  <div className="text-center border-x border-zinc-800">
+                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                                      <span>Goal</span>
+                                      <span className="text-[8px] text-emerald-300/80 font-black tabular-nums">×0.4</span>
+                                    </div>
+                                    <div className="text-sm font-bold text-emerald-400">{Math.round(person.goalAchievementScore ?? 0)}</div>
+                                  </div>
                                   <div className="text-center">
-                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1">Engage</div>
+                                    <div className="text-[10px] text-zinc-500 uppercase tracking-wider mb-1 flex items-center justify-center gap-1">
+                                      <span>Engage</span>
+                                      <span className="text-[8px] text-purple-300/80 font-black tabular-nums">×0.1</span>
+                                    </div>
                                     <div className="text-sm font-bold text-purple-400">{Math.round(person.engagementBehaviorScore ?? 0)}</div>
                                   </div>
                                 </div>

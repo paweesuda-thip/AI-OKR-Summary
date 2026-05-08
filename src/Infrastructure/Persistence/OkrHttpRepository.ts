@@ -163,23 +163,16 @@ export async function fetchParticipantDetails(
     }
   }
 
-  return rawData.map(p => {
-    const seed = p.employeeId || 0; 
-    const goalAchievementScore = p.avgPercent || 0; 
-    const qualityScore = Math.min(100, Math.max(0, goalAchievementScore + (seed % 30) - 15)); 
-    const engagementBehaviorScore = p.totalCheckInAll > 0 ? (p.totalCheckIn / p.totalCheckInAll) * 100 : goalAchievementScore;
-    const totalScore = (goalAchievementScore + qualityScore + engagementBehaviorScore) / 3;
-    const trendValue = seed % 3;
-    const trend: 'up' | 'normal' | 'down' = trendValue === 0 ? 'up' : trendValue === 1 ? 'down' : 'normal';
-    return {
-      ...p,
-      goalAchievementScore,
-      qualityScore,
-      engagementBehaviorScore,
-      totalScore,
-      trend
-    };
-  });
+  // Mirror new API field names onto the legacy aliases used across the UI layer.
+  // No mock generation — when the API omits a score we fall back to 0.
+  return rawData.map(p => ({
+    ...p,
+    goalAchievementScore: p.goalAchievementScore ?? p.goalScore ?? 0,
+    engagementBehaviorScore: p.engagementBehaviorScore ?? p.engageScore ?? 0,
+    qualityScore: p.qualityScore ?? 0,
+    totalScore: p.totalScore ?? 0,
+    aiScoreReason: p.aiScoreReason ?? (p.detail && p.detail.trim() ? p.detail : undefined),
+  }));
 }
 
 // ─── IOkrRepository implementation ─────────────────────────────────────────────

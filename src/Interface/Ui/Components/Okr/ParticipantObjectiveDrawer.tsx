@@ -301,28 +301,73 @@ export function ParticipantObjectiveDrawer({
                   </div>
                 </div>
                 
-                <div className="flex flex-col justify-center divide-y divide-white/5 bg-black/20">
-                  <div className="px-6 py-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Target className="w-4 h-4 text-emerald-500" />
-                        <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Goal Achievement</span>
+                <div className="flex flex-col divide-y divide-white/5 bg-black/20">
+                  {[
+                    {
+                      key: 'quality',
+                      Icon: Star,
+                      label: 'Quality of Work',
+                      weight: '×0.5',
+                      score: person.qualityScore ?? 0,
+                      detail: person.qualityDetail,
+                      tone: {
+                        ring: 'ring-amber-400/20',
+                        bg: 'bg-amber-500/12',
+                        icon: 'text-amber-300',
+                        score: 'text-amber-400',
+                        chip: 'bg-amber-500/15 border-amber-400/30 text-amber-300',
+                      },
+                    },
+                    {
+                      key: 'goal',
+                      Icon: Target,
+                      label: 'Goal Achievement',
+                      weight: '×0.4',
+                      score: person.goalAchievementScore ?? 0,
+                      detail: person.goalDetail,
+                      tone: {
+                        ring: 'ring-emerald-400/20',
+                        bg: 'bg-emerald-500/12',
+                        icon: 'text-emerald-300',
+                        score: 'text-emerald-400',
+                        chip: 'bg-emerald-500/15 border-emerald-400/30 text-emerald-300',
+                      },
+                    },
+                    {
+                      key: 'engage',
+                      Icon: Flame,
+                      label: 'Engagement & Behavior',
+                      weight: '×0.1',
+                      score: person.engagementBehaviorScore ?? 0,
+                      detail: person.engageDetail,
+                      tone: {
+                        ring: 'ring-purple-400/20',
+                        bg: 'bg-purple-500/12',
+                        icon: 'text-purple-300',
+                        score: 'text-purple-400',
+                        chip: 'bg-purple-500/15 border-purple-400/30 text-purple-300',
+                      },
+                    },
+                  ].map(({ key, Icon, label, weight, score, detail, tone }) => {
+                    const detailText = detail?.trim();
+                    return (
+                      <div key={key} className="px-6 py-4 flex flex-col gap-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ring-1 ${tone.ring} ${tone.bg}`}>
+                              <Icon className={`w-3.5 h-3.5 ${tone.icon}`} />
+                            </span>
+                            <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider truncate">{label}</span>
+                            <span className={`shrink-0 px-1.5 py-px rounded-full border text-[8px] font-black tabular-nums shadow-inner ${tone.chip}`}>{weight}</span>
+                          </div>
+                          <span className={`text-xl font-mono font-black tabular-nums ${tone.score}`}>{score.toFixed(0)}</span>
+                        </div>
+                        <p className={`text-[11px] leading-relaxed pl-9 ${detailText ? 'text-zinc-400' : 'text-zinc-600 italic'}`}>
+                          {detailText || 'ยังไม่มีคำอธิบายจาก AI สำหรับมิตินี้'}
+                        </p>
                       </div>
-                      <span className="text-xl font-mono font-black text-emerald-400">{(person.goalAchievementScore ?? 0).toFixed(0)}</span>
-                  </div>
-                  <div className="px-6 py-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Star className="w-4 h-4 text-amber-500" />
-                        <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Quality of Work</span>
-                      </div>
-                      <span className="text-xl font-mono font-black text-amber-400">{(person.qualityScore ?? 0).toFixed(0)}</span>
-                  </div>
-                  <div className="px-6 py-4 flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Flame className="w-4 h-4 text-purple-500" />
-                        <span className="text-xs font-bold text-zinc-300 uppercase tracking-wider">Engagement & Behavior</span>
-                      </div>
-                      <span className="text-xl font-mono font-black text-purple-400">{(person.engagementBehaviorScore ?? 0).toFixed(0)}</span>
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
 

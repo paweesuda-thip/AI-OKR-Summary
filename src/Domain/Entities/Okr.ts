@@ -154,11 +154,20 @@ export interface ParticipantDetailRaw {
   totalMissCheckInAll: number;
   totalMissCheckIn: number;
   avgPercent: number;
-  // Mock fields for new engagement API
-  goalAchievementScore?: number;
+  // ── New API: per-dimension scores ─────────────────────────────
+  goalScore?: number;
   qualityScore?: number;
-  engagementBehaviorScore?: number;
+  engageScore?: number;
   totalScore?: number;
-  trend?: 'up' | 'normal' | 'down';
+  // ── New API: AI-generated reasoning per dimension ────────────
+  detail?: string;
+  goalDetail?: string;
+  qualityDetail?: string;
+  engageDetail?: string;
+  dateAIProcessed?: string;
+  // ── Aliases for legacy UI consumers (mirrored in repository) ─
+  goalAchievementScore?: number;
+  engagementBehaviorScore?: number;
   aiScoreReason?: string;
+  trend?: 'up' | 'normal' | 'down';
 }

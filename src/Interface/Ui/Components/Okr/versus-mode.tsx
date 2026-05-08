@@ -383,7 +383,29 @@ export default function VersusMode({
     });
   }, [cycleOptions]);
 
-  const defaultCycleId = sortedCycles[0]?.setId || 0;
+  /**
+   * Default cycle: prefer ongoing (today within [dateStart, dateEnd]), then the
+   * most-recent past cycle (dateStart closest to but ≤ today), finally the
+   * earliest upcoming cycle. Avoids defaulting to far-future entries.
+   */
+  const defaultCycleId = useMemo(() => {
+    if (sortedCycles.length === 0) return 0;
+    const now = Date.now();
+    const ongoing = sortedCycles.find((c) => {
+      const start = new Date(c.dateStart).getTime();
+      const end = new Date(c.dateEnd).getTime();
+      return start <= now && now <= end;
+    });
+    if (ongoing) return ongoing.setId;
+    const past = sortedCycles
+      .filter((c) => new Date(c.dateStart).getTime() <= now)
+      .sort((a, b) => new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime())[0];
+    if (past) return past.setId;
+    const upcoming = [...sortedCycles].sort(
+      (a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime(),
+    )[0];
+    return upcoming?.setId ?? sortedCycles[0].setId;
+  }, [sortedCycles]);
   const hasSpartanDefault = orgGroupedOptions.some((group) =>
     group.options.some((opt) => opt.organizationId === 18477)
   );
