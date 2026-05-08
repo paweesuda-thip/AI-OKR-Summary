@@ -70,10 +70,34 @@ export default function Dashboard() {
 
   const { groupedOrgOptions: allOrgGroupedOptions } = useOrgNodeQuery();
 
-  const currentCycle = useMemo(
-    () => cycleOptions.find((cycle) => cycle.isCurrentCycle) || cycleOptions[0],
-    [cycleOptions],
-  );
+  /**
+   * Default cycle: prefer one that is genuinely ongoing (today within
+   * [dateStart, dateEnd]), tiebreaking by most-recent dateStart. Falls back to
+   * the latest past cycle, then the earliest upcoming. Avoids picking a stale
+   * `isCurrentCycle` flag when multiple cycles carry it.
+   */
+  const currentCycle = useMemo(() => {
+    if (cycleOptions.length === 0) return undefined;
+    const now = Date.now();
+    const ongoing = cycleOptions
+      .filter((c) => {
+        const start = new Date(c.dateStart).getTime();
+        const end = new Date(c.dateEnd).getTime();
+        return start <= now && now <= end;
+      })
+      .sort((a, b) => {
+        if (a.isCurrentCycle !== b.isCurrentCycle) return a.isCurrentCycle ? -1 : 1;
+        return new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime();
+      })[0];
+    if (ongoing) return ongoing;
+    const past = [...cycleOptions]
+      .filter((c) => new Date(c.dateStart).getTime() <= now)
+      .sort((a, b) => new Date(b.dateStart).getTime() - new Date(a.dateStart).getTime())[0];
+    if (past) return past;
+    return [...cycleOptions].sort(
+      (a, b) => new Date(a.dateStart).getTime() - new Date(b.dateStart).getTime(),
+    )[0];
+  }, [cycleOptions]);
 
   const defaultOrgId = useMemo(() => {
     const hasPreferred = allOrgGroupedOptions.some((group) =>
@@ -84,7 +108,8 @@ export default function Dashboard() {
     return allOrgGroupedOptions[0]?.options[0]?.organizationId ?? FALLBACK_ORG_ID;
   }, [allOrgGroupedOptions]);
 
-  const [assessmentSetId, setAssessmentSetId] = useState(FALLBACK_CYCLE_ID);
+  // 0 = sentinel "user has not picked a cycle yet" — will resolve to currentCycle once DDL loads.
+  const [assessmentSetId, setAssessmentSetId] = useState(0);
   const [organizationId, setOrganizationId] = useState(FALLBACK_ORG_ID);
 
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
@@ -103,8 +128,10 @@ export default function Dashboard() {
   const [hallOfFamePersonId, setHallOfFamePersonId] = useState<number | null>(null);
 
   const resolvedAssessmentSetId = useMemo(() => {
-    const exists = cycleOptions.some((cycle) => cycle.setId === assessmentSetId);
-    if (exists) return assessmentSetId;
+    // Honor the user's explicit pick only — sentinel 0 means "use the computed default".
+    if (assessmentSetId !== 0 && cycleOptions.some((cycle) => cycle.setId === assessmentSetId)) {
+      return assessmentSetId;
+    }
     return currentCycle?.setId ?? FALLBACK_CYCLE_ID;
   }, [assessmentSetId, currentCycle?.setId, cycleOptions]);
 

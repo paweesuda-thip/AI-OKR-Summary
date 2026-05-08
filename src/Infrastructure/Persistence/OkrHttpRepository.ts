@@ -165,14 +165,29 @@ export async function fetchParticipantDetails(
 
   // Mirror new API field names onto the legacy aliases used across the UI layer.
   // No mock generation — when the API omits a score we fall back to 0.
-  return rawData.map(p => ({
-    ...p,
-    goalAchievementScore: p.goalAchievementScore ?? p.goalScore ?? 0,
-    engagementBehaviorScore: p.engagementBehaviorScore ?? p.engageScore ?? 0,
-    qualityScore: p.qualityScore ?? 0,
-    totalScore: p.totalScore ?? 0,
-    aiScoreReason: p.aiScoreReason ?? (p.detail && p.detail.trim() ? p.detail : undefined),
-  }));
+  return rawData.map(p => {
+    // API encodes `trend` as an enum number: 0 = Stable, 1 = Up, 2 = Down.
+    // Map onto the legacy string union the UI expects; keep the raw enum on `trendValue`.
+    const rawTrend = (p as { trend?: unknown }).trend;
+    let trendValue: number | undefined;
+    let trendString: 'up' | 'normal' | 'down' | undefined;
+    if (typeof rawTrend === 'number') {
+      trendValue = rawTrend;
+      trendString = rawTrend === 1 ? 'up' : rawTrend === 2 ? 'down' : 'normal';
+    } else if (rawTrend === 'up' || rawTrend === 'down' || rawTrend === 'normal') {
+      trendString = rawTrend;
+    }
+    return {
+      ...p,
+      goalAchievementScore: p.goalAchievementScore ?? p.goalScore ?? 0,
+      engagementBehaviorScore: p.engagementBehaviorScore ?? p.engageScore ?? 0,
+      qualityScore: p.qualityScore ?? 0,
+      totalScore: p.totalScore ?? 0,
+      aiScoreReason: p.aiScoreReason ?? (p.detail && p.detail.trim() ? p.detail : undefined),
+      trendValue: trendValue ?? p.trendValue,
+      trend: trendString ?? p.trend,
+    };
+  });
 }
 
 // ─── IOkrRepository implementation ─────────────────────────────────────────────

@@ -587,7 +587,7 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                                <Activity className="w-4 h-4" strokeWidth={2.5} />}
                             </div>
                           </TooltipTrigger>
-                          <TooltipContent side="left" className="!bg-zinc-950 !border-zinc-800 !text-zinc-100 max-w-[320px] p-0 overflow-hidden shadow-2xl">
+                          <TooltipContent side="left" className="!bg-zinc-950 !border-zinc-800 !text-zinc-100 max-w-[360px] p-0 overflow-hidden shadow-2xl">
                             <div className="p-4">
                               <div className="flex items-center gap-2 mb-3">
                                 <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${person.trend === 'up' ? 'bg-emerald-500/15 text-emerald-400' : person.trend === 'down' ? 'bg-rose-500/15 text-rose-400' : 'bg-zinc-500/15 text-zinc-400'}`}>
@@ -596,18 +596,45 @@ export function CheckInEngagement({ participantDetails, showStatus = true, query
                                     {person.trend === 'up' ? 'Improving' : person.trend === 'down' ? 'Declining' : 'Stable'}
                                   </span>
                                 </div>
+                                <span className="text-[10px] font-mono text-zinc-500 tabular-nums">
+                                  Total {(person.totalScore ?? 0).toFixed(1)}
+                                </span>
                               </div>
-                              
-                              {/* AI Reason */}
-                              {(!queryParams?.dateStart && !queryParams?.dateEnd) && person.aiScoreReason && (
-                                <div className="text-zinc-300 font-normal leading-relaxed text-xs">
-                                  <div className="flex items-start gap-2">
-                                    <div className="w-1 h-1 rounded-full bg-blue-400 mt-1.5 shrink-0" />
-                                    <p>{person.aiScoreReason}</p>
-                                  </div>
-                                </div>
+
+                              {/* AI Reasoning — overall detail + trend detail as two bullets */}
+                              {(!queryParams?.dateStart && !queryParams?.dateEnd) && (person.aiScoreReason || person.trendDetail) && (
+                                <ul className="space-y-2.5">
+                                  {person.aiScoreReason && (
+                                    <li className="flex items-start gap-2.5">
+                                      <span className="mt-1 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-blue-500/15 ring-1 ring-blue-400/30">
+                                        <span className="h-1 w-1 rounded-full bg-blue-300" />
+                                      </span>
+                                      <div className="min-w-0 flex-1">
+                                        <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-300/90 mb-0.5">Reasoning</p>
+                                        <p className="text-xs leading-relaxed text-zinc-300 break-words">{person.aiScoreReason}</p>
+                                      </div>
+                                    </li>
+                                  )}
+                                  {person.trendDetail?.trim() && (
+                                    <li className="flex items-start gap-2.5">
+                                      <span className={`mt-1 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full ring-1 ${person.trend === 'up' ? 'bg-emerald-500/15 ring-emerald-400/30' : person.trend === 'down' ? 'bg-rose-500/15 ring-rose-400/30' : 'bg-zinc-500/15 ring-zinc-400/30'}`}>
+                                        {person.trend === 'up'
+                                          ? <TrendingUp className="h-2.5 w-2.5 text-emerald-300" />
+                                          : person.trend === 'down'
+                                            ? <TrendingDown className="h-2.5 w-2.5 text-rose-300" />
+                                            : <Activity className="h-2.5 w-2.5 text-zinc-300" />}
+                                      </span>
+                                      <div className="min-w-0 flex-1">
+                                        <p className={`text-[10px] font-semibold uppercase tracking-wider mb-0.5 ${person.trend === 'up' ? 'text-emerald-300/90' : person.trend === 'down' ? 'text-rose-300/90' : 'text-zinc-400/90'}`}>
+                                          Trend signal
+                                        </p>
+                                        <p className="text-xs leading-relaxed text-zinc-300 break-words">{person.trendDetail}</p>
+                                      </div>
+                                    </li>
+                                  )}
+                                </ul>
                               )}
-                              
+
                               {/* Score Breakdown */}
                               <div className="mt-3 pt-3 border-t border-zinc-800">
                                 <div className="grid grid-cols-3 gap-2">

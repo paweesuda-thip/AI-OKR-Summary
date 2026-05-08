@@ -165,6 +165,10 @@ export interface ParticipantDetailRaw {
   qualityDetail?: string;
   engageDetail?: string;
   dateAIProcessed?: string;
+  // ── New API: trend signal vs prior period ────────────────────
+  // Numeric enum from API: 0 = Stable, 1 = Up, 2 = Down.
+  trendValue?: number;
+  trendDetail?: string;
   // ── Aliases for legacy UI consumers (mirrored in repository) ─
   goalAchievementScore?: number;
   engagementBehaviorScore?: number;
