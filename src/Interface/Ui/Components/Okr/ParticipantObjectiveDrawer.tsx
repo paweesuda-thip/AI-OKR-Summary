@@ -437,14 +437,14 @@ export function ParticipantObjectiveDrawer({
                             className="w-full flex items-center gap-5 px-6 py-5 text-left relative z-10"
                             onClick={() => setExpandedObjectiveId(isExpanded ? null : obj.objectiveId)}
                           >
-                            <div className="shrink-0 flex flex-col items-center w-12">
+                            {/* <div className="shrink-0 flex flex-col items-center w-12">
                               <span className={`text-3xl font-black font-mono leading-none drop-shadow-md ${statusColor}`}>
                                 {Math.floor(personProgress)}
                               </span>
                               <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-1">Score</span>
-                            </div>
+                            </div> */}
 
-                            <div className="w-px self-stretch bg-white/10" />
+                            {/* <div className="w-px self-stretch bg-white/10" /> */}
 
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-3 mb-1.5">

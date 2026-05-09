@@ -538,7 +538,7 @@ const PreviewObjectiveCard = ({
       className={`w-full rounded-xl border border-[#1f1f1f] bg-[#0a0a0c] overflow-hidden ${isLeft ? "shadow-[inset_0_1px_0_rgba(244,63,94,0.08)]" : "shadow-[inset_0_1px_0_rgba(34,211,238,0.08)]"}`}
     >
       <div className="flex items-start gap-3 p-4">
-        <div className="relative shrink-0 w-11 h-11 flex items-center justify-center bg-[#070707] rounded-full ring-1 ring-[#1b1b1b]">
+        {/* <div className="relative shrink-0 w-11 h-11 flex items-center justify-center bg-[#070707] rounded-full ring-1 ring-[#1b1b1b]">
           <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
             <circle cx="18" cy="18" r="14" fill="none" className="stroke-[#111]" strokeWidth="2.5" />
             <circle
@@ -556,7 +556,7 @@ const PreviewObjectiveCard = ({
           <span className={`absolute text-[9px] font-bold font-mono ${isLeft ? "text-rose-400" : "text-cyan-400"}`}>
             {Math.floor(obj.personProgress)}
           </span>
-        </div>
+        </div> */}
         <div className={`flex-1 min-w-0 ${isLeft ? "text-left" : "text-right"}`}>
           <div className={`flex flex-wrap items-center gap-2 mb-1 ${isLeft ? "" : "justify-end"}`}>
             <span className="text-[8px] font-mono text-zinc-500 tracking-wider">obj#{obj.objectiveId}</span>
@@ -920,7 +920,6 @@ export default function VersusMode({
                                 Total score
                                 {p1.aiScoreReason?.trim() && <Info className="h-2.5 w-2.5 text-white/30" strokeWidth={2.5} />}
                               </div>
-                              <div className="text-[10px] font-mono text-zinc-500">{p1.totalCheckIn} check-ins</div>
                             </div>
                             <div className="flex items-baseline gap-2 mt-0.5">
                               <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
@@ -1024,7 +1023,6 @@ export default function VersusMode({
                                 Total score
                                 {p2.aiScoreReason?.trim() && <Info className="h-2.5 w-2.5 text-white/30" strokeWidth={2.5} />}
                               </div>
-                              <div className="text-[10px] font-mono text-zinc-500">{p2.totalCheckIn} check-ins</div>
                             </div>
                             <div className="flex items-baseline gap-2 mt-0.5 justify-end">
                               <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
@@ -1351,7 +1349,6 @@ export default function VersusMode({
                               Total score
                               {p1.aiScoreReason?.trim() && <Info className="h-2.5 w-2.5 text-white/30" strokeWidth={2.5} />}
                             </div>
-                            <div className="text-[10px] font-mono text-zinc-500">{p1.totalCheckIn} check-ins</div>
                           </div>
                           <div className="flex items-baseline gap-2 mt-0.5">
                             <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
@@ -1514,7 +1511,6 @@ export default function VersusMode({
                               Total score
                               {p2.aiScoreReason?.trim() && <Info className="h-2.5 w-2.5 text-white/30" strokeWidth={2.5} />}
                             </div>
-                            <div className="text-[10px] font-mono text-zinc-500">{p2.totalCheckIn} check-ins</div>
                           </div>
                           <div className="flex items-baseline gap-2 mt-0.5 justify-end">
                             <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
@@ -1662,7 +1658,7 @@ export default function VersusMode({
         {isActive && <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-transparent via-zinc-600 to-transparent opacity-30" />}
 
         <div className="flex items-start gap-4 p-4 md:p-6 relative z-10">
-          <div className="relative shrink-0 w-12 h-12 flex items-center justify-center bg-[#070707] rounded-full shadow-inner ring-1 ring-[#1b1b1b]">
+          {/* <div className="relative shrink-0 w-12 h-12 flex items-center justify-center bg-[#070707] rounded-full shadow-inner ring-1 ring-[#1b1b1b]">
             <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
               <circle cx="18" cy="18" r="14.5" fill="none" className="stroke-[#111]" strokeWidth="2.5" />
               <motion.circle
@@ -1676,7 +1672,7 @@ export default function VersusMode({
               />
             </svg>
             <span className={`absolute text-[10px] font-bold ${isLeft ? 'text-rose-400' : 'text-cyan-400'}`}>{isActive ? Math.floor(obj.personProgress) : '0'}</span>
-          </div>
+          </div> */}
 
           <div className="flex-1 min-w-0 pr-6">
             {badge && isActive && (
@@ -1741,18 +1737,22 @@ export default function VersusMode({
 
                       {detail.details.length > 0 && (
                         <div className="space-y-2">
-                          {detail.details.map((kr, krIdx) => (
-                            <div key={`${detail.objectiveId}-${krIdx}`} className="flex items-start gap-3 p-3 rounded-lg bg-[#111116] border border-[#1b1b1b]">
-                              <Crosshair className={`w-4 h-4 shrink-0 mt-0.5 ${kr.krProgress >= 100 ? (isLeft ? 'text-rose-500' : 'text-cyan-400') : 'text-zinc-700'}`} />
-                              <div className="flex-1 min-w-0">
-                                <div className={`text-sm font-sans leading-relaxed ${kr.krProgress >= 100 ? 'text-zinc-200' : 'text-zinc-400'}`}>{kr.krTitle}</div>
-                                <div className="text-[11px] font-mono text-zinc-500 mt-1.5 tabular-nums">
-                                  progress {kr.pointCurrent ?? 0}/{kr.pointOKR ?? 0}%
+                          {detail.details.map((kr, krIdx) => {
+                            const krPct = kr.pointOKR ?? 0;
+                            const isComplete = krPct >= 100;
+                            return (
+                              <div key={`${detail.objectiveId}-${krIdx}`} className="flex items-start gap-3 p-3 rounded-lg bg-[#111116] border border-[#1b1b1b]">
+                                <Crosshair className={`w-4 h-4 shrink-0 mt-0.5 ${isComplete ? (isLeft ? 'text-rose-500' : 'text-cyan-400') : 'text-zinc-700'}`} />
+                                <div className="flex-1 min-w-0">
+                                  <div className={`text-sm font-sans leading-relaxed ${isComplete ? 'text-zinc-200' : 'text-zinc-400'}`}>{kr.krTitle}</div>
+                                  <div className="text-[11px] font-mono text-zinc-500 mt-1.5 tabular-nums">
+                                    {kr.pointCurrent ?? 0} pt.
+                                  </div>
                                 </div>
+                                <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>{Math.floor(krPct)}%</span>
                               </div>
-                              <span className={`text-xs font-bold font-mono ${isLeft ? 'text-rose-400' : 'text-cyan-400'} shrink-0 ml-2 bg-black px-2.5 py-1 rounded-md border border-[#222]`}>{Math.floor(kr.krProgress)}%</span>
-                            </div>
-                          ))}
+                            );
+                          })}
                         </div>
                       )}
                     </div>
@@ -1888,10 +1888,6 @@ export default function VersusMode({
                   {isFinalResult && (
                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex items-center gap-4">
                       <ResultCounter value={result.scoreA} label="SCORE" isLeft={true} />
-                      <div className="hidden md:flex flex-col border-l border-zinc-800 pl-4 space-y-1.5">
-                        <span className="text-[11px] text-zinc-400 tracking-wide uppercase font-bold font-sans">Total Check-ins</span>
-                        <span className="text-white font-bold font-sans text-xl leading-none">{p1.totalCheckIn}</span>
-                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -2003,10 +1999,6 @@ export default function VersusMode({
                   {isFinalResult && (
                     <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 flex items-center flex-row-reverse gap-4">
                       <ResultCounter value={result.scoreB} label="SCORE" isLeft={false} />
-                      <div className="hidden md:flex flex-col border-r border-zinc-800 pr-4 space-y-1.5 items-end text-right">
-                        <span className="text-[11px] text-zinc-400 tracking-wide uppercase font-bold font-sans">Total Check-ins</span>
-                        <span className="text-white font-bold font-sans text-xl leading-none">{p2.totalCheckIn}</span>
-                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
