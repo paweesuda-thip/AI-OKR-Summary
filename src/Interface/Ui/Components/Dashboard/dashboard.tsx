@@ -355,6 +355,8 @@ export default function Dashboard() {
                               dashboardData={dashboardData}
                               aiScoreResult={aiScoreResult}
                               onAiScoreResultChange={setAiScoreResult}
+                              assessmentSetId={resolvedAssessmentSetId}
+                              organizationId={resolvedOrganizationId}
                             />
                           </div>
                         </div>

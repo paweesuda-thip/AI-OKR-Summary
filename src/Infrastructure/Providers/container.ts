@@ -3,10 +3,12 @@ import 'server-only';
 import { OkrHttpRepository } from '@/src/Infrastructure/Persistence/OkrHttpRepository';
 import { DdlServerRepository } from '@/src/Infrastructure/ExternalServices/DdlProxyClient';
 import { GeminiLlmProvider } from '@/src/Infrastructure/ExternalServices/GeminiLlmProvider';
+import { EmpeoStatioJobsService } from '@/src/Infrastructure/ExternalServices/EmpeoStatioJobsService';
 
 import { GetDashboardUseCase } from '@/src/Application/UseCases/Okr/GetDashboardUseCase';
 import { ListOrgNodesUseCase } from '@/src/Application/UseCases/Ddl/ListOrgNodesUseCase';
 import { ListAssessmentSetsUseCase } from '@/src/Application/UseCases/Ddl/ListAssessmentSetsUseCase';
+import { TriggerEmployeeStatioGenerateUseCase } from '@/src/Application/UseCases/Jobs/TriggerEmployeeStatioGenerateUseCase';
 
 /**
  * Hand-rolled Dependency Injection container.
@@ -36,6 +38,12 @@ class Container {
     return (this._gemini ??= new GeminiLlmProvider());
   }
 
+  // ─── Job services ───────────────────────────────────────────────────────
+  private _statioJobs?: EmpeoStatioJobsService;
+  get statioJobsService(): EmpeoStatioJobsService {
+    return (this._statioJobs ??= new EmpeoStatioJobsService());
+  }
+
   // ─── Use cases ──────────────────────────────────────────────────────────
   private _getDashboard?: GetDashboardUseCase;
   get getDashboardUseCase(): GetDashboardUseCase {
@@ -50,6 +58,13 @@ class Container {
   private _listAssessmentSets?: ListAssessmentSetsUseCase;
   get listAssessmentSetsUseCase(): ListAssessmentSetsUseCase {
     return (this._listAssessmentSets ??= new ListAssessmentSetsUseCase(this.ddlRepository));
+  }
+
+  private _triggerStatioGenerate?: TriggerEmployeeStatioGenerateUseCase;
+  get triggerEmployeeStatioGenerateUseCase(): TriggerEmployeeStatioGenerateUseCase {
+    return (this._triggerStatioGenerate ??= new TriggerEmployeeStatioGenerateUseCase(
+      this.statioJobsService,
+    ));
   }
 }
 

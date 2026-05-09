@@ -229,13 +229,15 @@ export function ParticipantObjectiveDrawer({
                         <TooltipContent
                           side="bottom"
                           align="end"
-                          className="border-white/10 bg-zinc-950/95 px-3 py-2 text-[11px] font-medium text-zinc-200"
+                          className="max-w-xs whitespace-normal wrap-break-word border-white/10 bg-zinc-950/95 px-3 py-2 text-[11px] font-medium leading-relaxed text-zinc-200"
                         >
-                          {heroTrend === 'up'
-                            ? 'Trajectory is up vs prior period.'
-                            : heroTrend === 'down'
-                              ? 'Trajectory is down vs prior period.'
-                              : 'Flat vs prior period.'}
+                          {person.trendDetail?.trim()
+                            ? person.trendDetail
+                            : heroTrend === 'up'
+                              ? 'Trajectory is up vs prior period.'
+                              : heroTrend === 'down'
+                                ? 'Trajectory is down vs prior period.'
+                                : 'Flat vs prior period.'}
                         </TooltipContent>
                       </Tooltip>
                       </TooltipProvider>

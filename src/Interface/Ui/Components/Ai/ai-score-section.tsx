@@ -19,6 +19,37 @@ interface AIScoreSectionProps {
   };
   aiScoreResult: AIScoreResult | null;
   onAiScoreResultChange: (result: AIScoreResult | null) => void;
+  /** Currently-selected cycle id from the dashboard header. Required to trigger the upstream statio-generate job. */
+  assessmentSetId: number;
+  /** Currently-selected organization id from the dashboard header. */
+  organizationId: number;
+}
+
+/**
+ * Fire-and-forget: kick off the upstream `employee-statio-generate` job so the
+ * backend AI pipeline starts producing per-employee `detail`/`qualityDetail`/
+ * etc. fields. Failure is logged but does not block the dashboard score render
+ * — that data shows up on subsequent participant-details fetches once the
+ * backend completes processing.
+ */
+async function triggerEmployeeStatioGenerate(
+  assessmentSetId: number,
+  organizationId: number,
+): Promise<void> {
+  try {
+    const response = await fetch('/api/jobs/employee-statio-generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assessmentSetId, organizationId }),
+    });
+    if (!response.ok) {
+      console.warn(
+        `employee-statio-generate trigger returned ${response.status}`,
+      );
+    }
+  } catch (err) {
+    console.warn('employee-statio-generate trigger failed', err);
+  }
 }
 
 const normalizeAIScoreResult = (payload: unknown): AIScoreResult | null => {
@@ -43,15 +74,21 @@ export function AIScoreSection({
   dashboardData,
   aiScoreResult,
   onAiScoreResultChange,
+  assessmentSetId,
+  organizationId,
 }: AIScoreSectionProps) {
   const [isGeneratingScore, setIsGeneratingScore] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const handleGetAIScore = async () => {
     if (!teamSummary) return;
-    
+
     setIsGeneratingScore(true);
     setError(null);
+
+    // Kick off the backend AI pipeline alongside the local score generation
+    // so the next participant-details fetch picks up freshly-processed data.
+    void triggerEmployeeStatioGenerate(assessmentSetId, organizationId);
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 55_000);

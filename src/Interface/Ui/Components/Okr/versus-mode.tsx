@@ -1,12 +1,13 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import {
-  ContributorSum,
   Objective,
   PersonObjective,
   type ParticipantDetailRaw,
+  type OkrDataRaw,
 } from "@/src/Domain/Entities/Okr";
-import { mapObjectiveForPerson } from "@/src/Infrastructure/Persistence/Mappers/OkrMapper";
+import { mapObjective, mapObjectiveForPerson } from "@/src/Infrastructure/Persistence/Mappers/OkrMapper";
+import { fetchEmployeeObjectiveSummary } from "@/src/Infrastructure/Persistence/OkrHttpRepository";
 import { Crosshair, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft, Swords, Dot } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
@@ -20,7 +21,6 @@ import {
   SelectSeparator,
 } from "@/src/Interface/Ui/Primitives/select";
 import type { CycleOption, GroupedOrgOption } from "@/src/Interface/Ui/utils/org-leaf";
-import { useDashboardQuery } from "@/src/Interface/Ui/Hooks/use-dashboard-query";
 import { useParticipantQuery } from "@/src/Interface/Ui/Hooks/use-participant-query";
 import BorderGlow from "@/src/Interface/Ui/Components/Shared/react-bits/BorderGlow";
 
@@ -44,59 +44,19 @@ interface ComparisonResult {
   conclusion: string;
 }
 
-/**
- * Alias kept for readability at call sites. Comes from shared
- * `mapObjectiveForPerson()` so versus-mode and check-in-engagement stay in sync.
- */
-type TopObjectiveEnhanced = PersonObjective;
-
 interface VersusModeProps {
   cycleOptions: CycleOption[];
   orgGroupedOptions: GroupedOrgOption[];
   ddlLoading?: boolean;
 }
 
-type PlayerEnhanced = ContributorSum & {
-  topObjectives: TopObjectiveEnhanced[];
-  /** From participant-details API (`ParticipantDetailRaw.avgPercent`), keyed by contributor name. */
-  avgParticipantPercent?: number;
-  totalScore: number;
-  goalAchievementScore: number;
-  qualityScore: number;
-  engagementBehaviorScore: number;
-};
+/**
+ * A selectable player in versus-mode.
+ * Source: ParticipantDetailRaw (has employeeId + all dimension scores).
+ * Objectives are fetched on-demand via fetchEmployeeObjectiveSummary.
+ */
+type PlayerEnhanced = ParticipantDetailRaw;
 
-function participantDetailsByContributorName(
-  participants: ParticipantDetailRaw[] | undefined,
-): Map<string, ParticipantDetailRaw> {
-  const map = new Map<string, ParticipantDetailRaw>();
-  for (const p of participants ?? []) {
-    for (const key of [p.fullName, p.fullName_EN]) {
-      const t = key?.trim();
-      if (t) map.set(t, p);
-    }
-  }
-  return map;
-}
-
-function mergeParticipantDetails(
-  pool: PlayerEnhanced[],
-  participants: ParticipantDetailRaw[] | undefined,
-): PlayerEnhanced[] {
-  const map = participantDetailsByContributorName(participants);
-  return pool.map((c) => {
-    const p = map.get(c.fullName.trim());
-    const fallbackScore = Math.floor(Math.random() * 30) + 70; // 70-100 Mock
-    return {
-      ...c,
-      avgParticipantPercent: p?.avgPercent ?? 0,
-      totalScore: p?.totalScore ?? fallbackScore,
-      goalAchievementScore: p?.goalAchievementScore ?? fallbackScore,
-      qualityScore: p?.qualityScore ?? fallbackScore,
-      engagementBehaviorScore: p?.engagementBehaviorScore ?? fallbackScore,
-    };
-  });
-}
 
 /** Shared A/Q/E bars — matches Check-in Engagement “multi-dimensional” UI (see docs/engagement-ranking-concept.md). */
 const EngagementMetricBar = ({
@@ -284,46 +244,8 @@ const RoundDossier = ({
   );
 };
 
-const buildPlayerPool = (
-  contributors: ContributorSum[],
-  objectives: Objective[],
-): PlayerEnhanced[] => {
-  const objectiveById = new Map(
-    objectives.map((objective) => [objective.objectiveId, objective]),
-  );
-
-  return contributors
-    .filter((c) => c.fullName && c.objectives && c.objectives.length > 0)
-    .map((c) => {
-      // Route ALL per-person progress math through the shared helper so
-      // versus-mode and check-in-engagement can't drift apart.
-      const topObjs: TopObjectiveEnhanced[] = c.objectives
-        .map((contribObj) => {
-          const source = objectiveById.get(contribObj.objectiveId);
-          return source ? mapObjectiveForPerson(source, c.fullName) : null;
-        })
-        .filter((o): o is TopObjectiveEnhanced => o !== null)
-        .sort((a, b) => b.personProgress - a.personProgress);
-
-      const avgObjectiveProgress =
-        topObjs.length > 0
-          ? topObjs.reduce((s, o) => s + o.personProgress, 0) / topObjs.length
-          : c.avgObjectiveProgress;
-
-      return {
-        ...c,
-        avgObjectiveProgress,
-        topObjectives: topObjs,
-        totalScore: 0,
-        goalAchievementScore: 0,
-        qualityScore: 0,
-        engagementBehaviorScore: 0,
-      };
-    });
-};
-
 /** Client-side load heuristic from KR count + point gap (maps OKR weight vs progress). */
-function objectiveLoadHint(obj: TopObjectiveEnhanced): { chip: string; sub: string } {
+function objectiveLoadHint(obj: PersonObjective): { chip: string; sub: string } {
   const subs = obj.subObjectives;
   const krs = subs.flatMap((s) => s.details ?? []);
   const n = krs.length;
@@ -334,6 +256,122 @@ function objectiveLoadHint(obj: TopObjectiveEnhanced): { chip: string; sub: stri
   if (score >= 32) return { chip: "LOAD · MED", sub: `${subs.length} detail · ${n} KR` };
   return { chip: "LOAD · LOW", sub: n ? `${subs.length} detail · ${n} KR` : "no KR rows" };
 }
+
+/**
+ * Hoisted to module scope so its function reference is stable across re-renders.
+ * Defining it inside `PreviewArena` would unmount+remount every parent render,
+ * replaying motion animations and causing the visible "flash" on player click.
+ */
+const PreviewObjectiveCard = ({
+  objective,
+  playerName,
+  isLeft,
+  index,
+}: {
+  objective?: Objective;
+  playerName: string;
+  isLeft: boolean;
+  index: number;
+}) => {
+  const obj: PersonObjective | null = objective
+    ? mapObjectiveForPerson(objective, playerName)
+    : null;
+  if (!objective || !obj) {
+    return (
+      <div
+        className={`w-full min-h-[88px] border border-dashed border-zinc-800 rounded-xl flex items-center justify-center bg-[#050505]/80 ${isLeft ? "" : "text-right"}`}
+      >
+        <span className="text-[9px] text-zinc-600 font-mono tracking-widest">OKR::{index + 1} · empty slot</span>
+      </div>
+    );
+  }
+  const load = objectiveLoadHint(obj);
+  const objectiveDetails = obj.subObjectives;
+
+  return (
+    <div
+      className={`w-full rounded-xl border border-[#1f1f1f] bg-[#0a0a0c] overflow-hidden ${isLeft ? "shadow-[inset_0_1px_0_rgba(244,63,94,0.08)]" : "shadow-[inset_0_1px_0_rgba(34,211,238,0.08)]"}`}
+    >
+      <div className="flex items-start gap-3 p-4">
+        <div className="relative shrink-0 w-11 h-11 flex items-center justify-center bg-[#070707] rounded-full ring-1 ring-[#1b1b1b]">
+          <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+            <circle cx="18" cy="18" r="14" fill="none" className="stroke-[#111]" strokeWidth="2.5" />
+            <circle
+              cx="18"
+              cy="18"
+              r="14"
+              fill="none"
+              className={isLeft ? "stroke-rose-500" : "stroke-cyan-400"}
+              strokeWidth="2.5"
+              strokeDasharray="88"
+              strokeDashoffset={88 - (88 * Math.min(100, Math.max(0, obj.personProgress))) / 100}
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className={`absolute text-[9px] font-bold font-mono ${isLeft ? "text-rose-400" : "text-cyan-400"}`}>
+            {Math.floor(obj.personProgress)}
+          </span>
+        </div>
+        <div className={`flex-1 min-w-0 ${isLeft ? "text-left" : "text-right"}`}>
+          <div className={`flex flex-wrap items-center gap-2 mb-1 ${isLeft ? "" : "justify-end"}`}>
+            <span className="text-[8px] font-mono text-zinc-500 tracking-wider">obj#{obj.objectiveId}</span>
+            <span
+              className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${isLeft ? "border-rose-500/30 text-rose-400/90" : "border-cyan-400/30 text-cyan-400/90"}`}
+            >
+              {load.chip}
+            </span>
+          </div>
+          <h4 className={`text-[13px] font-medium font-sans leading-snug text-zinc-200 line-clamp-3 ${isLeft ? "" : "text-right"}`}>{obj.objectiveName}</h4>
+          <p className={`text-[9px] font-mono text-zinc-500 mt-1 ${isLeft ? "" : "text-right"}`}>{load.sub}</p>
+        </div>
+      </div>
+      {objectiveDetails.length > 0 && (
+        <div className="border-t border-[#161616] bg-[#070709] px-3 py-2 space-y-2">
+          {objectiveDetails.map((detail, di) => (
+            <div key={detail.objectiveId ?? di} className="rounded-lg bg-[#0e0e11] border border-[#161616] p-2.5">
+              <div className={`flex items-start gap-2 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[9px] font-mono text-zinc-500 tracking-wide uppercase">Objective detail</div>
+                  <div className={`text-[11px] font-sans leading-relaxed text-zinc-300 mt-0.5 ${isLeft ? "text-left" : "text-right"}`}>
+                    {detail.title}
+                  </div>
+                </div>
+                <span className={`shrink-0 text-[10px] font-mono px-2 py-1 rounded border ${isLeft ? "border-rose-500/30 text-rose-400" : "border-cyan-400/30 text-cyan-400"}`}>
+                  {Math.floor(detail.personProgress)}%
+                </span>
+              </div>
+
+              {detail.details.length > 0 && (
+                <div className="mt-2 space-y-2">
+                  {detail.details.map((kr, ki) => (
+                    <div
+                      key={`${detail.objectiveId}-${ki}`}
+                      className={`flex flex-wrap items-start gap-2 text-[11px] font-sans rounded-lg bg-[#111116] border border-[#1b1b1b] p-2 ${isLeft ? "" : "flex-row-reverse text-right"}`}
+                    >
+                      <Crosshair className={`w-3 h-3 shrink-0 mt-0.5 ${isLeft ? "text-rose-500/80" : "text-cyan-400/80"}`} />
+                      <div className={`flex-1 min-w-0 leading-relaxed ${isLeft ? "text-left" : "text-right"} text-zinc-400`}>{kr.krTitle}</div>
+                      <div className={`flex flex-col items-end shrink-0 gap-0.5 font-mono text-[9px] ${isLeft ? "" : "items-start"}`}>
+                        <span className={isLeft ? "text-rose-400" : "text-cyan-400"}>{Math.floor(kr.pointOKR)}%</span>
+                        <span className="text-zinc-600">
+                          {kr.pointCurrent ?? 0} pt.
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {detail.details.length === 0 && (
+                <div className={`mt-2 text-[10px] font-mono text-zinc-600 ${isLeft ? "" : "text-right"}`}>
+                  no KR assigned
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function VersusMode({
   cycleOptions,
@@ -346,6 +384,14 @@ export default function VersusMode({
   const [result, setResult] = useState<ComparisonResult | null>(null);
   const [isComparing, setIsComparing] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
+
+  const [p1Objectives, setP1Objectives] = useState<Objective[]>([]);
+  const [p1ObjLoading, setP1ObjLoading] = useState(false);
+  const [p1ObjError, setP1ObjError] = useState<string | null>(null);
+
+  const [p2Objectives, setP2Objectives] = useState<Objective[]>([]);
+  const [p2ObjLoading, setP2ObjLoading] = useState(false);
+  const [p2ObjError, setP2ObjError] = useState<string | null>(null);
 
   const getStatusData = (percent: number) => {
     if (percent >= 80) return { 
@@ -457,52 +503,63 @@ export default function VersusMode({
 
   const queryEnabled = !ddlLoading && sortedCycles.length > 0 && orgGroupedOptions.length > 0;
 
-  const { data: p1DashboardData, isLoading: p1Loading } = useDashboardQuery(p1Params, { enabled: queryEnabled });
-  const { data: p2DashboardData, isLoading: p2Loading } = useDashboardQuery(p2Params, { enabled: queryEnabled });
-  const { data: p1Participants } = useParticipantQuery(p1Params, { enabled: queryEnabled });
-  const { data: p2Participants } = useParticipantQuery(p2Params, { enabled: queryEnabled });
-
-  const p1Candidates = useMemo(
-    () =>
-      mergeParticipantDetails(
-        buildPlayerPool(p1DashboardData?.contributors ?? [], p1DashboardData?.objectives ?? []),
-        p1Participants,
-      ),
-    [p1DashboardData, p1Participants],
-  );
-
-  const p2Candidates = useMemo(
-    () =>
-      mergeParticipantDetails(
-        buildPlayerPool(p2DashboardData?.contributors ?? [], p2DashboardData?.objectives ?? []),
-        p2Participants,
-      ),
-    [p2DashboardData, p2Participants],
-  );
+  const { data: p1Candidates = [], isLoading: p1Loading } = useParticipantQuery(p1Params, { enabled: queryEnabled });
+  const { data: p2Candidates = [], isLoading: p2Loading } = useParticipantQuery(p2Params, { enabled: queryEnabled });
 
   useEffect(() => {
-    if (p1 && !p1Candidates.some((c) => c.fullName === p1.fullName)) {
+    if (p1 && p1Candidates.length > 0 && !p1Candidates.find((c) => c.employeeId === p1.employeeId)) {
       setP1(null);
+      setP1Objectives([]);
     }
   }, [p1, p1Candidates]);
 
   useEffect(() => {
-    if (p2 && !p2Candidates.some((c) => c.fullName === p2.fullName)) {
+    if (p2 && p2Candidates.length > 0 && !p2Candidates.find((c) => c.employeeId === p2.employeeId)) {
       setP2(null);
+      setP2Objectives([]);
     }
   }, [p2, p2Candidates]);
 
   // If user flips cycles back to equal while self-selected on both sides, clear P2.
   useEffect(() => {
-    if (p1 && p2 && p1.fullName === p2.fullName && p1CycleId === p2CycleId) {
+    if (p1 && p2 && p1.employeeId === p2.employeeId && p1CycleId === p2CycleId) {
       setP2(null);
+      setP2Objectives([]);
     }
   }, [p1, p2, p1CycleId, p2CycleId]);
+
+  const fetchObjectivesFor = useCallback(
+    async (
+      player: PlayerEnhanced,
+      params: { assessmentSetId: number; organizationId: number },
+      setObjs: (o: Objective[]) => void,
+      setLoading: (v: boolean) => void,
+      setError: (e: string | null) => void,
+    ) => {
+      setLoading(true);
+      setError(null);
+      setObjs([]);
+      try {
+        const raw: OkrDataRaw[] = await fetchEmployeeObjectiveSummary({
+          ...params,
+          employeeId: player.employeeId,
+        });
+        setObjs(raw.map(mapObjective));
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load objectives');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
 
   const resetState = () => {
     setStep("select");
     setP1(null);
     setP2(null);
+    setP1Objectives([]);
+    setP2Objectives([]);
     setResult(null);
     setIsComparing(false);
     setCompareError(null);
@@ -510,6 +567,7 @@ export default function VersusMode({
 
   const runAiComparison = async () => {
     if (!p1 || !p2) return;
+    if (p1ObjLoading || p2ObjLoading) return;
     setIsComparing(true);
     setCompareError(null);
 
@@ -520,6 +578,8 @@ export default function VersusMode({
         body: JSON.stringify({
           playerA: p1,
           playerB: p2,
+          objectivesA: p1Objectives,
+          objectivesB: p2Objectives,
           cycleLabelA: p1SelectedCycleLabel,
           cycleLabelB: p2SelectedCycleLabel,
         }),
@@ -565,6 +625,7 @@ export default function VersusMode({
   const SelectScreen = () => {
     return (
       <motion.div
+        key="select"
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         className="w-full min-h-[85vh] flex flex-col overflow-hidden relative shadow-2xl font-sans"
       >
@@ -583,7 +644,7 @@ export default function VersusMode({
                   <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] shrink-0">
                     <div className="absolute inset-0 bg-rose-500/10 blur-3xl rounded-full" />
                     {p1.pictureURL ? (
-                      <Image src={p1.pictureURL} alt={p1.fullName} fill className="object-cover rounded-2xl border border-rose-500/25 shadow-[0_0_36px_rgba(244,63,94,0.12)]" unoptimized />
+                      <Image src={p1.pictureURL} alt={p1.fullName} fill className="object-cover rounded-2xl border border-rose-500/25 shadow-[0_0_36px_rgba(244,63,94,0.12)]" />
                     ) : (
                       <div className="w-full h-full bg-zinc-900 rounded-2xl border border-rose-500/25 flex items-center justify-center text-5xl text-white/15 font-bold shadow-[0_0_36px_rgba(244,63,94,0.12)]">{p1.fullName[0]}</div>
                     )}
@@ -594,29 +655,29 @@ export default function VersusMode({
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
                       <div className="mt-2 space-y-2">
                         <div className="flex items-center gap-2 mb-2">
-                          <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p1.totalScore).bg} ${getStatusData(p1.totalScore).border} ${getStatusData(p1.totalScore).color}`}>
-                            {getStatusData(p1.totalScore).label}
+                          <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p1.totalScore ?? p1.avgPercent).bg} ${getStatusData(p1.totalScore ?? p1.avgPercent).border} ${getStatusData(p1.totalScore ?? p1.avgPercent).color}`}>
+                            {getStatusData(p1.totalScore ?? p1.avgPercent).label}
                           </div>
                         </div>
                         <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
                           <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
                           <div className="flex items-baseline gap-2 mt-0.5">
                             <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
-                              {Math.floor(p1.totalScore)}
+                              {Math.floor(p1.totalScore ?? p1.avgPercent)}
                             </span>
                             <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
                           </div>
                         </div>
-                        <div className="text-[11px] font-mono text-zinc-500">{p1.checkInCount} check-ins</div>
+                        <div className="text-[11px] font-mono text-zinc-500">{p1.totalCheckIn} check-ins</div>
                       </div>
                     </div>
                     <div className="flex items-center gap-5">
                       <div className="w-28 h-28 lg:w-32 lg:h-32 shrink-0 relative">
                         <ResponsiveContainer width="100%" height="100%">
                           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
-                            { subject: 'A', value: p1.goalAchievementScore, fullMark: 100 },
-                            { subject: 'Q', value: p1.qualityScore, fullMark: 100 },
-                            { subject: 'E', value: p1.engagementBehaviorScore, fullMark: 100 }
+                            { subject: 'A', value: p1.goalAchievementScore ?? 0, fullMark: 100 },
+                            { subject: 'Q', value: p1.qualityScore ?? 0, fullMark: 100 },
+                            { subject: 'E', value: p1.engagementBehaviorScore ?? 0, fullMark: 100 }
                           ]}>
                             <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
                             <Radar isAnimationActive={true} animationDuration={800} dataKey="value" stroke="rgba(244,63,94,0.85)" strokeWidth={1.5} fill="url(#colorRoseBg)" fillOpacity={1} />
@@ -627,9 +688,9 @@ export default function VersusMode({
                         </ResponsiveContainer>
                       </div>
                       <div className="flex-1 space-y-3 max-w-[180px]">
-                        <EngagementMetricBar label="Achievement" value={p1.goalAchievementScore} color="rose" />
-                        <EngagementMetricBar label="Quality" value={p1.qualityScore} color="rose" />
-                        <EngagementMetricBar label="Engagement" value={p1.engagementBehaviorScore} color="rose" />
+                        <EngagementMetricBar label="Achievement" value={p1.goalAchievementScore ?? 0} color="rose" />
+                        <EngagementMetricBar label="Quality" value={p1.qualityScore ?? 0} color="rose" />
+                        <EngagementMetricBar label="Engagement" value={p1.engagementBehaviorScore ?? 0} color="rose" />
                       </div>
                     </div>
                   </div>
@@ -670,7 +731,7 @@ export default function VersusMode({
                   <div className="relative w-[150px] h-[190px] lg:w-[180px] lg:h-[230px] shrink-0">
                     <div className="absolute inset-0 bg-cyan-400/10 blur-3xl rounded-full" />
                     {p2.pictureURL ? (
-                      <Image src={p2.pictureURL} alt={p2.fullName} fill className="object-cover rounded-2xl border border-cyan-400/25 shadow-[0_0_36px_rgba(34,211,238,0.12)]" unoptimized />
+                      <Image src={p2.pictureURL} alt={p2.fullName} fill className="object-cover rounded-2xl border border-cyan-400/25 shadow-[0_0_36px_rgba(34,211,238,0.12)]" />
                     ) : (
                       <div className="w-full h-full bg-zinc-900 rounded-2xl border border-cyan-400/25 flex items-center justify-center text-5xl text-white/15 font-bold shadow-[0_0_36px_rgba(34,211,238,0.12)]">{p2.fullName[0]}</div>
                     )}
@@ -681,29 +742,29 @@ export default function VersusMode({
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
                       <div className="mt-2 space-y-2 flex flex-col items-end">
                         <div className="flex items-center gap-2 mb-2 justify-end">
-                          <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p2.totalScore).bg} ${getStatusData(p2.totalScore).border} ${getStatusData(p2.totalScore).color}`}>
-                            {getStatusData(p2.totalScore).label}
+                          <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p2.totalScore ?? p2.avgPercent).bg} ${getStatusData(p2.totalScore ?? p2.avgPercent).border} ${getStatusData(p2.totalScore ?? p2.avgPercent).color}`}>
+                            {getStatusData(p2.totalScore ?? p2.avgPercent).label}
                           </div>
                         </div>
                         <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
                           <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
                           <div className="flex items-baseline gap-2 mt-0.5 justify-end">
                             <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
-                              {Math.floor(p2.totalScore)}
+                              {Math.floor(p2.totalScore ?? p2.avgPercent)}
                             </span>
                             <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
                           </div>
                         </div>
-                        <div className="text-[11px] font-mono text-zinc-500 flex justify-end">{p2.checkInCount} check-ins</div>
+                        <div className="text-[11px] font-mono text-zinc-500 flex justify-end">{p2.totalCheckIn} check-ins</div>
                       </div>
                     </div>
                     <div className="flex items-center flex-row-reverse gap-5 w-full">
                       <div className="w-28 h-28 lg:w-32 lg:h-32 shrink-0 relative">
                         <ResponsiveContainer width="100%" height="100%">
                           <RadarChart cx="50%" cy="50%" outerRadius="70%" data={[
-                            { subject: 'A', value: p2.goalAchievementScore, fullMark: 100 },
-                            { subject: 'Q', value: p2.qualityScore, fullMark: 100 },
-                            { subject: 'E', value: p2.engagementBehaviorScore, fullMark: 100 }
+                            { subject: 'A', value: p2.goalAchievementScore ?? 0, fullMark: 100 },
+                            { subject: 'Q', value: p2.qualityScore ?? 0, fullMark: 100 },
+                            { subject: 'E', value: p2.engagementBehaviorScore ?? 0, fullMark: 100 }
                           ]}>
                             <PolarGrid gridType="polygon" radialLines={true} stroke="rgba(255,255,255,0.08)" strokeWidth={1} />
                             <Radar isAnimationActive={true} animationDuration={800} dataKey="value" stroke="rgba(34,211,238,0.85)" strokeWidth={1.5} fill="url(#colorCyanBg)" fillOpacity={1} />
@@ -714,9 +775,9 @@ export default function VersusMode({
                         </ResponsiveContainer>
                       </div>
                       <div className="flex-1 space-y-3 max-w-[180px]">
-                        <EngagementMetricBar label="Achievement" value={p2.goalAchievementScore} color="cyan" isRight />
-                        <EngagementMetricBar label="Quality" value={p2.qualityScore} color="cyan" isRight />
-                        <EngagementMetricBar label="Engagement" value={p2.engagementBehaviorScore} color="cyan" isRight />
+                        <EngagementMetricBar label="Achievement" value={p2.goalAchievementScore ?? 0} color="cyan" isRight />
+                        <EngagementMetricBar label="Quality" value={p2.qualityScore ?? 0} color="cyan" isRight />
+                        <EngagementMetricBar label="Engagement" value={p2.engagementBehaviorScore ?? 0} color="cyan" isRight />
                       </div>
                     </div>
                   </div>
@@ -816,20 +877,24 @@ export default function VersusMode({
                  {p1Loading ? (
                    Array.from({ length: 6 }).map((_, i) => <div key={i} className="shrink-0 w-24 h-24 rounded-2xl bg-white/5 animate-pulse" />)
                  ) : p1Candidates.map(c => {
-                   const isSelected = p1?.fullName === c.fullName;
-                   const isPickedByOther = p2?.fullName === c.fullName && p1CycleId === p2CycleId;
+                   const isSelected = p1?.employeeId === c.employeeId;
+                   const isPickedByOther = p2?.employeeId === c.employeeId && p1CycleId === p2CycleId;
                    return (
-                     <button key={c.fullName} onClick={() => !isPickedByOther && setP1(c)} disabled={isPickedByOther} 
+                     <button key={c.employeeId} onClick={() => {
+                       if (isPickedByOther) return;
+                       setP1(c);
+                       fetchObjectivesFor(c, p1Params, setP1Objectives, setP1ObjLoading, setP1ObjError);
+                     }} disabled={isPickedByOther}
                         className={`relative shrink-0 w-20 h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden snap-start transition-all duration-300 ${isSelected ? 'ring-2 ring-rose-500 scale-105 shadow-[0_0_20px_rgba(244,63,94,0.4)]' : isPickedByOther ? 'opacity-20 grayscale cursor-not-allowed' : 'hover:ring-1 hover:ring-white/20 hover:scale-105 opacity-70 hover:opacity-100'}`}
                      >
                        {c.pictureURL ? (
-                         <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover" unoptimized sizes="96px" />
+                         <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover" sizes="96px" />
                        ) : (
                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xl font-black text-white/50">{c.fullName[0]}</div>
                        )}
                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-1.5 pb-1.5 pt-5">
                          <div className="text-[9px] font-mono font-bold text-rose-300/95 tabular-nums text-center leading-none">
-                           {Math.floor(c.totalScore)}
+                           {Math.floor(c.totalScore ?? c.avgPercent)}
                          </div>
                          <div className="text-[9px] font-bold text-white truncate text-center uppercase tracking-wider mt-0.5">
                            {c.fullName.split(" ")[0]}
@@ -876,20 +941,24 @@ export default function VersusMode({
                  {p2Loading ? (
                    Array.from({ length: 6 }).map((_, i) => <div key={i} className="shrink-0 w-24 h-24 rounded-2xl bg-white/5 animate-pulse" />)
                  ) : p2Candidates.map(c => {
-                   const isSelected = p2?.fullName === c.fullName;
-                   const isPickedByOther = p1?.fullName === c.fullName && p1CycleId === p2CycleId;
+                   const isSelected = p2?.employeeId === c.employeeId;
+                   const isPickedByOther = p1?.employeeId === c.employeeId && p1CycleId === p2CycleId;
                    return (
-                     <button key={c.fullName} onClick={() => !isPickedByOther && setP2(c)} disabled={isPickedByOther} 
+                     <button key={c.employeeId} onClick={() => {
+                       if (isPickedByOther) return;
+                       setP2(c);
+                       fetchObjectivesFor(c, p2Params, setP2Objectives, setP2ObjLoading, setP2ObjError);
+                     }} disabled={isPickedByOther}
                         className={`relative shrink-0 w-20 h-20 lg:w-24 lg:h-24 rounded-2xl overflow-hidden snap-start transition-all duration-300 ${isSelected ? 'ring-2 ring-cyan-400 scale-105 shadow-[0_0_20px_rgba(34,211,238,0.4)]' : isPickedByOther ? 'opacity-20 grayscale cursor-not-allowed' : 'hover:ring-1 hover:ring-white/20 hover:scale-105 opacity-70 hover:opacity-100'}`}
                      >
                        {c.pictureURL ? (
-                         <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover" unoptimized sizes="96px" />
+                         <Image src={c.pictureURL} alt={c.fullName} fill className="object-cover" sizes="96px" />
                        ) : (
                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-xl font-black text-white/50">{c.fullName[0]}</div>
                        )}
                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent px-1.5 pb-1.5 pt-5">
                          <div className="text-[9px] font-mono font-bold text-cyan-300/95 tabular-nums text-center leading-none">
-                           {Math.floor(c.totalScore)}
+                           {Math.floor(c.totalScore ?? c.avgPercent)}
                          </div>
                          <div className="text-[9px] font-bold text-white truncate text-center uppercase tracking-wider mt-0.5">
                            {c.fullName.split(" ")[0]}
@@ -911,116 +980,11 @@ export default function VersusMode({
   const PreviewArena = () => {
     if (!p1 || !p2) return null;
 
-    const PreviewObjectiveCard = ({
-      obj,
-      isLeft,
-      index,
-    }: {
-      obj?: TopObjectiveEnhanced;
-      isLeft: boolean;
-      index: number;
-    }) => {
-      if (!obj) {
-        return (
-          <div
-            className={`w-full min-h-[88px] border border-dashed border-zinc-800 rounded-xl flex items-center justify-center bg-[#050505]/80 ${isLeft ? "" : "text-right"}`}
-          >
-            <span className="text-[9px] text-zinc-600 font-mono tracking-widest">OKR::{index + 1} · empty slot</span>
-          </div>
-        );
-      }
-      const load = objectiveLoadHint(obj);
-      const objectiveDetails = obj.subObjectives;
-
-      return (
-        <div
-          className={`w-full rounded-xl border border-[#1f1f1f] bg-[#0a0a0c] overflow-hidden ${isLeft ? "shadow-[inset_0_1px_0_rgba(244,63,94,0.08)]" : "shadow-[inset_0_1px_0_rgba(34,211,238,0.08)]"}`}
-        >
-          <div className="flex items-start gap-3 p-4">
-            <div className="relative shrink-0 w-11 h-11 flex items-center justify-center bg-[#070707] rounded-full ring-1 ring-[#1b1b1b]">
-              <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-                <circle cx="18" cy="18" r="14" fill="none" className="stroke-[#111]" strokeWidth="2.5" />
-                <circle
-                  cx="18"
-                  cy="18"
-                  r="14"
-                  fill="none"
-                  className={isLeft ? "stroke-rose-500" : "stroke-cyan-400"}
-                  strokeWidth="2.5"
-                  strokeDasharray="88"
-                  strokeDashoffset={88 - (88 * Math.min(100, Math.max(0, obj.personProgress))) / 100}
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span className={`absolute text-[9px] font-bold font-mono ${isLeft ? "text-rose-400" : "text-cyan-400"}`}>
-                {Math.floor(obj.personProgress)}
-              </span>
-            </div>
-            <div className={`flex-1 min-w-0 ${isLeft ? "text-left" : "text-right"}`}>
-              <div className={`flex flex-wrap items-center gap-2 mb-1 ${isLeft ? "" : "justify-end"}`}>
-                <span className="text-[8px] font-mono text-zinc-500 tracking-wider">obj#{obj.objectiveId}</span>
-                <span
-                  className={`text-[8px] font-mono px-1.5 py-0.5 rounded border ${isLeft ? "border-rose-500/30 text-rose-400/90" : "border-cyan-400/30 text-cyan-400/90"}`}
-                >
-                  {load.chip}
-                </span>
-              </div>
-              <h4 className={`text-[13px] font-medium font-sans leading-snug text-zinc-200 line-clamp-3 ${isLeft ? "" : "text-right"}`}>{obj.objectiveName}</h4>
-              <p className={`text-[9px] font-mono text-zinc-500 mt-1 ${isLeft ? "" : "text-right"}`}>{load.sub}</p>
-            </div>
-          </div>
-          {objectiveDetails.length > 0 && (
-            <div className="border-t border-[#161616] bg-[#070709] px-3 py-2 space-y-2">
-              {objectiveDetails.map((detail, di) => (
-                <div key={detail.objectiveId ?? di} className="rounded-lg bg-[#0e0e11] border border-[#161616] p-2.5">
-                  <div className={`flex items-start gap-2 ${isLeft ? "" : "flex-row-reverse text-right"}`}>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[9px] font-mono text-zinc-500 tracking-wide uppercase">Objective detail</div>
-                      <div className={`text-[11px] font-sans leading-relaxed text-zinc-300 mt-0.5 ${isLeft ? "text-left" : "text-right"}`}>
-                        {detail.title}
-                      </div>
-                    </div>
-                    <span className={`shrink-0 text-[10px] font-mono px-2 py-1 rounded border ${isLeft ? "border-rose-500/30 text-rose-400" : "border-cyan-400/30 text-cyan-400"}`}>
-                      {Math.floor(detail.personProgress)}%
-                    </span>
-                  </div>
-
-                  {detail.details.length > 0 && (
-                    <div className="mt-2 space-y-2">
-                      {detail.details.map((kr, ki) => (
-                        <div
-                          key={`${detail.objectiveId}-${ki}`}
-                          className={`flex flex-wrap items-start gap-2 text-[11px] font-sans rounded-lg bg-[#111116] border border-[#1b1b1b] p-2 ${isLeft ? "" : "flex-row-reverse text-right"}`}
-                        >
-                          <Crosshair className={`w-3 h-3 shrink-0 mt-0.5 ${isLeft ? "text-rose-500/80" : "text-cyan-400/80"}`} />
-                          <div className={`flex-1 min-w-0 leading-relaxed ${isLeft ? "text-left" : "text-right"} text-zinc-400`}>{kr.krTitle}</div>
-                          <div className={`flex flex-col items-end shrink-0 gap-0.5 font-mono text-[9px] ${isLeft ? "" : "items-start"}`}>
-                            <span className={isLeft ? "text-rose-400" : "text-cyan-400"}>{Math.floor(kr.pointOKR)}%</span>
-                            <span className="text-zinc-600">
-                              {kr.pointCurrent ?? 0} pt.
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {detail.details.length === 0 && (
-                    <div className={`mt-2 text-[10px] font-mono text-zinc-600 ${isLeft ? "" : "text-right"}`}>
-                      no KR assigned
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    const maxObj = Math.max(p1.topObjectives.length, p2.topObjectives.length, 1);
+    const maxObj = Math.max(p1Objectives.length, p2Objectives.length, 1);
 
     return (
       <motion.div
+        key="preview"
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
@@ -1076,7 +1040,6 @@ export default function VersusMode({
                         alt=""
                         fill
                         className="object-cover rounded-2xl border border-rose-500/25 shadow-[0_0_24px_rgba(244,63,94,0.1)]"
-                        unoptimized
                         sizes="120px"
                       />
                     ) : (
@@ -1089,20 +1052,20 @@ export default function VersusMode({
                     <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
                     <div className="mt-2 space-y-2">
                       <div className="flex items-center gap-2 mb-2">
-                        <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p1.totalScore).bg} ${getStatusData(p1.totalScore).border} ${getStatusData(p1.totalScore).color}`}>
-                          {getStatusData(p1.totalScore).label}
+                        <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p1.totalScore ?? p1.avgPercent).bg} ${getStatusData(p1.totalScore ?? p1.avgPercent).border} ${getStatusData(p1.totalScore ?? p1.avgPercent).color}`}>
+                          {getStatusData(p1.totalScore ?? p1.avgPercent).label}
                         </div>
                       </div>
                       <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
                         <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
                         <div className="flex items-baseline gap-2 mt-0.5">
                           <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
-                            {Math.floor(p1.totalScore)}
+                            {Math.floor(p1.totalScore ?? p1.avgPercent)}
                           </span>
                           <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
                         </div>
                       </div>
-                      <div className="text-[11px] font-mono text-zinc-500">{p1.checkInCount} check-ins</div>
+                      <div className="text-[11px] font-mono text-zinc-500">{p1.totalCheckIn} check-ins</div>
                     </div>
                   </div>
                 </div>
@@ -1114,9 +1077,9 @@ export default function VersusMode({
                         cy="50%"
                         outerRadius="70%"
                         data={[
-                          { subject: "A", value: p1.goalAchievementScore, fullMark: 100 },
-                          { subject: "Q", value: p1.qualityScore, fullMark: 100 },
-                          { subject: "E", value: p1.engagementBehaviorScore, fullMark: 100 },
+                          { subject: "A", value: p1.goalAchievementScore ?? 0, fullMark: 100 },
+                          { subject: "Q", value: p1.qualityScore ?? 0, fullMark: 100 },
+                          { subject: "E", value: p1.engagementBehaviorScore ?? 0, fullMark: 100 },
                         ]}
                       >
                         <PolarGrid
@@ -1144,15 +1107,24 @@ export default function VersusMode({
                     </ResponsiveContainer>
                   </div>
                   <div className="flex-1 space-y-3 min-w-0 max-w-[200px]">
-                    <EngagementMetricBar label="Achievement" value={p1.goalAchievementScore} color="rose" />
-                    <EngagementMetricBar label="Quality" value={p1.qualityScore} color="rose" />
-                    <EngagementMetricBar label="Engagement" value={p1.engagementBehaviorScore} color="rose" />
+                    <EngagementMetricBar label="Achievement" value={p1.goalAchievementScore ?? 0} color="rose" />
+                    <EngagementMetricBar label="Quality" value={p1.qualityScore ?? 0} color="rose" />
+                    <EngagementMetricBar label="Engagement" value={p1.engagementBehaviorScore ?? 0} color="rose" />
                   </div>
                 </div>
               </div>
               <div className="space-y-3">
+                {p1ObjLoading && (
+                  <div className="flex items-center gap-2 text-sm text-white/40 py-4">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading objectives…</span>
+                  </div>
+                )}
+                {p1ObjError && (
+                  <div className="text-xs text-rose-400/80 py-2">{p1ObjError}</div>
+                )}
                 {Array.from({ length: maxObj }).map((_, i) => (
-                  <PreviewObjectiveCard key={`pv1-${i}`} obj={p1.topObjectives[i]} isLeft index={i} />
+                  <PreviewObjectiveCard key={`pv1-${i}`} objective={p1Objectives[i]} playerName={p1.fullName} isLeft index={i} />
                 ))}
               </div>
             </div>
@@ -1160,7 +1132,7 @@ export default function VersusMode({
             <div className="hidden lg:flex items-start justify-center pt-3 shrink-0 px-1">
               <motion.button
                 type="button"
-                disabled={isComparing}
+                disabled={isComparing || p1ObjLoading || p2ObjLoading}
                 onClick={runAiComparison}
                 whileHover={isComparing ? undefined : { scale: 1.04 }}
                 whileTap={isComparing ? undefined : { scale: 0.97 }}
@@ -1194,7 +1166,6 @@ export default function VersusMode({
                         alt=""
                         fill
                         className="object-cover rounded-2xl border border-cyan-400/25 shadow-[0_0_24px_rgba(34,211,238,0.1)]"
-                        unoptimized
                         sizes="120px"
                       />
                     ) : (
@@ -1207,20 +1178,20 @@ export default function VersusMode({
                     <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
                     <div className="mt-2 space-y-2 flex flex-col items-end">
                       <div className="flex items-center gap-2 mb-2 justify-end">
-                        <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p2.totalScore).bg} ${getStatusData(p2.totalScore).border} ${getStatusData(p2.totalScore).color}`}>
-                          {getStatusData(p2.totalScore).label}
+                        <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p2.totalScore ?? p2.avgPercent).bg} ${getStatusData(p2.totalScore ?? p2.avgPercent).border} ${getStatusData(p2.totalScore ?? p2.avgPercent).color}`}>
+                          {getStatusData(p2.totalScore ?? p2.avgPercent).label}
                         </div>
                       </div>
                       <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
                         <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
                         <div className="flex items-baseline gap-2 mt-0.5 justify-end">
                           <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
-                            {Math.floor(p2.totalScore)}
+                            {Math.floor(p2.totalScore ?? p2.avgPercent)}
                           </span>
                           <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
                         </div>
                       </div>
-                      <div className="text-[11px] font-mono text-zinc-500 flex justify-end">{p2.checkInCount} check-ins</div>
+                      <div className="text-[11px] font-mono text-zinc-500 flex justify-end">{p2.totalCheckIn} check-ins</div>
                     </div>
                   </div>
                 </div>
@@ -1232,9 +1203,9 @@ export default function VersusMode({
                         cy="50%"
                         outerRadius="70%"
                         data={[
-                          { subject: "A", value: p2.goalAchievementScore, fullMark: 100 },
-                          { subject: "Q", value: p2.qualityScore, fullMark: 100 },
-                          { subject: "E", value: p2.engagementBehaviorScore, fullMark: 100 },
+                          { subject: "A", value: p2.goalAchievementScore ?? 0, fullMark: 100 },
+                          { subject: "Q", value: p2.qualityScore ?? 0, fullMark: 100 },
+                          { subject: "E", value: p2.engagementBehaviorScore ?? 0, fullMark: 100 },
                         ]}
                       >
                         <PolarGrid
@@ -1262,15 +1233,24 @@ export default function VersusMode({
                     </ResponsiveContainer>
                   </div>
                   <div className="flex-1 space-y-3 min-w-0 max-w-[200px]">
-                    <EngagementMetricBar label="Achievement" value={p2.goalAchievementScore} color="cyan" isRight />
-                    <EngagementMetricBar label="Quality" value={p2.qualityScore} color="cyan" isRight />
-                    <EngagementMetricBar label="Engagement" value={p2.engagementBehaviorScore} color="cyan" isRight />
+                    <EngagementMetricBar label="Achievement" value={p2.goalAchievementScore ?? 0} color="cyan" isRight />
+                    <EngagementMetricBar label="Quality" value={p2.qualityScore ?? 0} color="cyan" isRight />
+                    <EngagementMetricBar label="Engagement" value={p2.engagementBehaviorScore ?? 0} color="cyan" isRight />
                   </div>
                 </div>
               </div>
               <div className="space-y-3">
+                {p2ObjLoading && (
+                  <div className="flex items-center gap-2 text-sm text-white/40 py-4">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Loading objectives…</span>
+                  </div>
+                )}
+                {p2ObjError && (
+                  <div className="text-xs text-cyan-400/80 py-2">{p2ObjError}</div>
+                )}
                 {Array.from({ length: maxObj }).map((_, i) => (
-                  <PreviewObjectiveCard key={`pv2-${i}`} obj={p2.topObjectives[i]} isLeft={false} index={i} />
+                  <PreviewObjectiveCard key={`pv2-${i}`} objective={p2Objectives[i]} playerName={p2.fullName} isLeft={false} index={i} />
                 ))}
               </div>
             </div>
@@ -1309,7 +1289,8 @@ export default function VersusMode({
   // -------------------------------------------------------------
   // EVAL PLAYBACK (post-AI)
   // -------------------------------------------------------------
-  const HologramObjective = ({ obj, isActive, isLeft, badge }: { obj?: TopObjectiveEnhanced, isActive: boolean, isLeft: boolean, badge?: string }) => {
+  const HologramObjective = ({ objective, playerName, isActive, isLeft, badge }: { objective?: Objective, playerName: string, isActive: boolean, isLeft: boolean, badge?: string }) => {
+    const obj: PersonObjective | null = objective ? mapObjectiveForPerson(objective, playerName) : null;
     const [expanded, setExpanded] = useState(false);
     const hasDetails = obj && obj.subObjectives && obj.subObjectives.length > 0;
 
@@ -1318,7 +1299,7 @@ export default function VersusMode({
       if (!isActive) setExpanded(false);
     }, [isActive]);
 
-    if (!obj) return (
+    if (!objective || !obj) return (
       <div className={`w-full h-24 border border-zinc-800 border-dashed rounded-xl flex items-center justify-center transition-all duration-500 ${isActive ? 'scale-105 opacity-80' : 'scale-95 opacity-20'}`}>
         <span className="text-[11px] sm:text-xs text-zinc-500 font-sans tracking-wide text-center px-3">— no objective bound —</span>
       </div>
@@ -1479,7 +1460,7 @@ export default function VersusMode({
     // Phases: 0 = Intro, 1..N = Rounds, N+1 = Final Analysis
 
     if (!result || !p1 || !p2) return null;
-    const totalRounds = Math.max(p1.topObjectives.length, p2.topObjectives.length) || 1;
+    const totalRounds = Math.max(p1Objectives.length, p2Objectives.length) || 1;
     const isIntro = phase === 0;
     const isRound = phase > 0 && phase <= totalRounds;
     const isFinalResult = phase > totalRounds;
@@ -1559,11 +1540,11 @@ export default function VersusMode({
             {/* Info / Portrait Row */}
             <div className="flex items-center gap-6 mb-8 relative border-b border-zinc-800/50 pb-6 pr-4">
               <div className={`w-28 h-36 md:w-32 md:h-40 rounded-2xl overflow-hidden bg-black border ${(P1Winner && isFinalResult) ? 'border-rose-500/50 shadow-[0_0_40px_rgba(244,63,94,0.2)]' : 'border-[#222]'} relative z-10 shrink-0 transition-all duration-700`}>
-                {p1.pictureURL && <Image src={p1.pictureURL} alt={p1.fullName} fill className={`object-cover ${(!P1Winner && isFinalResult) ? 'grayscale opacity-70' : ''}`} unoptimized />}
+                {p1.pictureURL && <Image src={p1.pictureURL} alt={p1.fullName} fill className={`object-cover ${(!P1Winner && isFinalResult) ? 'grayscale opacity-70' : ''}`} />}
               </div>
               <div className="flex flex-col flex-1 min-w-0">
                 <h3 className="text-xl md:text-3xl font-bold font-sans text-white tracking-tight truncate">{p1.fullName}</h3>
-                <div className="text-rose-500/80 font-mono text-[10px] uppercase tracking-widest mt-1 mb-2">Total Score: {Math.floor(p1.totalScore)}</div>
+                <div className="text-rose-500/80 font-mono text-[10px] uppercase tracking-widest mt-1 mb-2">Total Score: {Math.floor(p1.totalScore ?? p1.avgPercent)}</div>
                 {P1Winner && isFinalResult && <div className="text-rose-500 font-bold uppercase tracking-widest text-xs mt-1 animate-pulse flex items-center gap-2"><Trophy className="w-4 h-4 shrink-0" /> Eval lead</div>}
 
                 <AnimatePresence>
@@ -1572,7 +1553,7 @@ export default function VersusMode({
                       <ResultCounter value={result.scoreA} label="SCORE" isLeft={true} />
                       <div className="hidden md:flex flex-col border-l border-zinc-800 pl-4 space-y-1.5">
                         <span className="text-[11px] text-zinc-400 tracking-wide uppercase font-bold font-sans">Total Check-ins</span>
-                        <span className="text-white font-bold font-sans text-xl leading-none">{p1.checkInCount}</span>
+                        <span className="text-white font-bold font-sans text-xl leading-none">{p1.totalCheckIn}</span>
                       </div>
                     </motion.div>
                   )}
@@ -1620,7 +1601,7 @@ export default function VersusMode({
                   const rb = result.rounds?.[i];
                   const p1Badge = typeof rb?.p1_badge === 'string' ? rb.p1_badge : undefined;
                   return (
-                    <HologramObjective key={`p1-obj-${i}`} obj={p1.topObjectives[i]} isActive={isFinalResult ? true : phase === i + 1} isLeft={true} badge={p1Badge} />
+                    <HologramObjective key={`p1-obj-${i}`} objective={p1Objectives[i]} playerName={p1.fullName} isActive={isFinalResult ? true : phase === i + 1} isLeft={true} badge={p1Badge} />
                   );
                 })}
               </motion.div>
@@ -1674,11 +1655,11 @@ export default function VersusMode({
             {/* Info / Portrait Row */}
             <div className="flex items-center gap-6 mb-8 relative border-b border-zinc-800/50 pb-6 pl-4 flex-row-reverse">
               <div className={`w-28 h-36 md:w-32 md:h-40 rounded-2xl overflow-hidden bg-black border ${(P2Winner && isFinalResult) ? 'border-cyan-400/50 shadow-[0_0_40px_rgba(34,211,238,0.2)]' : 'border-[#222]'} relative z-10 shrink-0 transition-all duration-700`}>
-                {p2.pictureURL && <Image src={p2.pictureURL} alt={p2.fullName} fill className={`object-cover ${(!P2Winner && isFinalResult) ? 'grayscale opacity-70' : ''}`} unoptimized />}
+                {p2.pictureURL && <Image src={p2.pictureURL} alt={p2.fullName} fill className={`object-cover ${(!P2Winner && isFinalResult) ? 'grayscale opacity-70' : ''}`} />}
               </div>
               <div className="flex flex-col flex-1 min-w-0 items-end text-right">
                 <h3 className="text-xl md:text-3xl font-bold font-sans text-white tracking-tight truncate">{p2.fullName}</h3>
-                <div className="text-cyan-400/80 font-mono text-[10px] uppercase tracking-widest mt-1 mb-2">Total Score: {Math.floor(p2.totalScore)}</div>
+                <div className="text-cyan-400/80 font-mono text-[10px] uppercase tracking-widest mt-1 mb-2">Total Score: {Math.floor(p2.totalScore ?? p2.avgPercent)}</div>
                 {P2Winner && isFinalResult && <div className="text-cyan-400 font-bold uppercase tracking-widest text-xs mt-1 animate-pulse flex items-center justify-end gap-2 text-right">Eval lead <Trophy className="w-4 h-4 shrink-0" /></div>}
 
                 <AnimatePresence>
@@ -1687,7 +1668,7 @@ export default function VersusMode({
                       <ResultCounter value={result.scoreB} label="SCORE" isLeft={false} />
                       <div className="hidden md:flex flex-col border-r border-zinc-800 pr-4 space-y-1.5 items-end text-right">
                         <span className="text-[11px] text-zinc-400 tracking-wide uppercase font-bold font-sans">Total Check-ins</span>
-                        <span className="text-white font-bold font-sans text-xl leading-none">{p2.checkInCount}</span>
+                        <span className="text-white font-bold font-sans text-xl leading-none">{p2.totalCheckIn}</span>
                       </div>
                     </motion.div>
                   )}
@@ -1735,7 +1716,7 @@ export default function VersusMode({
                   const rb = result.rounds?.[i];
                   const p2Badge = typeof rb?.p2_badge === 'string' ? rb.p2_badge : undefined;
                   return (
-                    <HologramObjective key={`p2-obj-${i}`} obj={p2.topObjectives[i]} isActive={isFinalResult ? true : phase === i + 1} isLeft={false} badge={p2Badge} />
+                    <HologramObjective key={`p2-obj-${i}`} objective={p2Objectives[i]} playerName={p2.fullName} isActive={isFinalResult ? true : phase === i + 1} isLeft={false} badge={p2Badge} />
                   );
                 })}
               </motion.div>
@@ -1759,8 +1740,8 @@ export default function VersusMode({
 
       <div className="relative z-10 w-full h-full flex flex-col">
         <AnimatePresence mode="wait">
-          {step === "select" && <SelectScreen key="select" />}
-          {step === "preview" && <PreviewArena key="preview" />}
+          {step === "select" && SelectScreen()}
+          {step === "preview" && PreviewArena()}
           {step === "result" && <ShowdownArena key="showdown" />}
         </AnimatePresence>
       </div>
