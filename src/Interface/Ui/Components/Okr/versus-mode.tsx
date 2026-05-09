@@ -8,7 +8,7 @@ import {
 } from "@/src/Domain/Entities/Okr";
 import { mapObjective, mapObjectiveForPerson } from "@/src/Infrastructure/Persistence/Mappers/OkrMapper";
 import { fetchEmployeeObjectiveSummary } from "@/src/Infrastructure/Persistence/OkrHttpRepository";
-import { Crosshair, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft, Swords, Dot } from "lucide-react";
+import { Crosshair, Activity, Terminal, Zap, ChevronRight, Trophy, ChevronDown, Users, CalendarDays, Loader2, Cpu, ArrowLeft, Swords, Dot, TrendingUp, TrendingDown, Info, Target, Star, Flame, Award, type LucideIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Radar, RadarChart, PolarGrid, PolarAngleAxis, ResponsiveContainer } from "recharts";
 import {
@@ -20,6 +20,11 @@ import {
   SelectTrigger,
   SelectSeparator,
 } from "@/src/Interface/Ui/Primitives/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/src/Interface/Ui/Primitives/popover";
 import type { CycleOption, GroupedOrgOption } from "@/src/Interface/Ui/utils/org-leaf";
 import { useParticipantQuery } from "@/src/Interface/Ui/Hooks/use-participant-query";
 import BorderGlow from "@/src/Interface/Ui/Components/Shared/react-bits/BorderGlow";
@@ -58,47 +63,287 @@ interface VersusModeProps {
 type PlayerEnhanced = ParticipantDetailRaw;
 
 
-/** Shared A/Q/E bars — matches Check-in Engagement “multi-dimensional” UI (see docs/engagement-ranking-concept.md). */
+/** Tone palette for the metric icon-pill in the detail card. Keyed by metric so
+ * Goal/Quality/Engage carry the same color identity as the rest of the app
+ * (matches check-in-engage). */
+const METRIC_TONE = {
+  goal:    { bg: "bg-emerald-500/10", ring: "ring-emerald-400/25", text: "text-emerald-300" },
+  quality: { bg: "bg-amber-500/10",   ring: "ring-amber-400/25",   text: "text-amber-300"   },
+  engage:  { bg: "bg-purple-500/10",  ring: "ring-purple-400/25",  text: "text-purple-300"  },
+  total:   { bg: "bg-blue-500/10",    ring: "ring-blue-400/25",    text: "text-blue-300"    },
+  trend:   { bg: "bg-white/5",        ring: "ring-white/15",       text: "text-zinc-300"    },
+} as const;
+type MetricKey = keyof typeof METRIC_TONE;
+
+/** Refined enterprise detail card. Floating panel surfaced from a metric or
+ * status trigger. Dark, restrained, comfortable reading — no HUD ornamentation. */
+const MetricDetailCard = ({
+  icon: Icon,
+  metricKey,
+  title,
+  weightHint,
+  scoreNode,
+  detail,
+  emptyHint = "ยังไม่มีคำอธิบายจาก AI",
+}: {
+  icon?: LucideIcon;
+  metricKey: MetricKey;
+  title: string;
+  weightHint?: string;
+  scoreNode?: React.ReactNode;
+  detail?: string;
+  emptyHint?: string;
+}) => {
+  const tone = METRIC_TONE[metricKey];
+  const text = detail?.trim();
+  const hasText = Boolean(text);
+
+  return (
+    <div className="relative w-[340px] overflow-hidden rounded-xl border border-white/10 bg-zinc-950/95 shadow-[0_24px_60px_-12px_rgba(0,0,0,0.7)] backdrop-blur-2xl">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-3 border-b border-white/[0.06] px-4 pt-3.5 pb-3">
+        <div className="flex items-center gap-2.5 min-w-0">
+          {Icon && (
+            <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ring-1 ${tone.bg} ${tone.ring}`}>
+              <Icon className={`h-4 w-4 ${tone.text}`} aria-hidden />
+            </span>
+          )}
+          <div className="min-w-0">
+            <p className="text-[13px] font-semibold leading-tight tracking-tight text-zinc-50 truncate">
+              {title}
+            </p>
+            {weightHint && (
+              <p className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.18em] text-zinc-500">
+                {weightHint}
+              </p>
+            )}
+          </div>
+        </div>
+        {scoreNode && <div className="shrink-0 pt-0.5">{scoreNode}</div>}
+      </div>
+
+      {/* Body */}
+      <div className="px-4 py-3.5">
+        <p
+          className={
+            hasText
+              ? "text-[12px] leading-[1.7] text-zinc-200/90"
+              : "text-[12px] leading-[1.6] italic text-zinc-500"
+          }
+        >
+          {hasText ? text : emptyHint}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+/** Per-metric metadata: label, weight, icon. Single source of truth aligned with check-in-engage. */
+const BAR_METRICS = {
+  goal:    { label: "Goal",    weight: "× 0.4 weight", icon: Target },
+  quality: { label: "Quality", weight: "× 0.5 weight", icon: Star   },
+  engage:  { label: "Engage",  weight: "× 0.1 weight", icon: Flame  },
+} as const;
+type BarMetricKey = keyof typeof BAR_METRICS;
+
+/** Reusable score chip used as the right-side scoreNode in popover headers. Side color matches player. */
+const ScoreChip = ({ value, color }: { value: number; color: "rose" | "cyan" }) => (
+  <div className="flex items-baseline gap-1">
+    <span
+      className={`font-mono text-lg font-bold tabular-nums leading-none ${color === "rose" ? "text-rose-300" : "text-cyan-300"}`}
+    >
+      {Math.floor(value)}
+    </span>
+    <span className="font-mono text-[10px] text-zinc-500">/100</span>
+  </div>
+);
+
+/** Goal/Quality/Engage bar. Click → enterprise detail card with metric icon, weight hint, and AI prose. */
 const EngagementMetricBar = ({
-  label,
+  metricKey,
   value,
   color,
   isRight,
+  detail,
 }: {
-  label: string;
+  metricKey: BarMetricKey;
   value: number;
   color: "rose" | "cyan";
   isRight?: boolean;
-}) => (
-  <div className="space-y-1.5 w-full">
-    <div className={`flex justify-between items-end ${isRight ? "flex-row-reverse" : ""}`}>
-      <span className="text-[9px] text-white/50 uppercase tracking-widest font-semibold">{label}</span>
-      <span
-        className={`text-[10px] font-mono font-bold ${
-          color === "rose" ? "text-rose-400" : "text-cyan-400"
-        }`}
+  detail?: string;
+}) => {
+  const meta = BAR_METRICS[metricKey];
+  const detailText = detail?.trim();
+  const hasDetail = Boolean(detailText);
+
+  const barInner = (
+    <div className="space-y-1.5 w-full">
+      <div className={`flex justify-between items-end ${isRight ? "flex-row-reverse" : ""}`}>
+        <span
+          className={`text-[9px] text-white/50 uppercase tracking-widest font-semibold inline-flex items-center gap-1 ${isRight ? "flex-row-reverse" : ""}`}
+        >
+          {meta.label}
+          {hasDetail && (
+            <Info
+              className={`h-2.5 w-2.5 transition-colors ${color === "rose" ? "text-rose-400/55 group-hover/bar:text-rose-300" : "text-cyan-400/55 group-hover/bar:text-cyan-200"}`}
+              strokeWidth={2.5}
+            />
+          )}
+        </span>
+        <span
+          className={`text-[10px] font-mono font-bold ${color === "rose" ? "text-rose-400" : "text-cyan-400"}`}
+        >
+          {Math.floor(value)}
+        </span>
+      </div>
+      <div
+        className={`w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex ${isRight ? "justify-end" : "justify-start"} transition-shadow ${hasDetail ? (color === "rose" ? "group-hover/bar:shadow-[0_0_14px_rgba(244,63,94,0.4)]" : "group-hover/bar:shadow-[0_0_14px_rgba(34,211,238,0.4)]") : ""}`}
       >
-        {Math.floor(value)}
-      </span>
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: `${value}%` }}
+          transition={{ delay: 0.2, duration: 1, ease: "easeOut" }}
+          className={`h-full rounded-full ${
+            color === "rose"
+              ? "bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
+              : "bg-gradient-to-l from-cyan-400 to-cyan-600 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
+          }`}
+        />
+      </div>
     </div>
-    <div
-      className={`w-full h-1.5 bg-black/40 rounded-full overflow-hidden flex ${
-        isRight ? "justify-end" : "justify-start"
-      }`}
+  );
+
+  if (!hasDetail) {
+    return barInner;
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger className="group/bar block w-full cursor-pointer rounded-sm text-left outline-none transition-opacity focus-visible:ring-1 focus-visible:ring-white/30">
+        {barInner}
+      </PopoverTrigger>
+      <PopoverContent
+        side={isRight ? "left" : "right"}
+        sideOffset={16}
+        align="center"
+        className="w-auto rounded-xl bg-transparent p-0 shadow-none ring-0"
+      >
+        <MetricDetailCard
+          icon={meta.icon}
+          metricKey={metricKey}
+          title={meta.label}
+          weightHint={meta.weight}
+          detail={detailText}
+          scoreNode={<ScoreChip value={value} color={color} />}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+/** Trend signal chip — clickable when trendDetail is present. */
+const TrendBadge = ({
+  trend,
+  detail,
+  isRight,
+}: {
+  trend?: "up" | "down" | "normal";
+  detail?: string;
+  isRight?: boolean;
+}) => {
+  const TrendIcon =
+    trend === "up" ? TrendingUp : trend === "down" ? TrendingDown : Activity;
+  const labelText =
+    trend === "up" ? "Trend ↑" : trend === "down" ? "Trend ↓" : "Trend · Flat";
+  const chipTone =
+    trend === "up"
+      ? "text-emerald-300 bg-emerald-500/10 border-emerald-400/25 hover:bg-emerald-500/15"
+      : trend === "down"
+        ? "text-rose-300 bg-rose-500/10 border-rose-400/25 hover:bg-rose-500/15"
+        : "text-zinc-300 bg-white/5 border-white/15 hover:bg-white/10";
+
+  const detailText = detail?.trim();
+  const hasDetail = Boolean(detailText);
+
+  const chipInner = (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-[3px] font-mono text-[9px] font-bold uppercase tracking-[0.18em] transition-colors ${chipTone}`}
     >
-      <motion.div
-        initial={{ width: 0 }}
-        animate={{ width: `${value}%` }}
-        transition={{ delay: 0.2, duration: 1, ease: "easeOut" }}
-        className={`h-full rounded-full ${
-          color === "rose"
-            ? "bg-gradient-to-r from-rose-600 to-rose-400 shadow-[0_0_8px_rgba(244,63,94,0.5)]"
-            : "bg-gradient-to-l from-cyan-400 to-cyan-600 shadow-[0_0_8px_rgba(34,211,238,0.5)]"
-        }`}
-      />
-    </div>
-  </div>
-);
+      <TrendIcon className="h-2.5 w-2.5" strokeWidth={2.5} />
+      {labelText}
+    </span>
+  );
+
+  if (!hasDetail) {
+    return chipInner;
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger className="rounded-full outline-none focus-visible:ring-1 focus-visible:ring-white/30">
+        {chipInner}
+      </PopoverTrigger>
+      <PopoverContent
+        side={isRight ? "left" : "right"}
+        sideOffset={14}
+        align="center"
+        className="w-auto rounded-xl bg-transparent p-0 shadow-none ring-0"
+      >
+        <MetricDetailCard
+          icon={TrendIcon}
+          metricKey="trend"
+          title={trend === "up" ? "Trending up" : trend === "down" ? "Trending down" : "Stable trend"}
+          weightHint="vs prior period"
+          detail={detailText}
+          emptyHint="No trend reasoning available."
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
+
+/** Total score card wrapper — turns the score block into a popover trigger that surfaces aiScoreReason. */
+const TotalScorePopover = ({
+  children,
+  reason,
+  totalValue,
+  color,
+  isRight,
+}: {
+  children: React.ReactNode;
+  reason?: string;
+  totalValue: number;
+  color: "rose" | "cyan";
+  isRight?: boolean;
+}) => {
+  const text = reason?.trim();
+  if (!text) {
+    return <>{children}</>;
+  }
+
+  return (
+    <Popover>
+      <PopoverTrigger className="block w-full rounded-lg outline-none transition-shadow focus-visible:ring-1 focus-visible:ring-white/30 hover:shadow-[0_0_16px_rgba(255,255,255,0.06)]">
+        {children}
+      </PopoverTrigger>
+      <PopoverContent
+        side={isRight ? "left" : "right"}
+        sideOffset={18}
+        align="center"
+        className="w-auto rounded-xl bg-transparent p-0 shadow-none ring-0"
+      >
+        <MetricDetailCard
+          icon={Award}
+          metricKey="total"
+          title="Overall score"
+          weightHint="AI composite reasoning"
+          detail={text}
+          scoreNode={<ScoreChip value={totalValue} color={color} />}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+};
 
 // -------------------------------------------------------------
 // HELPER COMPONENT: Typewriter Text Effect (FIXED FOR THAI GLYPHS / STRICT MODE)
@@ -653,22 +898,38 @@ export default function VersusMode({
                   <div className="flex flex-col gap-5 flex-1 min-w-0">
                     <div>
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
-                      <div className="mt-2 space-y-2">
-                        <div className="flex items-center gap-2 mb-2">
+                      <div className="mt-2.5 flex flex-col items-start gap-2.5 w-full max-w-[min(100%,280px)]">
+                        {/* Status row — AT RISK + TREND inline for horizontal balance */}
+                        <div className="flex items-center gap-2 flex-wrap">
                           <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p1.totalScore ?? p1.avgPercent).bg} ${getStatusData(p1.totalScore ?? p1.avgPercent).border} ${getStatusData(p1.totalScore ?? p1.avgPercent).color}`}>
                             {getStatusData(p1.totalScore ?? p1.avgPercent).label}
                           </div>
+                          {(p1.trend || p1.trendDetail) && (
+                            <TrendBadge trend={p1.trend} detail={p1.trendDetail} />
+                          )}
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
-                          <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
-                          <div className="flex items-baseline gap-2 mt-0.5">
-                            <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
-                              {Math.floor(p1.totalScore ?? p1.avgPercent)}
-                            </span>
-                            <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                        {/* Score panel — clean, focused on the number. Click → AI overall reasoning. */}
+                        <TotalScorePopover
+                          reason={p1.aiScoreReason}
+                          totalValue={p1.totalScore ?? p1.avgPercent}
+                          color="rose"
+                        >
+                          <div className={`rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full text-left transition-colors ${p1.aiScoreReason?.trim() ? "cursor-pointer hover:bg-white/[0.06]" : ""}`}>
+                            <div className="flex items-baseline justify-between gap-3">
+                              <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold inline-flex items-center gap-1">
+                                Total score
+                                {p1.aiScoreReason?.trim() && <Info className="h-2.5 w-2.5 text-white/30" strokeWidth={2.5} />}
+                              </div>
+                              <div className="text-[10px] font-mono text-zinc-500">{p1.totalCheckIn} check-ins</div>
+                            </div>
+                            <div className="flex items-baseline gap-2 mt-0.5">
+                              <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
+                                {Math.floor(p1.totalScore ?? p1.avgPercent)}
+                              </span>
+                              <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-[11px] font-mono text-zinc-500">{p1.totalCheckIn} check-ins</div>
+                        </TotalScorePopover>
                       </div>
                     </div>
                     <div className="flex items-center gap-5">
@@ -688,9 +949,9 @@ export default function VersusMode({
                         </ResponsiveContainer>
                       </div>
                       <div className="flex-1 space-y-3 max-w-[180px]">
-                        <EngagementMetricBar label="Achievement" value={p1.goalAchievementScore ?? 0} color="rose" />
-                        <EngagementMetricBar label="Quality" value={p1.qualityScore ?? 0} color="rose" />
-                        <EngagementMetricBar label="Engagement" value={p1.engagementBehaviorScore ?? 0} color="rose" />
+                        <EngagementMetricBar metricKey="goal" value={p1.goalAchievementScore ?? 0} color="rose" detail={p1.goalDetail} />
+                        <EngagementMetricBar metricKey="quality" value={p1.qualityScore ?? 0} color="rose" detail={p1.qualityDetail} />
+                        <EngagementMetricBar metricKey="engage" value={p1.engagementBehaviorScore ?? 0} color="rose" detail={p1.engageDetail} />
                       </div>
                     </div>
                   </div>
@@ -740,22 +1001,39 @@ export default function VersusMode({
                   <div className="flex flex-col gap-5 flex-1 min-w-0">
                     <div className="w-full text-right">
                       <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
-                      <div className="mt-2 space-y-2 flex flex-col items-end">
-                        <div className="flex items-center gap-2 mb-2 justify-end">
+                      <div className="mt-2.5 flex flex-col items-end gap-2.5 w-full max-w-[min(100%,280px)] ml-auto">
+                        {/* Status row — TREND + AT RISK inline (mirrored order) for horizontal balance */}
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
+                          {(p2.trend || p2.trendDetail) && (
+                            <TrendBadge trend={p2.trend} detail={p2.trendDetail} isRight />
+                          )}
                           <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p2.totalScore ?? p2.avgPercent).bg} ${getStatusData(p2.totalScore ?? p2.avgPercent).border} ${getStatusData(p2.totalScore ?? p2.avgPercent).color}`}>
                             {getStatusData(p2.totalScore ?? p2.avgPercent).label}
                           </div>
                         </div>
-                        <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
-                          <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
-                          <div className="flex items-baseline gap-2 mt-0.5 justify-end">
-                            <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
-                              {Math.floor(p2.totalScore ?? p2.avgPercent)}
-                            </span>
-                            <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                        {/* Score panel — clean, focused on the number. Click → AI overall reasoning. */}
+                        <TotalScorePopover
+                          reason={p2.aiScoreReason}
+                          totalValue={p2.totalScore ?? p2.avgPercent}
+                          color="cyan"
+                          isRight
+                        >
+                          <div className={`rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full transition-colors ${p2.aiScoreReason?.trim() ? "cursor-pointer hover:bg-white/[0.06]" : ""}`}>
+                            <div className="flex items-baseline justify-between gap-3 flex-row-reverse">
+                              <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold inline-flex items-center gap-1 flex-row-reverse">
+                                Total score
+                                {p2.aiScoreReason?.trim() && <Info className="h-2.5 w-2.5 text-white/30" strokeWidth={2.5} />}
+                              </div>
+                              <div className="text-[10px] font-mono text-zinc-500">{p2.totalCheckIn} check-ins</div>
+                            </div>
+                            <div className="flex items-baseline gap-2 mt-0.5 justify-end">
+                              <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
+                                {Math.floor(p2.totalScore ?? p2.avgPercent)}
+                              </span>
+                              <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="text-[11px] font-mono text-zinc-500 flex justify-end">{p2.totalCheckIn} check-ins</div>
+                        </TotalScorePopover>
                       </div>
                     </div>
                     <div className="flex items-center flex-row-reverse gap-5 w-full">
@@ -775,9 +1053,9 @@ export default function VersusMode({
                         </ResponsiveContainer>
                       </div>
                       <div className="flex-1 space-y-3 max-w-[180px]">
-                        <EngagementMetricBar label="Achievement" value={p2.goalAchievementScore ?? 0} color="cyan" isRight />
-                        <EngagementMetricBar label="Quality" value={p2.qualityScore ?? 0} color="cyan" isRight />
-                        <EngagementMetricBar label="Engagement" value={p2.engagementBehaviorScore ?? 0} color="cyan" isRight />
+                        <EngagementMetricBar metricKey="goal" value={p2.goalAchievementScore ?? 0} color="cyan" isRight detail={p2.goalDetail} />
+                        <EngagementMetricBar metricKey="quality" value={p2.qualityScore ?? 0} color="cyan" isRight detail={p2.qualityDetail} />
+                        <EngagementMetricBar metricKey="engage" value={p2.engagementBehaviorScore ?? 0} color="cyan" isRight detail={p2.engageDetail} />
                       </div>
                     </div>
                   </div>
@@ -980,7 +1258,10 @@ export default function VersusMode({
   const PreviewArena = () => {
     if (!p1 || !p2) return null;
 
-    const maxObj = Math.max(p1Objectives.length, p2Objectives.length, 1);
+    // Drop objectives where the person owns no KR — they'd otherwise render
+    // as "empty slot" placeholders and clutter the manifest.
+    const p1OwnObjectives = p1Objectives.filter(obj => mapObjectiveForPerson(obj, p1.fullName) !== null);
+    const p2OwnObjectives = p2Objectives.filter(obj => mapObjectiveForPerson(obj, p2.fullName) !== null);
 
     return (
       <motion.div
@@ -1050,22 +1331,36 @@ export default function VersusMode({
                   </div>
                   <div className="flex-1 min-w-0">
                     <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p1.fullName}</h1>
-                    <div className="mt-2 space-y-2">
-                      <div className="flex items-center gap-2 mb-2">
+                    <div className="mt-2.5 flex flex-col items-start gap-2.5 w-full max-w-[min(100%,280px)]">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p1.totalScore ?? p1.avgPercent).bg} ${getStatusData(p1.totalScore ?? p1.avgPercent).border} ${getStatusData(p1.totalScore ?? p1.avgPercent).color}`}>
                           {getStatusData(p1.totalScore ?? p1.avgPercent).label}
                         </div>
+                        {(p1.trend || p1.trendDetail) && (
+                          <TrendBadge trend={p1.trend} detail={p1.trendDetail} />
+                        )}
                       </div>
-                      <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full max-w-[min(100%,280px)]">
-                        <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
-                        <div className="flex items-baseline gap-2 mt-0.5">
-                          <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
-                            {Math.floor(p1.totalScore ?? p1.avgPercent)}
-                          </span>
-                          <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                      <TotalScorePopover
+                        reason={p1.aiScoreReason}
+                        totalValue={p1.totalScore ?? p1.avgPercent}
+                        color="rose"
+                      >
+                        <div className={`rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 w-full text-left transition-colors ${p1.aiScoreReason?.trim() ? "cursor-pointer hover:bg-white/[0.06]" : ""}`}>
+                          <div className="flex items-baseline justify-between gap-3">
+                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold inline-flex items-center gap-1">
+                              Total score
+                              {p1.aiScoreReason?.trim() && <Info className="h-2.5 w-2.5 text-white/30" strokeWidth={2.5} />}
+                            </div>
+                            <div className="text-[10px] font-mono text-zinc-500">{p1.totalCheckIn} check-ins</div>
+                          </div>
+                          <div className="flex items-baseline gap-2 mt-0.5">
+                            <span className="text-2xl font-bold tabular-nums text-rose-400 leading-none">
+                              {Math.floor(p1.totalScore ?? p1.avgPercent)}
+                            </span>
+                            <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-[11px] font-mono text-zinc-500">{p1.totalCheckIn} check-ins</div>
+                      </TotalScorePopover>
                     </div>
                   </div>
                 </div>
@@ -1107,9 +1402,9 @@ export default function VersusMode({
                     </ResponsiveContainer>
                   </div>
                   <div className="flex-1 space-y-3 min-w-0 max-w-[200px]">
-                    <EngagementMetricBar label="Achievement" value={p1.goalAchievementScore ?? 0} color="rose" />
-                    <EngagementMetricBar label="Quality" value={p1.qualityScore ?? 0} color="rose" />
-                    <EngagementMetricBar label="Engagement" value={p1.engagementBehaviorScore ?? 0} color="rose" />
+                    <EngagementMetricBar metricKey="goal" value={p1.goalAchievementScore ?? 0} color="rose" detail={p1.goalDetail} />
+                    <EngagementMetricBar metricKey="quality" value={p1.qualityScore ?? 0} color="rose" detail={p1.qualityDetail} />
+                    <EngagementMetricBar metricKey="engage" value={p1.engagementBehaviorScore ?? 0} color="rose" detail={p1.engageDetail} />
                   </div>
                 </div>
               </div>
@@ -1123,36 +1418,58 @@ export default function VersusMode({
                 {p1ObjError && (
                   <div className="text-xs text-rose-400/80 py-2">{p1ObjError}</div>
                 )}
-                {Array.from({ length: maxObj }).map((_, i) => (
-                  <PreviewObjectiveCard key={`pv1-${i}`} objective={p1Objectives[i]} playerName={p1.fullName} isLeft index={i} />
+                {!p1ObjLoading && !p1ObjError && p1OwnObjectives.length === 0 && (
+                  <div className="text-[10px] font-mono text-zinc-600 tracking-widest uppercase py-3 text-center">
+                    No objectives owned in this cycle
+                  </div>
+                )}
+                {p1OwnObjectives.map((obj, i) => (
+                  <PreviewObjectiveCard key={`pv1-${obj.objectiveId ?? i}`} objective={obj} playerName={p1.fullName} isLeft index={i} />
                 ))}
               </div>
             </div>
 
-            <div className="hidden lg:flex items-start justify-center pt-3 shrink-0 px-1">
-              <motion.button
-                type="button"
-                disabled={isComparing || p1ObjLoading || p2ObjLoading}
-                onClick={runAiComparison}
-                whileHover={isComparing ? undefined : { scale: 1.04 }}
-                whileTap={isComparing ? undefined : { scale: 0.97 }}
-                className="p-0 border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none"
-              >
-                <BorderGlow
-                  borderRadius={14}
-                  backgroundColor="#07070e"
-                  glowColor="160 70 45"
-                  colors={["#34d399", "#22d3ee", "#6ee7b7"]}
-                  glowIntensity={1.25}
-                  glowRadius={22}
-                  fillOpacity={0.24}
+            {/* Comparison spine — vertical command axis between the two profiles.
+                The Eval button anchors at the top (sticky on scroll), and a thin
+                gradient rail connects down to a center "VS" marker, giving the
+                middle column visual purpose instead of empty space. */}
+            <div className="hidden lg:flex flex-col items-center pt-3 shrink-0 px-1 self-stretch">
+              <div className="sticky top-6 z-10 flex flex-col items-center gap-2">
+                <span className="text-[8px] font-bold uppercase tracking-[0.32em] text-emerald-300/55 select-none">
+                  AI Eval
+                </span>
+                <motion.button
+                  type="button"
+                  disabled={isComparing || p1ObjLoading || p2ObjLoading}
+                  onClick={runAiComparison}
+                  whileHover={isComparing ? undefined : { scale: 1.04 }}
+                  whileTap={isComparing ? undefined : { scale: 0.97 }}
+                  className="p-0 border-0 bg-transparent cursor-pointer disabled:cursor-not-allowed disabled:opacity-40 disabled:pointer-events-none"
                 >
-                  <div className="flex items-center justify-center gap-2 px-5 py-2.5 font-semibold uppercase tracking-[0.18em] text-[10px] text-emerald-200/95 select-none pointer-events-none">
-                    {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4 shrink-0" />}
-                    {isComparing ? "Evaluating…" : "Run AI eval"}
-                  </div>
-                </BorderGlow>
-              </motion.button>
+                  <BorderGlow
+                    borderRadius={14}
+                    backgroundColor="#07070e"
+                    glowColor="160 70 45"
+                    colors={["#34d399", "#22d3ee", "#6ee7b7"]}
+                    glowIntensity={1.25}
+                    glowRadius={22}
+                    fillOpacity={0.24}
+                  >
+                    <div className="flex items-center justify-center gap-2 px-5 py-2.5 font-semibold uppercase tracking-[0.18em] text-[10px] text-emerald-200/95 select-none pointer-events-none">
+                      {isComparing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Cpu className="w-4 h-4 shrink-0" />}
+                      {isComparing ? "Evaluating…" : "Run AI eval"}
+                    </div>
+                  </BorderGlow>
+                </motion.button>
+              </div>
+
+              {/* Decorative vertical spine — connects button to the center "VS" marker. */}
+              <div aria-hidden className="relative flex flex-1 flex-col items-center w-full mt-6 mb-2 min-h-[200px]">
+                <span className="w-px flex-1 bg-gradient-to-b from-emerald-300/35 via-white/10 to-transparent" />
+                <span className="absolute top-[40%] flex h-8 w-8 items-center justify-center rounded-full border border-white/12 bg-zinc-950 shadow-[inset_0_0_14px_rgba(110,231,183,0.12)]">
+                  <Swords className="h-3.5 w-3.5 text-white/55" strokeWidth={1.8} />
+                </span>
+              </div>
             </div>
 
             <div className="flex flex-col gap-4 min-w-0 lg:pl-2 xl:pl-6">
@@ -1176,22 +1493,37 @@ export default function VersusMode({
                   </div>
                   <div className="flex-1 min-w-0 text-right">
                     <h1 className="text-2xl lg:text-3xl font-bold text-white leading-tight truncate tracking-tight">{p2.fullName}</h1>
-                    <div className="mt-2 space-y-2 flex flex-col items-end">
-                      <div className="flex items-center gap-2 mb-2 justify-end">
+                    <div className="mt-2.5 flex flex-col items-end gap-2.5 w-full max-w-[min(100%,280px)] ml-auto">
+                      <div className="flex items-center gap-2 flex-wrap justify-end">
+                        {(p2.trend || p2.trendDetail) && (
+                          <TrendBadge trend={p2.trend} detail={p2.trendDetail} isRight />
+                        )}
                         <div className={`px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded border shadow-inner ${getStatusData(p2.totalScore ?? p2.avgPercent).bg} ${getStatusData(p2.totalScore ?? p2.avgPercent).border} ${getStatusData(p2.totalScore ?? p2.avgPercent).color}`}>
                           {getStatusData(p2.totalScore ?? p2.avgPercent).label}
                         </div>
                       </div>
-                      <div className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full max-w-[min(100%,280px)] ml-auto">
-                        <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold">Total score</div>
-                        <div className="flex items-baseline gap-2 mt-0.5 justify-end">
-                          <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
-                            {Math.floor(p2.totalScore ?? p2.avgPercent)}
-                          </span>
-                          <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                      <TotalScorePopover
+                        reason={p2.aiScoreReason}
+                        totalValue={p2.totalScore ?? p2.avgPercent}
+                        color="cyan"
+                        isRight
+                      >
+                        <div className={`rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-right w-full transition-colors ${p2.aiScoreReason?.trim() ? "cursor-pointer hover:bg-white/[0.06]" : ""}`}>
+                          <div className="flex items-baseline justify-between gap-3 flex-row-reverse">
+                            <div className="text-[9px] uppercase tracking-[0.2em] text-white/45 font-semibold inline-flex items-center gap-1 flex-row-reverse">
+                              Total score
+                              {p2.aiScoreReason?.trim() && <Info className="h-2.5 w-2.5 text-white/30" strokeWidth={2.5} />}
+                            </div>
+                            <div className="text-[10px] font-mono text-zinc-500">{p2.totalCheckIn} check-ins</div>
+                          </div>
+                          <div className="flex items-baseline gap-2 mt-0.5 justify-end">
+                            <span className="text-2xl font-bold tabular-nums text-cyan-400 leading-none">
+                              {Math.floor(p2.totalScore ?? p2.avgPercent)}
+                            </span>
+                            <span className="text-[11px] font-mono text-zinc-500">/ 100</span>
+                          </div>
                         </div>
-                      </div>
-                      <div className="text-[11px] font-mono text-zinc-500 flex justify-end">{p2.totalCheckIn} check-ins</div>
+                      </TotalScorePopover>
                     </div>
                   </div>
                 </div>
@@ -1233,9 +1565,9 @@ export default function VersusMode({
                     </ResponsiveContainer>
                   </div>
                   <div className="flex-1 space-y-3 min-w-0 max-w-[200px]">
-                    <EngagementMetricBar label="Achievement" value={p2.goalAchievementScore ?? 0} color="cyan" isRight />
-                    <EngagementMetricBar label="Quality" value={p2.qualityScore ?? 0} color="cyan" isRight />
-                    <EngagementMetricBar label="Engagement" value={p2.engagementBehaviorScore ?? 0} color="cyan" isRight />
+                    <EngagementMetricBar metricKey="goal" value={p2.goalAchievementScore ?? 0} color="cyan" isRight detail={p2.goalDetail} />
+                    <EngagementMetricBar metricKey="quality" value={p2.qualityScore ?? 0} color="cyan" isRight detail={p2.qualityDetail} />
+                    <EngagementMetricBar metricKey="engage" value={p2.engagementBehaviorScore ?? 0} color="cyan" isRight detail={p2.engageDetail} />
                   </div>
                 </div>
               </div>
@@ -1249,8 +1581,13 @@ export default function VersusMode({
                 {p2ObjError && (
                   <div className="text-xs text-cyan-400/80 py-2">{p2ObjError}</div>
                 )}
-                {Array.from({ length: maxObj }).map((_, i) => (
-                  <PreviewObjectiveCard key={`pv2-${i}`} objective={p2Objectives[i]} playerName={p2.fullName} isLeft={false} index={i} />
+                {!p2ObjLoading && !p2ObjError && p2OwnObjectives.length === 0 && (
+                  <div className="text-[10px] font-mono text-zinc-600 tracking-widest uppercase py-3 text-center">
+                    No objectives owned in this cycle
+                  </div>
+                )}
+                {p2OwnObjectives.map((obj, i) => (
+                  <PreviewObjectiveCard key={`pv2-${obj.objectiveId ?? i}`} objective={obj} playerName={p2.fullName} isLeft={false} index={i} />
                 ))}
               </div>
             </div>

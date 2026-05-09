@@ -179,7 +179,14 @@ async function generateJsonWithRetry<T = any>(opts: {
 export const compareController = {
   async handle(req: Request): Promise<Response> {
     try {
-      const { playerA, playerB, cycleLabelA, cycleLabelB } = await req.json();
+      const {
+        playerA,
+        playerB,
+        objectivesA,
+        objectivesB,
+        cycleLabelA,
+        cycleLabelB,
+      } = await req.json();
 
       if (!playerA || !playerB) {
         return NextResponse.json({ error: 'Missing player data' }, { status: 400 });
@@ -191,31 +198,74 @@ export const compareController = {
       const labelA = typeof cycleLabelA === 'string' && cycleLabelA.trim() ? cycleLabelA.trim() : 'รอบ A';
       const labelB = typeof cycleLabelB === 'string' && cycleLabelB.trim() ? cycleLabelB.trim() : 'รอบ B';
 
-      const trimPlayer = (p: any) => {
+      const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
+      const str = (v: unknown): string => (typeof v === 'string' ? v.trim() : '');
+
+      const trimPlayer = (p: any, objectives: any) => {
+        const objList = Array.isArray(objectives) ? objectives : [];
         return {
-          name: p.fullName,
-          checkIns: p.checkInCount,
-          avgProgress: p.avgParticipantPercent ?? p.avgObjectiveProgress,
-          topObjectives: p.topObjectives.map((obj: any) => ({
-            name: obj.objectiveName,
-            progress: obj.progress,
-            tasks:
-              obj.actualDetails
-                ?.map((detail: any) => {
-                  const detailProgress = Math.round(detail?.progress || 0);
-                  const krList =
-                    detail?.details
-                      ?.map((kr: any) => `${kr.krTitle} (${Math.round(kr.krProgress || 0)}%)`)
-                      .join(', ') || 'no KR';
-                  return `${detail?.title || 'Objective detail'} [${detailProgress}%]: ${krList}`;
-                })
-                .join(' | ') || 'No specific breakdown',
-          })),
+          // Identity
+          name: str(p?.fullName) || 'Unknown',
+          // Activity
+          checkIns: num(p?.totalCheckIn),
+          missedCheckIns: num(p?.totalMissCheckIn),
+          // Aggregate progress
+          avgProgress: num(p?.avgPercent),
+          // Per-dimension scores (enriched — feeds the AI reasoning context)
+          dimensions: {
+            goal:    { score: num(p?.goalAchievementScore ?? p?.goalScore),       weight: 0.4, detail: str(p?.goalDetail) },
+            quality: { score: num(p?.qualityScore),                                weight: 0.5, detail: str(p?.qualityDetail) },
+            engage:  { score: num(p?.engagementBehaviorScore ?? p?.engageScore),  weight: 0.1, detail: str(p?.engageDetail) },
+          },
+          totalScore: num(p?.totalScore ?? p?.avgPercent),
+          // Trend signal
+          trend: typeof p?.trend === 'string' ? p.trend : 'normal',
+          trendDetail: str(p?.trendDetail),
+          // Overall AI composite reasoning
+          aiOverallReason: str(p?.aiScoreReason),
+          // Objectives (separately fetched by the client, passed via objectivesA/B)
+          topObjectives: objList.map((obj: any) => {
+            const subList = Array.isArray(obj?.subObjectives) ? obj.subObjectives : [];
+            return {
+              name: str(obj?.objectiveName) || str(obj?.objectiveName_EN) || 'Objective',
+              progress: num(obj?.progress),
+              status: str(obj?.status),
+              tasks:
+                subList
+                  .map((sub: any) => {
+                    const subProgress = Math.round(num(sub?.progress));
+                    const krList =
+                      (Array.isArray(sub?.details) ? sub.details : [])
+                        .map((kr: any) => `${str(kr?.krTitle) || 'KR'} (${Math.round(num(kr?.pointOKR))}%)`)
+                        .join(', ') || 'no KR';
+                    return `${str(sub?.title) || 'Sub-objective'} [${subProgress}%]: ${krList}`;
+                  })
+                  .join(' | ') || 'No specific breakdown',
+            };
+          }),
         };
       };
 
-      const dataA = trimPlayer(playerA);
-      const dataB = trimPlayer(playerB);
+      const dataA = trimPlayer(playerA, objectivesA);
+      const dataB = trimPlayer(playerB, objectivesB);
+
+      // Compact, prose-friendly briefing on what the prior AI pipeline already
+      // concluded about each dimension/trend. Surfaced in the summary prompt so
+      // the comparison is grounded in real evidence — not just raw numbers.
+      const formatPlayerInsights = (p: ReturnType<typeof trimPlayer>): string => {
+        const lines: string[] = [];
+        lines.push(`Total score: ${Math.round(p.totalScore)} / 100 · Avg progress: ${Math.round(p.avgProgress)}% · Check-ins: ${p.checkIns} (missed ${p.missedCheckIns})`);
+        lines.push(`Dimension breakdown (× weight):`);
+        lines.push(`  - Goal achievement (×0.4) = ${Math.round(p.dimensions.goal.score)}${p.dimensions.goal.detail ? ` — AI says: ${p.dimensions.goal.detail}` : ''}`);
+        lines.push(`  - Quality of work  (×0.5) = ${Math.round(p.dimensions.quality.score)}${p.dimensions.quality.detail ? ` — AI says: ${p.dimensions.quality.detail}` : ''}`);
+        lines.push(`  - Engagement       (×0.1) = ${Math.round(p.dimensions.engage.score)}${p.dimensions.engage.detail ? ` — AI says: ${p.dimensions.engage.detail}` : ''}`);
+        const trendLabel = p.trend === 'up' ? 'improving' : p.trend === 'down' ? 'declining' : 'stable';
+        lines.push(`Trend vs prior period: ${trendLabel}${p.trendDetail ? ` — ${p.trendDetail}` : ''}`);
+        if (p.aiOverallReason) {
+          lines.push(`Overall AI assessment: ${p.aiOverallReason}`);
+        }
+        return lines.join('\n');
+      };
 
       const apiKey = process.env.ANTHROPIC_API_KEY || process.env.NEXT_PUBLIC_ANTHROPIC_API_KEY;
       const maxRounds = Math.max(dataA.topObjectives.length, dataB.topObjectives.length);
@@ -379,9 +429,18 @@ ${conclusionSkeleton}
 
 ${fixedMathBlock}
 
-Player summary data:
-- ${isSelfComparison ? `${nameA} @ ${labelA}` : dataA.name}: checkIns=${dataA.checkIns}, avgProgress=${dataA.avgProgress}, objectives=${dataA.topObjectives.length}
-- ${isSelfComparison ? `${nameA} @ ${labelB}` : dataB.name}: checkIns=${dataB.checkIns}, avgProgress=${dataB.avgProgress}, objectives=${dataB.topObjectives.length}
+EVIDENCE GROUNDING (MANDATORY):
+- The blocks below contain a prior-pipeline AI assessment of each player across three weighted dimensions (Goal ×0.4, Quality ×0.5, Engagement ×0.1) plus a trend signal vs the prior period.
+- When you write จุดแข็ง / จุดที่ควรพัฒนา bullets, anchor each bullet in this evidence:
+  - Cite the dimension by name (e.g. "คุณภาพงาน", "การบรรลุเป้าหมาย", "การมีส่วนร่วม") OR the trend signal.
+  - Reuse concrete facts from the AI-says lines (numbers, KR mentions, behaviour patterns) — do NOT invent.
+  - If a player's strongest dimension is ${dataA.dimensions.quality.weight > dataA.dimensions.goal.weight ? 'Quality (highest weight ×0.5)' : 'Goal'}, prefer it as the lead จุดแข็ง when supported.
+
+Player A AI-derived insights (${isSelfComparison ? `${nameA} @ ${labelA}` : dataA.name}):
+${formatPlayerInsights(dataA)}
+
+Player B AI-derived insights (${isSelfComparison ? `${nameA} @ ${labelB}` : dataB.name}):
+${formatPlayerInsights(dataB)}
 
 Pre-Matched Rounds Data (for reference — do NOT re-emit rounds):
 ${JSON.stringify(matchedRounds, null, 2)}
