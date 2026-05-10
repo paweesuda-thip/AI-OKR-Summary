@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
+import { Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip as RechartsTooltip } from 'recharts';
 import { Card } from "@/src/Interface/Ui/Primitives/card";
-import { CopyCheck, Target, Users, CheckCircle2, Activity, UserX, ArrowUpRight, Gauge, Flag, Timer } from "lucide-react";
+import { Target, Users, CheckCircle2, Activity, ArrowUpRight, Gauge, Flag, Timer, Star, Flame, TrendingUp, TrendingDown } from "lucide-react";
 import { TeamSummary, ParticipantDetailRaw, Objective, KrDetail } from "@/src/Domain/Entities/Okr";
 import { Avatar, AvatarFallback, AvatarImage } from "@/src/Interface/Ui/Primitives/avatar";
 import { Dialog, DialogContent, DialogTrigger, DialogTitle } from "@/src/Interface/Ui/Primitives/dialog";
@@ -345,9 +346,197 @@ export default function OverviewCards({ summary, participantDetails = [], object
     const atRiskPercent = totalObjectives > 0 ? (atRiskCount / totalObjectives) * 100 : 0;
     const behindPercent = totalObjectives > 0 ? (behindCount / totalObjectives) * 100 : 0;
 
+    const validParticipants = participantDetails.filter(p => {
+        const score = p.totalScore ?? p.avgPercent ?? 0;
+        return score > 0;
+    });
+    const count = validParticipants.length || 1;
+
+    const avgTotalScore = validParticipants.reduce((acc, p) => acc + (p.totalScore ?? p.avgPercent ?? 0), 0) / count;
+    const avgGoal = validParticipants.reduce((acc, p) => acc + (p.goalAchievementScore ?? p.goalScore ?? 0), 0) / count;
+    const avgQuality = validParticipants.reduce((acc, p) => acc + (p.qualityScore ?? 0), 0) / count;
+    const avgEngage = validParticipants.reduce((acc, p) => acc + (p.engagementBehaviorScore ?? p.engageScore ?? 0), 0) / count;
+
+    const upTrends = validParticipants.filter(p => p.trendValue === 1 || p.trend === 'up').length;
+    const downTrends = validParticipants.filter(p => p.trendValue === 2 || p.trend === 'down').length;
+
+    const radarData = useMemo(() => [
+        { subject: 'Goal', A: avgGoal, fullMark: 100 },
+        { subject: 'Quality', A: avgQuality, fullMark: 100 },
+        { subject: 'Engage', A: avgEngage, fullMark: 100 }
+    ], [avgGoal, avgQuality, avgEngage]);
+
     return (
         <TooltipProvider delay={120}>
-            <div className="w-full">
+            <div className="w-full flex flex-col gap-3 lg:gap-4">
+                {/* ─────────────────────────────────────────────────────────────
+                    Performance Composite Panel — Cockpit HUD Layout
+                    3 Columns: Left (Hero Score), Center (Radar), Right (Breakdown Cards)
+                ───────────────────────────────────────────────────────────────── */}
+                <section className="relative overflow-hidden rounded-2xl border border-border/50 bg-background/40 backdrop-blur-xl shadow-sm p-6 lg:p-8">
+                    {/* Ambient Glows */}
+                    <div className="absolute top-0 right-1/4 h-[300px] w-[300px] rounded-full bg-blue-500/10 blur-[80px] pointer-events-none" />
+                    <div className="absolute bottom-0 left-1/4 h-[250px] w-[250px] rounded-full bg-purple-500/10 blur-[60px] pointer-events-none" />
+
+                    <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+                        
+                        {/* Left: Overall Score & Formula */}
+                        <div className="lg:col-span-4 flex flex-col justify-center h-full">
+                                <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground mb-6">
+                                    <Activity className="h-4 w-4 text-blue-500" />
+                                    Composite Score
+                                </div>
+                                
+                                <div className="mb-4">
+                                    <div className="flex items-baseline gap-2">
+                                        <span className="text-6xl lg:text-[5.5rem] font-black tracking-tighter text-transparent bg-clip-text bg-gradient-to-br from-foreground to-foreground/50 leading-none">
+                                            {avgTotalScore.toFixed(1)}
+                                        </span>
+                                        <span className="text-xl font-bold text-muted-foreground/50">/ 100</span>
+                                    </div>
+                                </div>
+                                
+                                <div className="flex flex-wrap items-center gap-2 mb-8 lg:mb-12">
+                                    {/* Status pill */}
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border shadow-sm ${avgTotalScore >= 80 ? 'bg-violet-500/10 border-violet-500/20 text-violet-500' : avgTotalScore >= 60 ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : avgTotalScore >= 40 ? 'bg-amber-500/10 border-amber-500/20 text-amber-500' : 'bg-rose-500/10 border-rose-500/20 text-rose-500'}`}>
+                                        <div className="w-1.5 h-1.5 rounded-full bg-current animate-pulse" />
+                                        <span className="text-[10px] font-bold uppercase tracking-widest">
+                                            {avgTotalScore >= 80 ? 'Beyond' : avgTotalScore >= 60 ? 'On Track' : avgTotalScore >= 40 ? 'At Risk' : 'Behind'}
+                                        </span>
+                                    </div>
+                                    
+                                    {/* Trend pills */}
+                                    {(upTrends > 0 || downTrends > 0) && (
+                                    <div className="flex items-center gap-2 bg-muted/40 border border-border/50 px-3 py-1.5 rounded-full">
+                                        {upTrends > 0 && <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500"><TrendingUp className="w-3 h-3"/> {upTrends}</span>}
+                                        {upTrends > 0 && downTrends > 0 && <span className="w-px h-3 bg-border/50 mx-0.5" />}
+                                        {downTrends > 0 && <span className="flex items-center gap-1 text-[10px] font-bold text-rose-500"><TrendingDown className="w-3 h-3"/> {downTrends}</span>}
+                                    </div>
+                                    )}
+                                </div>
+
+                                {/* Contribution mix formula */}
+                                <div className="mt-auto space-y-3 bg-background/50 border border-border/40 rounded-2xl p-4 shadow-sm">
+                                    <div className="flex items-center justify-between text-[9px] uppercase tracking-[0.2em] text-muted-foreground font-bold">
+                                        <span>Weight Mix</span>
+                                        <span>Formula</span>
+                                    </div>
+                                    
+                                    {(() => {
+                                        const qContrib = avgQuality * 0.5;
+                                        const gContrib = avgGoal * 0.4;
+                                        const eContrib = avgEngage * 0.1;
+                                        const sum = qContrib + gContrib + eContrib || 1;
+                                        return (
+                                            <div className="flex h-2 w-full rounded-full bg-muted/50 overflow-hidden shadow-inner">
+                                                <div className="h-full bg-amber-500 transition-all duration-700 hover:brightness-110" style={{ width: `${(qContrib / sum) * 100}%` }} title={`Quality: ${qContrib.toFixed(1)}`} />
+                                                <div className="h-full bg-emerald-500 transition-all duration-700 hover:brightness-110" style={{ width: `${(gContrib / sum) * 100}%` }} title={`Goal: ${gContrib.toFixed(1)}`} />
+                                                <div className="h-full bg-purple-500 transition-all duration-700 hover:brightness-110" style={{ width: `${(eContrib / sum) * 100}%` }} title={`Engage: ${eContrib.toFixed(1)}`} />
+                                            </div>
+                                        );
+                                    })()}
+                                    
+                                    <div className="flex justify-between text-[10px] font-mono font-bold text-muted-foreground/80 tabular-nums pt-1">
+                                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" /> Q×.5</span>
+                                        <span className="opacity-30">+</span>
+                                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" /> G×.4</span>
+                                        <span className="opacity-30">+</span>
+                                        <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-sm bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.5)]" /> E×.1</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Center: Radar Chart */}
+                            <div className="lg:col-span-4 relative h-[280px] flex items-center justify-center lg:border-x border-border/20 py-4 lg:py-0">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <RadarChart cx="50%" cy="50%" outerRadius="65%" data={radarData}>
+                                        <defs>
+                                            <radialGradient id="radarFillCockpit" cx="50%" cy="50%" r="50%">
+                                                <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.6} />
+                                                <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.2} />
+                                            </radialGradient>
+                                        </defs>
+                                        <PolarGrid stroke="rgba(148,163,184,0.15)" strokeDasharray="3 3" />
+                                        <PolarAngleAxis dataKey="subject" tick={{ fill: 'currentColor', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em' }} />
+                                        <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                                        <Radar name="Team Avg" dataKey="A" stroke="#3b82f6" fill="url(#radarFillCockpit)" strokeWidth={2} dot={{ fill: '#3b82f6', r: 4, strokeWidth: 2, stroke: 'var(--background)' }} activeDot={{ r: 6, fill: '#8b5cf6', stroke: 'var(--background)' }} />
+                                        <RechartsTooltip
+                                            contentStyle={{ backgroundColor: 'rgba(15,23,42,0.95)', border: '1px solid rgba(148,163,184,0.2)', borderRadius: '12px', fontSize: '12px', padding: '10px 14px', boxShadow: '0 10px 25px -5px rgba(0,0,0,0.5)' }}
+                                            itemStyle={{ color: '#fff', fontWeight: 600 }}
+                                            formatter={(value: number) => value.toFixed(1)}
+                                        />
+                                    </RadarChart>
+                                </ResponsiveContainer>
+                            </div>
+
+                            {/* Right: Breakdown Cards */}
+                            <div className="lg:col-span-4 flex flex-col gap-3.5">
+                                <div className="text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground mb-1.5">Metric Details</div>
+                                
+                                {/* Quality */}
+                                <div className="group relative overflow-hidden rounded-[1.25rem] border border-border/40 bg-background/40 p-4 flex items-center gap-4 hover:border-amber-500/40 hover:bg-background/60 transition-all duration-300 shadow-sm hover:shadow-md">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/0 via-amber-500/0 to-amber-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="flex-shrink-0 w-11 h-11 rounded-full bg-amber-500/10 flex items-center justify-center border border-amber-500/20 text-amber-500 group-hover:scale-110 transition-transform duration-500">
+                                        <Star className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0 relative z-10">
+                                        <div className="flex justify-between items-end mb-2">
+                                            <div className="text-xs font-bold text-foreground uppercase tracking-wider">Quality</div>
+                                            <div className="text-xl font-mono font-black text-amber-500 leading-none">{avgQuality.toFixed(1)}</div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-1.5 flex-1 bg-muted/60 rounded-full overflow-hidden shadow-inner">
+                                                <div className="h-full bg-amber-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(100, Math.max(0, avgQuality))}%` }} />
+                                            </div>
+                                            <div className="text-[9px] font-black text-amber-500/80 bg-amber-500/10 px-1.5 py-0.5 rounded uppercase tracking-widest shadow-sm">Wt .5</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Goal */}
+                                <div className="group relative overflow-hidden rounded-[1.25rem] border border-border/40 bg-background/40 p-4 flex items-center gap-4 hover:border-emerald-500/40 hover:bg-background/60 transition-all duration-300 shadow-sm hover:shadow-md">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/0 via-emerald-500/0 to-emerald-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="flex-shrink-0 w-11 h-11 rounded-full bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20 text-emerald-500 group-hover:scale-110 transition-transform duration-500">
+                                        <Target className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0 relative z-10">
+                                        <div className="flex justify-between items-end mb-2">
+                                            <div className="text-xs font-bold text-foreground uppercase tracking-wider">Goal</div>
+                                            <div className="text-xl font-mono font-black text-emerald-500 leading-none">{avgGoal.toFixed(1)}</div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-1.5 flex-1 bg-muted/60 rounded-full overflow-hidden shadow-inner">
+                                                <div className="h-full bg-emerald-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(100, Math.max(0, avgGoal))}%` }} />
+                                            </div>
+                                            <div className="text-[9px] font-black text-emerald-500/80 bg-emerald-500/10 px-1.5 py-0.5 rounded uppercase tracking-widest shadow-sm">Wt .4</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Engage */}
+                                <div className="group relative overflow-hidden rounded-[1.25rem] border border-border/40 bg-background/40 p-4 flex items-center gap-4 hover:border-purple-500/40 hover:bg-background/60 transition-all duration-300 shadow-sm hover:shadow-md">
+                                    <div className="absolute inset-0 bg-gradient-to-r from-purple-500/0 via-purple-500/0 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    <div className="flex-shrink-0 w-11 h-11 rounded-full bg-purple-500/10 flex items-center justify-center border border-purple-500/20 text-purple-500 group-hover:scale-110 transition-transform duration-500">
+                                        <Flame className="w-5 h-5" />
+                                    </div>
+                                    <div className="flex-1 min-w-0 relative z-10">
+                                        <div className="flex justify-between items-end mb-2">
+                                            <div className="text-xs font-bold text-foreground uppercase tracking-wider">Engage</div>
+                                            <div className="text-xl font-mono font-black text-purple-500 leading-none">{avgEngage.toFixed(1)}</div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-1.5 flex-1 bg-muted/60 rounded-full overflow-hidden shadow-inner">
+                                                <div className="h-full bg-purple-500 rounded-full transition-all duration-1000 ease-out" style={{ width: `${Math.min(100, Math.max(0, avgEngage))}%` }} />
+                                            </div>
+                                            <div className="text-[9px] font-black text-purple-500/80 bg-purple-500/10 px-1.5 py-0.5 rounded uppercase tracking-widest shadow-sm">Wt .1</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                </section>
+
                 <div className="grid w-full grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-3 lg:gap-4">
                     {/* Card 1: Cycle Health (col-span-2) */}
                     <section className="group relative col-span-1 md:col-span-2 xl:col-span-2 overflow-hidden rounded-2xl border border-border/50 bg-background/40 p-5 backdrop-blur-xl transition-all duration-300 hover:border-sky-500/30 hover:bg-background/60 shadow-sm flex flex-col justify-between">
@@ -409,7 +598,7 @@ export default function OverviewCards({ summary, participantDetails = [], object
                         <div className="relative z-10 space-y-4 mt-auto">
                             <div>
                                 <div className="flex justify-between items-end mb-1.5">
-                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Milestones</span>
+                                    <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">Objectives</span>
                                     <span className="text-xs font-bold text-foreground">{completedSubObjectives} <span className="text-[10px] font-medium text-muted-foreground">/ {totalSubObjectives}</span></span>
                                 </div>
                                 <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
