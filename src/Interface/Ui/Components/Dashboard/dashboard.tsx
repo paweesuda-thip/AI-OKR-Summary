@@ -233,21 +233,23 @@ export default function Dashboard() {
   }, [objectives]);
 
   const showStatus = useMemo(() => {
-    if (!selectedCycle?.dateEnd) return true;
+    let startDate: Date;
+    let endDate: Date;
 
-    const cycleEnd = new Date(selectedCycle.dateEnd);
-    
-    // Determine the date to evaluate against
-    // If Overall QTR is ON, use the real current date.
-    // If Overall QTR is OFF (filtering by date), use the end date of the filter range.
-    const evaluatedDate = isOverall 
-      ? new Date() 
-      : (dateRange?.to ? dateRange.to : new Date());
+    if (isOverall) {
+      if (!selectedCycle?.dateStart) return true;
+      startDate = new Date(selectedCycle.dateStart);
+      endDate = new Date(); // Use current date for overall progression
+    } else {
+      if (!dateRange?.from || !dateRange?.to) return false;
+      startDate = dateRange.from;
+      endDate = dateRange.to;
+    }
 
-    if (evaluatedDate.getFullYear() > cycleEnd.getFullYear()) return true;
-    if (evaluatedDate.getFullYear() === cycleEnd.getFullYear() && evaluatedDate.getMonth() >= cycleEnd.getMonth()) return true;
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
-    return false;
+    return diffDays >= 24;
   }, [isOverall, selectedCycle, dateRange]);
 
   // ── Render ─────────────────────────────────────────────────────────────────

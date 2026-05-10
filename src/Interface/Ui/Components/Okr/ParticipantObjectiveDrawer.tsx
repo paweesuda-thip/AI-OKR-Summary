@@ -195,7 +195,15 @@ export function ParticipantObjectiveDrawer({
                         <span className="text-[10px] font-bold text-zinc-300 uppercase tracking-widest">Rank</span>
                         <span className="text-xs font-black font-mono text-white">#{person.displayRank || '?'}</span>
                       </div>
-                      <div className="h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
+                      {person.dateAIProcessed && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-blue-500/20 bg-blue-500/10 shadow-inner">
+                          <span className="text-[10px] font-bold text-blue-300 uppercase tracking-widest">AI Processed</span>
+                          <span className="text-[10px] text-blue-200">
+                            {new Date(person.dateAIProcessed).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}
+                          </span>
+                        </div>
+                      )}
+                      <div className="hidden sm:block h-px flex-1 bg-gradient-to-r from-white/10 to-transparent" />
                     </div>
                     <h2 className="text-4xl font-black text-transparent bg-clip-text bg-linear-to-r from-white to-white/70 tracking-tight leading-tight truncate drop-shadow-sm mb-1">
                       {person.fullName}
