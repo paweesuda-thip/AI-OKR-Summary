@@ -384,7 +384,7 @@ export default function OverviewCards({ summary, participantDetails = [], object
                         <div className="lg:col-span-4 flex flex-col justify-center h-full">
                                 <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground mb-6">
                                     <Activity className="h-4 w-4 text-blue-500" />
-                                    Composite Score
+                                    Average Total Score
                                 </div>
                                 
                                 <div className="mb-4">
