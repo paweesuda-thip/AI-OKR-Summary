@@ -4,11 +4,9 @@ import type { AssessmentSetDto, OrgNodeDto } from '@/src/Domain/Entities/Ddl';
 import type { IDdlRepository } from '@/src/Domain/Interfaces/IDdlRepository';
 import { UpstreamApiError } from '@/src/Domain/Exceptions';
 
-const API_CORE_BASE_URL = process.env.NEXT_PUBLIC_API_CORE_BASE_URL ?? 'https://api-core.empeo.com';
 const API_EMPEO_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://api.empeo.com';
 
 const DDL_USER_ID = process.env.DDL_USER_ID;
-const STATIO_GOFIVE_KEY = process.env.NEXT_PUBLIC_API_STATIO_GOFIVE_KEY;
 const EMPEO_API_KEY = process.env.NEXT_PUBLIC_API_KEY_EMPEO;
 
 type UnknownRecord = Record<string, unknown>;
@@ -48,10 +46,21 @@ async function safeJson(response: Response): Promise<unknown> {
 async function fetchFromUpstream(
   url: string,
   headers: Record<string, string>,
+  options?: { method?: string; body?: unknown }
 ): Promise<unknown> {
+  const method = options?.method ?? 'GET';
+  const reqHeaders: Record<string, string> = { ...headers };
+  let reqBody: string | undefined;
+
+  if (options?.body) {
+    reqHeaders['Content-Type'] = 'application/json';
+    reqBody = JSON.stringify(options.body);
+  }
+
   const response = await fetch(url, {
-    method: 'GET',
-    headers,
+    method,
+    headers: reqHeaders,
+    body: reqBody,
     cache: 'no-store',
   });
 
@@ -69,14 +78,19 @@ async function fetchFromUpstream(
 }
 
 export async function fetchOrgNodesFromUpstream() {
-  if (!STATIO_GOFIVE_KEY) {
-    throw new Error('Missing API_STATIO_GOFIVE_KEY');
+  if (!EMPEO_API_KEY) {
+    throw new Error('Missing API_KEY_EMPEO');
   }
 
-  const url = `${API_CORE_BASE_URL}/api/v1/organizations/node?userId=${encodeURIComponent(DDL_USER_ID ?? '')}`;
-  const payload = await fetchFromUpstream(url, {
-    'X-API-STATIO-GOFIVE-KEY': STATIO_GOFIVE_KEY,
-  });
+  const url = `${API_EMPEO_BASE_URL}/api/v1/organizations/node`;
+  const payload = await fetchFromUpstream(
+    url,
+    { 'X-API-KEY-EMPEO': EMPEO_API_KEY },
+    {
+      method: 'POST',
+      body: { userId: DDL_USER_ID ?? '' },
+    }
+  );
 
   return {
     status: { code: '1000', description: 'Success' },
@@ -89,10 +103,15 @@ export async function fetchAssessmentSetsFromUpstream() {
     throw new Error('Missing API_KEY_EMPEO');
   }
 
-  const url = `${API_EMPEO_BASE_URL}/api/v1/okr-kpi/assessment-sets?userId=${encodeURIComponent(DDL_USER_ID ?? '')}`;
-  const payload = await fetchFromUpstream(url, {
-    'X-API-KEY-EMPEO': EMPEO_API_KEY,
-  });
+  const url = `${API_EMPEO_BASE_URL}/api/v1/okr-kpi/assessment-sets`;
+  const payload = await fetchFromUpstream(
+    url,
+    { 'X-API-KEY-EMPEO': EMPEO_API_KEY },
+    {
+      method: 'POST',
+      body: { userId: DDL_USER_ID ?? '' },
+    }
+  );
 
   return {
     status: { code: '1000', description: 'Success' },

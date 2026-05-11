@@ -34,9 +34,16 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
   return fallback;
 }
 
-async function get<T>(endpoint: string): Promise<T> {
-  const response = await fetch(endpoint, {
+const API_EMPEO_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'https://api.empeo.com';
+const API_CORE_BASE_URL = process.env.NEXT_PUBLIC_API_CORE_BASE_URL ?? 'https://api-core.empeo.com';
+const API_KEY_EMPEO = process.env.NEXT_PUBLIC_API_KEY_EMPEO ?? '';
+const API_STATIO_GOFIVE_KEY = process.env.NEXT_PUBLIC_API_STATIO_GOFIVE_KEY ?? '';
+const USER_ID = process.env.NEXT_PUBLIC_DDL_USER_ID ?? '';
+
+async function get<T>(url: string, headers: Record<string, string>): Promise<T> {
+  const response = await fetch(url, {
     method: 'GET',
+    headers,
     cache: 'no-store',
   });
   const payload = await parseJsonOrNull(response);
@@ -64,15 +71,17 @@ function extractData<T>(payload: unknown): T[] {
 }
 
 export async function fetchOrgNodes(): Promise<OrgNodeDto[]> {
-  const payload = await get<DdlApiResponse<OrgNodeDto[]> | OrgNodeDto[]>(
-    '/api/ddl/org-node',
-  );
+  const url = `${API_CORE_BASE_URL}/api/v1/organizations/node?userId=${encodeURIComponent(USER_ID)}`;
+  const payload = await get<DdlApiResponse<OrgNodeDto[]> | OrgNodeDto[]>(url, {
+    'X-API-STATIO-GOFIVE-KEY': API_STATIO_GOFIVE_KEY,
+  });
   return extractData<OrgNodeDto>(payload);
 }
 
 export async function fetchAssessmentSets(): Promise<AssessmentSetDto[]> {
-  const payload = await get<DdlApiResponse<AssessmentSetDto[]> | AssessmentSetDto[]>(
-    '/api/ddl/assessment-sets',
-  );
+  const url = `${API_EMPEO_BASE_URL}/api/v1/okr-kpi/assessment-sets?userId=${encodeURIComponent(USER_ID)}`;
+  const payload = await get<DdlApiResponse<AssessmentSetDto[]> | AssessmentSetDto[]>(url, {
+    'X-API-KEY-EMPEO': API_KEY_EMPEO,
+  });
   return extractData<AssessmentSetDto>(payload);
 }
