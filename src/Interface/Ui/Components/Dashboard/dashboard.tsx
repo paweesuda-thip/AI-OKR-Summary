@@ -152,7 +152,7 @@ export default function Dashboard() {
   }), [resolvedAssessmentSetId, resolvedOrganizationId, isOverall, dateRange]);
 
   // ── TanStack Query ─────────────────────────────────────────────────────────
-  const shouldRunOverviewQueries = activeTab === 'overview';
+  const shouldRunOverviewQueries = activeTab === 'overview' && !ddlLoading;
 
   const {
     data: dashboardResult,
@@ -165,8 +165,9 @@ export default function Dashboard() {
     isLoading: partLoading,
   } = useParticipantQuery(queryParams, { enabled: shouldRunOverviewQueries });
 
-  // ── Derived data ───────────────────────────────────────────────────────────
-  const loading = dashLoading || partLoading || ddlLoading;
+  // Ensure loading remains true if queries are enabled but haven't successfully fetched data or errored yet
+  const isQueryPending = shouldRunOverviewQueries && !dashboardResult && !dashError;
+  const loading = dashLoading || partLoading || ddlLoading || isQueryPending;
   const errorMessage =
     dashError?.message ||
     (ddlError instanceof Error ? ddlError.message : "") ||
