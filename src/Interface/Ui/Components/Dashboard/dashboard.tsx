@@ -157,17 +157,20 @@ export default function Dashboard() {
   const {
     data: dashboardResult,
     isLoading: dashLoading,
+    isFetching: dashFetching,
     error: dashError,
   } = useDashboardQuery(queryParams, { enabled: shouldRunOverviewQueries });
 
   const {
     data: participantDetails = [],
     isLoading: partLoading,
+    isFetching: partFetching,
   } = useParticipantQuery(queryParams, { enabled: shouldRunOverviewQueries });
 
   // Ensure loading remains true if queries are enabled but haven't successfully fetched data or errored yet
   const isQueryPending = shouldRunOverviewQueries && !dashboardResult && !dashError;
-  const loading = dashLoading || partLoading || ddlLoading || isQueryPending;
+  const isInitialFetching = (dashFetching || partFetching) && !dashboardResult;
+  const loading = dashLoading || partLoading || ddlLoading || isQueryPending || isInitialFetching;
   const errorMessage =
     dashError?.message ||
     (ddlError instanceof Error ? ddlError.message : "") ||
@@ -372,16 +375,13 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
-        {/* ── Main Content ── */}
         <main className="relative flex-1 min-w-0 flex flex-col h-full overflow-y-auto scrollbar-hide">
-          <motion.div
-            layout
-            transition={{ duration: 0.28, ease: "easeOut" }}
-            className={`relative z-10 flex-1 w-full ${
+          <div
+            className={`relative z-10 flex-1 w-full transition-all duration-300 ${
               activeTab === "versus"
                 ? "pt-0 px-0 pb-0 max-w-none"
                 : "pt-6 px-4 sm:px-8 pb-12 max-w-[1920px] mx-auto"
-            } ${loading ? "opacity-60 pointer-events-none transition-opacity duration-300" : "transition-opacity duration-300"}`}
+            } ${loading ? "opacity-60 pointer-events-none blur-[2px]" : "opacity-100 blur-0"}`}
           >
 
             {errorMessage && (
@@ -716,7 +716,7 @@ export default function Dashboard() {
                 </motion.div>
               )}
             </AnimatePresence>
-            </motion.div>
+          </div>
         </main>
       </div>
   );
