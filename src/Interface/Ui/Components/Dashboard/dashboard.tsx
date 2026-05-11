@@ -633,26 +633,28 @@ export default function Dashboard() {
             </section>
 
             {/* ── Focus Areas (Unboxed) ── */}
-            <section className="relative grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
-              <>
-                <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                  <ProgressUpdateSection
-                    title="Trending"
-                    description="Tasks with the highest acceleration"
-                    subObjectives={topUpdates}
-                    type="top"
-                  />
-                </div>
-                <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
-                  <ProgressUpdateSection
-                    title="Needs Attention"
-                    description="Tasks losing momentum"
-                    subObjectives={bottomUpdates}
-                    type="bottom"
-                  />
-                </div>
-              </>
-            </section>
+            {(topUpdates.length > 0 || bottomUpdates.length > 0) && (
+              <section className="relative grid grid-cols-1 xl:grid-cols-2 gap-8 max-w-7xl mx-auto w-full">
+                <>
+                  <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
+                    <ProgressUpdateSection
+                      title="Trending"
+                      description="Tasks with the highest acceleration"
+                      subObjectives={topUpdates}
+                      type="top"
+                    />
+                  </div>
+                  <div className="bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg transition-all hover:bg-background/40 hover:border-border/50">
+                    <ProgressUpdateSection
+                      title="Needs Attention"
+                      description="Tasks losing momentum"
+                      subObjectives={bottomUpdates}
+                      type="bottom"
+                    />
+                  </div>
+                </>
+              </section>
+            )}
 
             {/* ── Period Comparison ── */}
             <section className="hidden relative bg-background/20 backdrop-blur-xl border border-border/30 rounded-3xl p-6 shadow-lg max-w-7xl mx-auto w-full">
