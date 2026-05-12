@@ -381,7 +381,7 @@ export default function Dashboard() {
               activeTab === "versus"
                 ? "pt-0 px-0 pb-0 max-w-none"
                 : "pt-6 px-4 sm:px-8 pb-12 max-w-[1920px] mx-auto"
-            } ${loading ? "opacity-60 pointer-events-none blur-[2px]" : "opacity-100 blur-0"}`}
+            }`}
           >
 
             {errorMessage && (
